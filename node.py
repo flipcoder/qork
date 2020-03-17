@@ -36,10 +36,14 @@ class Node:
             return self.accel or vec3(0)
         self.accel = a
     def scale(self, v = None, space = LOCAL):
+        if v == None:
+            assert False #
+        if type(v)==int or type(v)==float:
+            v = vec3(float(v))
         if space == LOCAL:
-            self.transform *= glm.scale(v)
+            self.transform *= glm.scale(mat4(), v)
         elif space == PARENT:
-            self.transform = glm.scale(v) * self.transform
+            self.transform = glm.scale(mat4(), v) * self.transform
         else:
             assert False # not impl
     def position(self, v = None, space = None):

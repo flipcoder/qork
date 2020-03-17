@@ -27,6 +27,8 @@ class Map(Mesh):
         ])
         self.mesh_type = gl.TRIANGLE_STRIP
         self.load('data/map.png')
+        self.scale(100)
+        self.position(vec3(0,0,-10))
     
 class App(Core):
     gl_version = (3, 3)
@@ -59,7 +61,7 @@ class App(Core):
                 out vec2 v_text;
 
                 void main() {
-                    gl_Position = View * Model * Projection * vec4(in_vert, 1.0);
+                    gl_Position = Projection * View * Model * vec4(in_vert, 1.0);
                     v_text = in_text;
                 }
             ''',
