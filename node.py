@@ -24,7 +24,7 @@ class Node:
         self.being_destroyed = False # scheduled to be destroyed?
         self.destroyed = False
     def rotate(self, turns, axis):
-        self.transform *= glm.rotate(turns * 2.0 * math.PI, axis)
+        self.transform = glm.rotate(self.transform, turns * 360, axis)
     def velocity(self, v = None):
         if v == None:
             return self.vel

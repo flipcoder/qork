@@ -28,7 +28,8 @@ class Map(Mesh):
         self.mesh_type = gl.TRIANGLE_STRIP
         self.load('data/map.png')
         self.scale(100)
-        self.position(vec3(0,0,-10))
+        self.rotate(0.12, vec3(1,0,0))
+        self.position(vec3(0,-10,-10))
     
 class App(Core):
     gl_version = (3, 3)
@@ -113,7 +114,7 @@ class App(Core):
             0,
             (-1 if self.btns[UP] else 0) +
             (1 if self.btns[DOWN] else 0)
-        ))
+        ) * 50)
         if self.camera.velocity() != vec3(0):
             print(self.camera.position())
         super().logic(dt)
