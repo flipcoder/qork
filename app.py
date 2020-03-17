@@ -112,15 +112,12 @@ class App(Core):
             (-1 if self.btns[UP] else 0) +
             (1 if self.btns[DOWN] else 0)
         ))
+        if self.camera.velocity() != vec3(0):
+            print(self.camera.position())
         super().logic(dt)
 
     def render(self, time, dt):
         super().render(time, dt)
-
-    def clean(self):
-        if self.dtor:
-            for dtor in self.dtor:
-                dtor.deinit()
 
 if __name__ == '__main__':
     App.run()

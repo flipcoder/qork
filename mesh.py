@@ -3,7 +3,7 @@ from node import *
 import numpy as np
 from PIL import Image
 import moderngl as gl
-from itertools import chain
+from defs import *
 
 class Mesh(Node):
     def __init__(self, app, **kwargs):
@@ -22,7 +22,7 @@ class Mesh(Node):
                 self.sampler.assign(0),
             ])
     def render(self):
-        self.app.shader['Model'] = tuple(chain(*self.transform))
+        self.app.shader['Model'] = flatten(self.transform)
         if self.visible:
             self.vao.render(self.mesh_type)
 
