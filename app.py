@@ -22,7 +22,7 @@ class Player(Mesh):
         self.vertices = copy(QUAD)
         self.mesh_type = gl.TRIANGLE_STRIP
         self.load('data/player.png')
-        self.position(vec3(12,-10,-10))
+        self.position(vec3(12,0,-10))
         self.scale(2)
 
 class Map(Mesh):
@@ -32,7 +32,7 @@ class Map(Mesh):
         self.mesh_type = gl.TRIANGLE_STRIP
         self.load('data/map.png')
         self.rotate(0.25, vec3(-1,0,0))
-        self.position(vec3(0,-10,0))
+        self.position(vec3(0,0,0))
         self.scale(100)
     
 class App(Core):
@@ -50,7 +50,7 @@ class App(Core):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.btns = [False] * MAX_BUTTONS # left, right, up down
+        self.btns = [False] * MAX_BUTTONS
         self.bg_color = (.25, .5, 1)
         
         self.shader = self.ctx.program(
@@ -82,7 +82,7 @@ class App(Core):
 
                 void main() {
                     vec4 t = texture(Texture, v_text);
-                    if(t.a < 0.5)
+                    if(t.a < 0.9)
                         discard;
                     else
                         f_color = t;
@@ -94,6 +94,7 @@ class App(Core):
         self.root.attach(Map(self))
         self.player = self.root.attach(Player(self))
         self.camera = self.root.attach(Camera(self))
+        self.camera.position(vec3(13,5,0))
         # self.camera = self.player.attach(Camera(self))
         
     def key_event(self, key, action, modifiers):
@@ -134,6 +135,7 @@ class App(Core):
                 self.btns[TURN_RIGHT] = False
     
     def logic(self, dt):
+        control = self.camera
 
         # move
         v = normalize(vec3(
@@ -144,16 +146,17 @@ class App(Core):
             (-1 if self.btns[UP] else 0) +
             (1 if self.btns[DOWN] else 0)
         )) * 20
-        v.y *= 0.25
-        self.camera.velocity(v)
+        v = (vec4(v,1.0) * glm.inverse(control.matrix(WORLD))).xyz
+        v.y *= 0.5
+        control.velocity(v)
         
         # turn
         if self.btns[TURN_LEFT] or self.btns[TURN_RIGHT]:
-            self.camera.rotate(
+            control.rotate(
                 -dt * (
                     (-1.0 if self.btns[TURN_LEFT] else 0.0) +
                     (1.0 if self.btns[TURN_RIGHT] else 0.0)
-                ),
+                ) * 0.25,
                 vec3(0,1,0)
             )
 

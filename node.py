@@ -56,9 +56,9 @@ class Node:
         if type(v)==int or type(v)==float:
             v = vec3(float(v))
         if space == LOCAL:
-            self.transform *= glm.scale(mat4(), v)
+            self.transform *= glm.scale(mat4(1.0), v)
         elif space == PARENT:
-            self.transform = glm.scale(mat4(), v) * self.transform
+            self.transform = glm.scale(mat4(1.0), v) * self.transform
         else:
             assert False # not impl
         self.world_transform.pend()
