@@ -11,8 +11,8 @@ class Mesh(Node):
         self.vertices = None
     def load(self, fn):
         if type(self.vertices) == np.ndarray:
-            img = Image.open(fn).convert('RGB')
-            self.texture = self.ctx.texture(img.size, 3, img.tobytes())
+            img = Image.open(fn).convert('RGBA')
+            self.texture = self.ctx.texture(img.size, 4, img.tobytes())
             self.sampler = self.ctx.sampler(texture=self.texture)
             
             self.vbo = self.ctx.buffer(self.vertices.astype('f4').tobytes())
@@ -22,7 +22,8 @@ class Mesh(Node):
                 self.sampler.assign(0),
             ])
     def render(self):
-        self.app.shader['Model'] = flatten(self.transform)
+        super().render()
         if self.visible:
+            self.app.shader['Model'] = flatten(self.matrix(WORLD))
             self.vao.render(self.mesh_type)
 

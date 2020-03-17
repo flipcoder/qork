@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import glm
 import math
-from reactive import Signal
+from reactive import Signal, Lazy
 from glm import vec3, vec4, mat4
 from defs import *
 
@@ -14,6 +14,12 @@ class Node:
         self.children = []
         self.parent = None
         self.transform = mat4(1.0)
+        def world_calc(self):
+            if self.parent:
+                return self.parent.matrix(WORLD) * self.transform
+            else:
+                return self.transform
+        self.world_transform = Lazy(lambda _, self=self: world_calc(self))
         self.components = []
         self.detach_me = []
         self.deinited = False
@@ -23,8 +29,17 @@ class Node:
         self.accel = vec3(0)
         self.being_destroyed = False # scheduled to be destroyed?
         self.destroyed = False
+    def pend(self):
+        self.world_transform.pend()
+    def matrix(self, space = PARENT):
+        assert space != LOCAL
+        if space==PARENT:
+            return self.transform
+        # else: # WORLD
+        return self.world_transform()
     def rotate(self, turns, axis):
         self.transform = glm.rotate(self.transform, turns * 2.0 * math.pi, axis)
+        self.world_transform.pend()
     def velocity(self, v = None):
         if v == None:
             return self.vel
@@ -46,6 +61,7 @@ class Node:
             self.transform = glm.scale(mat4(), v) * self.transform
         else:
             assert False # not impl
+        self.world_transform.pend()
     def position(self, v = None, space = None):
         if type(v) == int and space==None:
             space = v
@@ -56,12 +72,16 @@ class Node:
         if not v:
             return self.transform[3].xyz
         self.transform[3] += vec4(v, 0.0)
+        self.world_transform.pend()
     def move(self, v: vec3):
         self.transform[3] += vec4(v, 0.0)
+        self.world_transform.pend()
     def attach(self, node):
         assert not node.parent
         self.children.append(node)
         node.parent = self
+        return node
+        self.world_transform.pend()
     def logic(self, dt):
         self.detach_me = []
         for component in self.components:
@@ -91,6 +111,7 @@ class Node:
     def detach(self):
         if self.parent:
             self.parent.detach_me.append(self)
+        self.world_transform.pend()
         self.on_detach()
     def render(self):
         if self.visible:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import glm
+import moderngl as gl
 import moderngl_window as mglw
 from defs import *
 
@@ -8,19 +9,11 @@ class Core(mglw.WindowConfig):
         super().__init__(**kwargs)
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
         self.camera = None
+        self.bg_color = (0,0,0)
     def logic(self, dt):
         self.root.logic(dt)
         self.clean()
         self.cleanup_list = []
-    def render(self, time, dt):
-        self.time = time
-        self.dt = dt
-        self.logic(dt)
-        self.ctx.clear(0.0, 0.0, 0.0)
-        if self.camera:
-            self.shader['Projection'] = flatten(self.camera.projection)
-            self.shader['View'] = flatten(glm.inverse(self.camera.transform))
-            self.root.render()
     def clean(self):
         if self.cleanup_list:
             for cleanup_list in self.cleanup_list:
@@ -29,9 +22,10 @@ class Core(mglw.WindowConfig):
         self.dt = dt
         self.time = time
         self.logic(dt)
-        self.ctx.clear(0.0, 0.0, 0.0)
+        self.ctx.clear(*self.bg_color)
+        self.ctx.enable(gl.CULL_FACE)
         if self.camera:
             self.shader['Projection'] = flatten(self.camera.projection)
-            self.shader['View'] = flatten(glm.inverse(self.camera.transform))
+            self.shader['View'] = flatten(glm.inverse(self.camera.matrix(WORLD)))
             self.root.render()
 

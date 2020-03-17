@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 
 import itertools
+import numpy as np
 
 # buttons
 LEFT = 0
 RIGHT = 1
 UP = 2
 DOWN = 3
+JUMP = 4
+CROUCH = 5
+TURN_LEFT = 6
+TURN_RIGHT = 7
+MAX_BUTTONS = 8
 
 # space
 LOCAL = 0
@@ -17,4 +23,12 @@ EPSILON = 0.00001
 
 def flatten(r):
     return tuple(itertools.chain(*r))
+
+QUAD = np.array([
+    # x    y    z    u    v
+    0.0, 0.0, 0.0, 0.0, 1.0,
+    1.0, 0.0, 0.0, 1.0, 1.0,
+    0.0, 1.0, 0.0, 0.0, 0.0,
+    1.0, 1.0, 0.0, 1.0, 0.0,
+])
 

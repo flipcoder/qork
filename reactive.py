@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import types
+
 class Signal:
     def __init__(self):
         self.slots = {}
@@ -47,4 +49,27 @@ class Signal:
                         return
                     if force_brk:
                         return
+
+class Lazy:
+    def __init__(self, func):
+        self.func = func
+        self.fresh = False
+        self.value = None
+        self.is_lambda = isinstance(self.func, types.LambdaType) and \
+            self.func.__name__ == '<lambda>'
+    def __call__(self):
+        self.ensure()
+        return self.value
+    def pend(self):
+        self.fresh = False
+        self.value = None
+    def ensure(self):
+        if not self.fresh:
+            self.recache()
+    def recache(self):
+        if self.is_lambda:
+            self.value = self.func(None)
+        else:
+            self.value = self.func()
+        self.fresh = True
 
