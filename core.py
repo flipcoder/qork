@@ -13,19 +13,19 @@ class Core(mglw.WindowConfig):
     def logic(self, dt):
         self.root.logic(dt)
         self.clean()
-        self.cleanup_list = []
     def clean(self):
         if self.cleanup_list:
             for cleanup_list in self.cleanup_list:
                 cleanup_list.cleanup()
+            self.cleanup_list = []
     def render(self, time, dt):
         self.dt = dt
         self.time = time
         self.logic(dt)
         self.ctx.clear(*self.bg_color)
-        self.ctx.enable(gl.CULL_FACE)
+        self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
         if self.camera:
             self.shader['Projection'] = flatten(self.camera.projection)
             self.shader['View'] = flatten(glm.inverse(self.camera.matrix(WORLD)))
-            self.root.render()
+        self.root.render()
 

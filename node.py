@@ -101,13 +101,11 @@ class Node:
         if self.detach_me:
             self.children = filter(lambda x: x not in self.detach_me, children)
             self.detach_me = []
-    def cleanup(self): # called by Core as an explicit destructor
-        pass
     def destroy(self):
         if not self.being_destroyed:
-            detach()
-            self.app.dtor.append(self) # schedule Core to call _destroy()
-            self.detaching = True
+            self.detach()
+            self.app.cleanup_list.append(self) # schedule Core to cal clean()
+            self.destroyed = True
     def detach(self):
         if self.parent:
             self.parent.detach_me.append(self)
@@ -119,7 +117,7 @@ class Node:
                 self.components.render(self)
             for ch in self.children:
                 ch.render()
-    def deinit(self):
+    def clean(self): # called by Core as an explicit destructor
         if not self.deinited:
             self.on_deinit()
             for ch in self.children:

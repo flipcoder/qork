@@ -23,7 +23,7 @@ class Player(Mesh):
         self.mesh_type = gl.TRIANGLE_STRIP
         self.load('data/player.png')
         self.position(vec3(12,0,-10))
-        self.scale(2)
+        self.scale(1.5)
 
 class Map(Mesh):
     def __init__(self, app, **kwargs):
@@ -94,8 +94,8 @@ class App(Core):
         self.root.attach(Map(self))
         self.player = self.root.attach(Player(self))
         self.camera = self.root.attach(Camera(self))
-        self.camera.position(vec3(13,5,0))
         # self.camera = self.player.attach(Camera(self))
+        self.camera.position(vec3(13,5,0))
         
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
@@ -156,7 +156,7 @@ class App(Core):
                 -dt * (
                     (-1.0 if self.btns[TURN_LEFT] else 0.0) +
                     (1.0 if self.btns[TURN_RIGHT] else 0.0)
-                ) * 0.25,
+                ) * 0.5,
                 vec3(0,1,0)
             )
 
