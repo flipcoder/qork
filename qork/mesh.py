@@ -7,6 +7,21 @@ from .defs import *
 import cson
 from glm import ivec2, vec2
 from .sprite import *
+from .util import *
+from copy import copy
+
+class MeshBuffer(Resource):
+    def __init__(self, name, data, ctx, shader, meshtype, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = name
+        self.data = data.copy()
+        self.ctx = ctx
+        self.shader = shader
+        self.mesh_type = meshtype
+        self.vbo = self.ctx.buffer(self.data.astype('f4').tobytes())
+        self.vao = self.ctx.simple_vertex_array(self.shader, self.vbo, 'in_vert', 'in_text')
+    def render(self):
+        self.vao.render(self.mesh_type)
 
 class Mesh(Node):
     def __init__(self, app, fn=None, **kwargs):
@@ -19,8 +34,36 @@ class Mesh(Node):
         self.animator = None
         self.image = None
         self.frame = 0
+        self.loaded = False
         self.resources = []
+        self.vbo = None
+        self.vao = None
+        self.mesh_type = kwargs.get('mesh_type')
+        
+        pos = kwargs.get('position') or kwargs.get('pos')
+        scale = kwargs.get('scale')
+        data = kwargs.get('data')
+        scale = kwargs.get('scale')
+        rot = kwargs.get('rot') or kwargs.get('rotation')
+        initfunc = kwargs.get('init')
+        
+        if data:
+            self.data = data
+        if pos != None:
+            self.position(pos)
+        if scale != None:
+            self.scale(scale)
+        if rot != None:
+            self.rotate(*rot)
+        
+        if initfunc:
+            initfunc(self)
+        
+        if self.fn:
+            load()
     def load(self, fn=None):
+        if self.loaded: return
+        
         fn = self.fn = fn or self.fn # use either filename from ctor or arg
 
         # json = sprite data
@@ -45,9 +88,18 @@ class Mesh(Node):
                     img = skin[i]
                     # print(img.size)
                     skin[i] = self.ctx.texture(img.size, 4, img.tobytes())
-        assert type(self.vertices) == np.ndarray # mesh has geometry?
-        self.vbo = self.ctx.buffer(self.vertices.astype('f4').tobytes())
-        self.vao = self.ctx.simple_vertex_array(self.app.shader, self.vbo, 'in_vert', 'in_text')
+        if type(self.data) == tuple:
+            meshdata = MeshBuffer(
+                *self.data, # name and buffer
+                self.ctx,
+                self.app.shader,
+                self.mesh_type
+            )
+            self.meshdata = self.app.cache.cache_direct(
+                meshdata.name,
+                meshdata
+            )
+        self.loaded = True
     def logic(self, t):
         super().logic(t)
         if self.animator:
@@ -57,7 +109,7 @@ class Mesh(Node):
             self.app.shader['Model'] = flatten(self.matrix(WORLD))
             for i in range(len(self.layers)):
                 self.layers[i][self.skin][self.frame].use(i)
-            self.vao.render(self.mesh_type)
+            self.meshdata.render()
         super().render()
     def cleanup(self):
         for r in self.resources:

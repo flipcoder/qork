@@ -5,9 +5,21 @@ import moderngl_window as mglw
 from .defs import *
 from .cache import *
 from .sprite import *
+from .util import *
 import cson
+import os
 
 class Core(mglw.WindowConfig):
+    gl_version = (3, 3)
+    window_size = (960, 540)
+    aspect_ratio = 16 / 9
+    resizable = True
+    samples = 4
+    resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
+    
+    @classmethod
+    def run(cls):
+        mglw.run_window_config(cls)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
@@ -28,13 +40,7 @@ class Core(mglw.WindowConfig):
         args = ([self] + list(args))
         return Class, args, kwargs
     def resolve_resource(self, *args, **kwargs):
-        fn = None
-        for arg in args: # check args for filename (first string
-            if isinstance(arg, str):
-                fn = arg
-                break
-        if not fn: # if no filename, look it up in kwargs
-            fn = kwargs.get('fn') or kwargs.get('filename')
+        fn = filename(*args, **kwargs)
         assert fn
         fnl = fn.lower()
         for ext in ['.cson']:

@@ -8,6 +8,9 @@ class Camera(Node):
         super().__init__(app, **kwargs)
         fov = 80.0
         self.projection = glm.perspectiveFov(
-            math.radians(fov), 960.0, 540.0, 0.1, 1000.0
+            math.radians(fov),
+            float(self.app.window_size[0]),
+            float(self.app.window_size[1]),
+            0.1, 1000.0
         )
 

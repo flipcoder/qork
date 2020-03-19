@@ -12,7 +12,7 @@ from qork import *
 class Player(Mesh):
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
-        self.vertices = copy(QUAD)
+        self.data = TEXTURED_QUAD
         self.mesh_type = gl.TRIANGLE_STRIP
         self.load('data/player.cson')
         self.position(vec3(12,0,-10))
@@ -21,7 +21,7 @@ class Player(Mesh):
 class Map(Mesh):
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
-        self.vertices = copy(QUAD)
+        self.data = TEXTURED_QUAD
         self.mesh_type = gl.TRIANGLE_STRIP
         self.load('data/map.png')
         self.rotate(0.25, vec3(-1,0,0))
@@ -29,18 +29,8 @@ class Map(Mesh):
         self.scale(100)
     
 class App(Core):
-    gl_version = (3, 3)
-    title = "ModernGL Workbench"
-    window_size = (960, 540)
-    aspect_ratio = 16 / 9
-    resizable = True
-    samples = 4
-    resource_dir = os.path.normpath(os.path.join(__file__, '../data/'))
-
-    @classmethod
-    def run(cls):
-        mglw.run_window_config(cls)
-
+    title = "qork"
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.btns = [False] * MAX_BUTTONS
@@ -90,42 +80,34 @@ class App(Core):
         # self.camera = self.player.attach(Camera(self))
         self.camera.position(vec3(13,5,0))
         
+        self.keybinds = [
+            'S',
+            'F',
+            'E',
+            'D',
+            'SPACE',
+            'A',
+            'J',
+            'L'
+        ]
+
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
+        keybinds = self.keybinds
         if action == keys.ACTION_PRESS:
-            if key == keys.S:
-                self.btns[LEFT] = True
-            elif key == keys.F:
-                self.btns[RIGHT] = True
-            elif key == keys.E:
-                self.btns[UP] = True
-            elif key == keys.D:
-                self.btns[DOWN] = True
-            elif key == keys.A:
-                self.btns[CROUCH] = True
-            elif key == keys.SPACE:
-                self.btns[JUMP] = True
-            elif key == keys.J:
-                self.btns[TURN_LEFT] = True
-            elif key == keys.L:
-                self.btns[TURN_RIGHT] = True
-        if action == keys.ACTION_RELEASE:
-            if key == keys.S:
-                self.btns[LEFT] = False
-            elif key == keys.F:
-                self.btns[RIGHT] = False
-            elif key == keys.E:
-                self.btns[UP] = False
-            elif key == keys.D:
-                self.btns[DOWN] = False
-            elif key == keys.A:
-                self.btns[CROUCH] = False
-            elif key == keys.SPACE:
-                self.btns[JUMP] = False
-            elif key == keys.J:
-                self.btns[TURN_LEFT] = False
-            elif key == keys.L:
-                self.btns[TURN_RIGHT] = False
+            i = 0
+            for bind in self.keybinds:
+                if key == getattr(keys, bind):
+                    self.btns[i] = True
+                    break
+                i += 1
+        elif action == keys.ACTION_RELEASE:
+            i = 0
+            for bind in self.keybinds:
+                if key == getattr(keys, bind):
+                    self.btns[i] = False
+                    break
+                i += 1
     
     def logic(self, dt):
         control = self.camera

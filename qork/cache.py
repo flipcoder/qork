@@ -23,6 +23,18 @@ class Cache(Factory):
         r.resource_count = 1
         self.resources[fn] = r
         return r
+    def cache_direct(self, fn, data):
+        if fn in self.resources:
+            return self.resources[fn]
+        self.resources[fn] = data
+        return data
+    def cache_overwrite(self, fn, data):
+        if fn in self.resources:
+            res = self.resources[fn]
+            res.cleanup()
+            del self.resources[fn]
+        self.resources[fn] = data
+        return data
     def cache_as(self, Type, *args, **kwargs):
         r = self.__call__(self, *args, **kwargs)
         assert isinstance(r(), Type)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import itertools
 import numpy as np
+from dataclasses import dataclass
 
 # buttons
 LEFT = 0
@@ -21,14 +21,19 @@ WORLD = 2
 
 EPSILON = 0.00001
 
-def flatten(r):
-    return tuple(itertools.chain(*r))
+QUAD = ('QUAD', np.array([
+    # x    y    z
+    0.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    1.0, 1.0, 0.0,
+]))
 
-QUAD = np.array([
+TEXTURED_QUAD = ('TEXTURED_QUAD', np.array([
     # x    y    z    u    v
     0.0, 0.0, 0.0, 0.0, 1.0,
     1.0, 0.0, 0.0, 1.0, 1.0,
     0.0, 1.0, 0.0, 0.0, 0.0,
     1.0, 1.0, 0.0, 1.0, 0.0,
-])
+]))
 
