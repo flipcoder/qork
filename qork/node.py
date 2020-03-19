@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import glm
 import math
-from reactive import Signal, Lazy
+from .reactive import *
 from glm import vec3, vec4, mat4
-from defs import *
+from .defs import *
 
 class Node:
     def __init__(self, app, **kwargs):

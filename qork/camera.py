@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from node import *
+from .node import *
 import glm
 import math
 

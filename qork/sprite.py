@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
-from resource import *
+from .resource import *
 from glm import ivec2, vec2
 import cson
 from PIL import Image

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-from node import *
+from .node import *
 import numpy as np
 from PIL import Image
 import moderngl as gl
-from defs import *
+from .defs import *
 import cson
 from glm import ivec2, vec2
-from sprite import *
+from .sprite import *
 
 class Mesh(Node):
     def __init__(self, app, fn=None, **kwargs):

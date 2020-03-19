@@ -2,9 +2,9 @@
 import glm
 import moderngl as gl
 import moderngl_window as mglw
-from defs import *
-from cache import *
-from sprite import *
+from .defs import *
+from .cache import *
+from .sprite import *
 import cson
 
 class Core(mglw.WindowConfig):

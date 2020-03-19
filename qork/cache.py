@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from factory import *
-from resource import *
+from .factory import *
+from .resource import *
 
 class Cache(Factory):
     def __init__(self):

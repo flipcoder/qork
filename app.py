@@ -7,14 +7,7 @@ import glm
 from glm import vec3, mat4, normalize
 from PIL import Image
 from copy import copy
-
-from reactive import *
-from node import *
-from component import *
-from mesh import *
-from camera import *
-from core import *
-from defs import *
+from qork import *
 
 class Player(Mesh):
     def __init__(self, app, **kwargs):
