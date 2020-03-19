@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import numpy as np
-from dataclasses import dataclass
 
 # buttons
 LEFT = 0
