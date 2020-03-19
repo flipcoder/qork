@@ -3,6 +3,9 @@ import glm
 import moderngl as gl
 import moderngl_window as mglw
 from defs import *
+from cache import *
+from sprite import *
+import cson
 
 class Core(mglw.WindowConfig):
     def __init__(self, **kwargs):
@@ -10,14 +13,38 @@ class Core(mglw.WindowConfig):
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
         self.camera = None
         self.bg_color = (0,0,0)
+        self.cache = Cache()
+        self.cache.register_resolver(self.resolve_resource)
+        self.cache.register_transformer(self.transform_resource)
     def logic(self, dt):
         self.root.logic(dt)
         self.clean()
     def clean(self):
         if self.cleanup_list:
-            for cleanup_list in self.cleanup_list:
-                cleanup_list.cleanup()
+            for entity in self.cleanup_list:
+                entity.cleanup()
             self.cleanup_list = []
+    def transform_resource(self, Class, *args, **kwargs):
+        args = ([self] + list(args))
+        return Class, args, kwargs
+    def resolve_resource(self, *args, **kwargs):
+        fn = None
+        for arg in args: # check args for filename (first string
+            if isinstance(arg, str):
+                fn = arg
+                break
+        if not fn: # if no filename, look it up in kwargs
+            fn = kwargs.get('fn') or kwargs.get('filename')
+        assert fn
+        fnl = fn.lower()
+        for ext in ['.cson']:
+            with open(fn, 'rb') as f:
+                data = cson.load(f)
+                if data['type']=='sprite':
+                    return Sprite
+        for ext in ['.png','.jpg']:
+            if fnl.endswith(ext):
+                return Image
     def render(self, time, dt):
         self.dt = dt
         self.time = time

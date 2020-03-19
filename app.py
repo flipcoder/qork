@@ -39,7 +39,7 @@ class App(Core):
     gl_version = (3, 3)
     title = "ModernGL Workbench"
     window_size = (960, 540)
-    aspect_ratio = 4 / 3
+    aspect_ratio = 16 / 9
     resizable = True
     samples = 4
     resource_dir = os.path.normpath(os.path.join(__file__, '../data/'))
