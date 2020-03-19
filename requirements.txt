@@ -3,3 +3,4 @@ moderngl-window
 numpy
 PIL
 pyglm
+cson

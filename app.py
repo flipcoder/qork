@@ -21,7 +21,7 @@ class Player(Mesh):
         super().__init__(app, **kwargs)
         self.vertices = copy(QUAD)
         self.mesh_type = gl.TRIANGLE_STRIP
-        self.load('data/player.png')
+        self.load('data/player.cson')
         self.position(vec3(12,0,-10))
         self.scale(1.5)
 
@@ -38,11 +38,11 @@ class Map(Mesh):
 class App(Core):
     gl_version = (3, 3)
     title = "ModernGL Workbench"
-    window_size = (800, 600)
+    window_size = (960, 540)
     aspect_ratio = 4 / 3
     resizable = True
     samples = 4
-    resource_dir = os.path.normpath(os.path.join(__file__, '..'))
+    resource_dir = os.path.normpath(os.path.join(__file__, '../data/'))
 
     @classmethod
     def run(cls):
