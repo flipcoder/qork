@@ -40,9 +40,7 @@ class App(Core):
             vertex_shader='''
                 #version 330
 
-                uniform mat4 Model;
-                uniform mat4 View;
-                uniform mat4 Projection;
+                uniform mat4 ModelViewProjection;
                 
                 in vec3 in_vert;
                 in vec2 in_text;
@@ -50,7 +48,7 @@ class App(Core):
                 out vec2 v_text;
 
                 void main() {
-                    gl_Position = Projection * View * Model * vec4(in_vert, 1.0);
+                    gl_Position = ModelViewProjection * vec4(in_vert, 1.0);
                     v_text = in_text;
                 }
             ''',

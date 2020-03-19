@@ -6,6 +6,7 @@ from .defs import *
 from .cache import *
 from .sprite import *
 from .util import *
+from .reactive import *
 import cson
 import os
 
@@ -22,6 +23,7 @@ class Core(mglw.WindowConfig):
         mglw.run_window_config(cls)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.on_resize = Signal()
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
         self.camera = None
         self.bg_color = (0,0,0)
@@ -56,8 +58,20 @@ class Core(mglw.WindowConfig):
         self.logic(dt)
         self.ctx.clear(*self.bg_color)
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
-        if self.camera:
-            self.shader['Projection'] = flatten(self.camera.projection)
-            self.shader['View'] = flatten(glm.inverse(self.camera.matrix(WORLD)))
+        # if self.camera:
+        #     self.shader['Projection'] = flatten(self.camera.projection)
+        #     self.shader['View'] = flatten(glm.inverse(self.camera.matrix(WORLD)))
         self.root.render()
+    def view_projection(self):
+        if not self.camera:
+            return mat4(1)
+        return self.projection() * self.view()
+    def projection(self):
+        if not self.camera:
+            return mat4(1)
+        return self.camera.projection()
+    def view(self):
+        if not self.camera:
+            return mat4(1)
+        return self.camera.view()
 

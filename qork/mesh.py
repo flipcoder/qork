@@ -106,7 +106,8 @@ class Mesh(Node):
             self.animator.logic(t)
     def render(self):
         if self.visible:
-            self.app.shader['Model'] = flatten(self.matrix(WORLD))
+            self.app.shader['ModelViewProjection'] = \
+                flatten(self.app.view_projection() * self.matrix(WORLD))
             for i in range(len(self.layers)):
                 self.layers[i][self.skin][self.frame].use(i)
             self.meshdata.render()

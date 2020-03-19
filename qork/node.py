@@ -30,8 +30,7 @@ class Node:
         self.accel = vec3(0)
         self.being_destroyed = False # scheduled to be destroyed?
         self.destroyed = False
-    def pend(self):
-        self.world_transform.pend()
+        self.on_pend = Signal()
     def event(self, *args, **kwargs):
         self.on_event(*args, **kwargs)
     def __call__(self, *args, **kwargs):
@@ -43,7 +42,7 @@ class Node:
         return self.world_transform()
     def rotate(self, turns, axis):
         self.transform = glm.rotate(self.transform, turns * 2.0 * math.pi, axis)
-        self.world_transform.pend()
+        self.pend()
     def velocity(self, v = None):
         if v == None:
             return self.vel
@@ -86,6 +85,7 @@ class Node:
         self.pend()
     def pend(self):
         self.world_transform.pend()
+        self.on_pend()
         for ch in self.children:
             ch.pend()
     def attach(self, node):

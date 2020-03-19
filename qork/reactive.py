@@ -102,6 +102,7 @@ class Lazy:
         self.func = func
         self.fresh = False
         self.value = None
+        self.on_pend = Signal()
     def __call__(self):
         self.ensure()
         return self.value
@@ -109,10 +110,13 @@ class Lazy:
         if callable(v):
             self.func = v
             self.fresh = False
+            self.on_pend()
         else:
             self.value = v
             self.fresh = True
+            self.on_pend()
     def pend(self):
+        self.on_pend()
         self.fresh = False
         self.value = None
     def ensure(self):
@@ -121,4 +125,5 @@ class Lazy:
     def recache(self):
         self.value = self.func()
         self.fresh = True
+        self.on_pend()
 
