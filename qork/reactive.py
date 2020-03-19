@@ -119,9 +119,6 @@ class Lazy:
         if not self.fresh:
             self.recache()
     def recache(self):
-        if is_lambda(self.func):
-            self.value = self.func(None)
-        else:
-            self.value = self.func()
+        self.value = self.func()
         self.fresh = True
 

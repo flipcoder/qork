@@ -95,7 +95,7 @@ class Mesh(Node):
                 self.app.shader,
                 self.mesh_type
             )
-            self.meshdata = self.app.cache.cache_direct(
+            self.meshdata = self.app.cache.ensure(
                 meshdata.name,
                 meshdata
             )

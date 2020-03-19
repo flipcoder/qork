@@ -47,4 +47,3 @@ def fcmp(a, b):
             if abs(a[c] - b[c]) >= EPSILON:
                 return False
         return True
-

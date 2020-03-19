@@ -25,8 +25,7 @@ class Core(mglw.WindowConfig):
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
         self.camera = None
         self.bg_color = (0,0,0)
-        self.cache = Cache()
-        self.cache.register_resolver(self.resolve_resource)
+        self.cache = Cache(self.resolve_resource)
         self.cache.register_transformer(self.transform_resource)
     def logic(self, dt):
         self.root.logic(dt)

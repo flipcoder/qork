@@ -3,4 +3,6 @@
 class Resource:
     def __init__(self, *args, **kwargs):
         pass
+    def cleanup(self):
+        pass
 
