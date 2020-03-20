@@ -74,7 +74,7 @@ Make some nodes and attach them:
 add(Map())
 player = add(Player())
 camera = player.add(Camera())
-camera.position = vec3(0,2,5)
+camera.position(vec3(0,2,5))
 ```
 
 More to come soon!  Work in progress!

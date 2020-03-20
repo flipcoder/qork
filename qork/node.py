@@ -125,6 +125,8 @@ class Node:
         node.parent = self
         return node
         self.pend()
+    def add(self, node): # alias for attach
+        return self.attach(node)
     def logic(self, dt):
         for component in self.components:
             self.components.logic(self, dt)
@@ -169,6 +171,10 @@ class Node:
         else:
             assert node.parent == self
             node.detach()
+    def safe_remove(self, node=None):
+        return self.safe_detach(node)
+    def remove(self, node=None):
+        return self.detach(node)
     def render(self):
         if self.visible:
             for component in self.components:

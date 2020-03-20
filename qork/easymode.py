@@ -17,5 +17,7 @@ def load(*args):
         return CACHE(*args)
     CACHE = args[0]
     return CACHE
+def add(node):
+    return qork().add(node)
 cache = load
 

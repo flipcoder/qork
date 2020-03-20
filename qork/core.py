@@ -39,7 +39,10 @@ class Core(mglw.WindowConfig):
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
         self.camera = None
         self.bg_color = (0,0,0)
+        self.root = None # for easy add()
         # self.renderpass = RenderPass()
+    def add(self, node):
+        return self.root.add(node)
     def logic(self, dt):
         self.root.logic(dt)
         self.clean()
