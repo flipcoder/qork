@@ -63,15 +63,19 @@ class Cache(Factory):
         if fn is None:
             return len(self.resources)
         return self.resources[fn]._count
-    def clear(self):
-        for fn,res in self.resources.items():
-            if hasattr(res,'cleanup') and callable(res.cleanup):
-                res.cleanup()
-        self.resources = []
-        for resource in self.cleanup_list:
-            if hasattr(res,'cleanup') and callable(res.cleanup):
-                res.cleanup()
-        self.cleanup_list = []
+    # def clear(self):
+    #     count = 0
+    #     for fn,res in self.resources.items():
+    #         if hasattr(res,'cleanup') and callable(res.cleanup):
+    #             res.cleanup()
+    #             count += 1
+    #     self.resources = []
+    #     for resource in self.cleanup_list:
+    #         if hasattr(res,'cleanup') and callable(res.cleanup):
+    #             res.cleanup()
+    #             count += 1
+    #     self.cleanup_list = []
+    #     return count
     def clean(self):
         remove = []
         count = 0
@@ -85,11 +89,21 @@ class Cache(Factory):
             else:
                 remaining += 1
         if remove:
-            self.resources = filter(lambda r: r not in remove, self.resources)
-        for res in self.cleanup_list:
+            self.resources = list(filter(lambda r: r not in remove, self.resources))
+        cleanup_list = self.cleanup_list[:]
+        for res in cleanup_list:
             if hasattr(res,'cleanup') and callable(res.cleanup):
                 res.cleanup()
             count += 1
         self.cleanup_list = []
         return count, remaining
+    def finish(self):
+        total = 0
+        while True:
+            count, remaining = self.clean()
+            total += count
+            if remaining == 0:
+                break
+            assert count > 0 # resource leak
+        return total
 

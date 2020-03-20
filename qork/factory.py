@@ -7,14 +7,17 @@ class FactoryException(Exception):
 class Factory:
     def __init__(self, resolver=None, transformer=None):
         self.resolvers = [resolver] if resolver else []
-        self.transform = transformer if transformer else None
+        self.transform = [transformer] if transformer else []
     def register_transformer(self, func):
         """
         Register optional transform/normalizer function.
         Can be used to normalize filenames and
         add in additional parameters to Class ctor
         """
-        self.transform = func
+        if callable(func):
+            self.transform.append(func)
+        else:
+            self.transform += func
     def register(self, func):
         """
         Resolver is a function to determine what type to build based on args
@@ -31,12 +34,12 @@ class Factory:
             raise FactoryException(
                 "Unable to resolve resource: '" + str((args, kwargs)) + "'"
             )
+        for transform in self.transform:
+            args, kwargs = transform(*args, **kwargs)
         for resolve in self.resolvers:
             Class, args, kwargs = resolve(*args, **kwargs)
             if Class:
                 break # success
-        if self.transform:
-            Class, args, kwargs = self.transform(Class, *args, **kwargs)
         if not Class:
             raise FactoryException(
                 "Unable to resolve resource: '" + str((args, kwargs)) + "'"

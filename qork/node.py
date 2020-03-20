@@ -8,7 +8,8 @@ from .util import *
 
 class Node:
     def __init__(self, app, *args, **kwargs):
-        self.fn = filename_from_args(args)
+        self.args = args
+        self.kwargs = kwargs
         self.app = app
         self.cache = app.cache
         self.ctx = app.ctx

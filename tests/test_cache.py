@@ -11,25 +11,27 @@ from qork.util import *
 def increment(x):
     return x + 1
 
-class MockResource:
-    def __init__(self, data=None, *args, **kwargs):
+class MockResource(Resource):
+    def __init__(self, fn='', data=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fn = fn
         self.data = data
-        self.args = args
-        self.kwargs = kwargs
 
-def mock_resolver(fn):
+def mock_resolver(*args, **kwargs):
     """
     Resolver is a Factory function based on cache id (filename)
     """
+    fn = filename_from_args(args, kwargs)
     if fn.endswith('.png'):
-        return MockResource
-    return None
+        return MockResource, args, kwargs
+    return None, None, None
 
 def mock_transformer(*args, **kwargs):
     """
     Inject userdata into MockResource ctor
     """
-    return MockResource, (['data'] + list(args)), kwargs
+    args = [args[0]] + ['data'] + list(args[1:])
+    return args, kwargs
 
 def test_cache_resolver():
     cache = Cache()
@@ -43,12 +45,11 @@ def test_cache_resolver():
     res = None
     
 def test_cache_transformer():
-    cache = Cache(mock_resolver)
-    cache.register_transformer(mock_transformer)
-    res = cache('test2.png')
+    cache = Cache(mock_resolver, mock_transformer)
+    res = cache('test.png')
+    assert res.fn == 'test.png'
     assert res.data == 'data'
-    print(res.args)
-    assert len(res.args) == 2 # self, data
+    assert len(res.args) == 0
     assert not res.kwargs
 
 def test_cache_direct():
@@ -60,15 +61,15 @@ def test_cache_direct():
     cache.ensure('test.invalid', res)
     assert cache('test.invalid')
     
-def test_cache_clear():
-    cleans = Wrapper(0)
-    cache = Cache()
-    res = cache.ensure('test.png', MockResource())
-    res.cleanup = lambda self=res, x=cleans: x.do(increment)
-    assert cache('test.png')
-    assert cleans() == 0
-    cache.clear()
-    assert cleans() == 1
+# def test_cache_clear():
+#     cleans = Wrapper(0)
+#     cache = Cache()
+#     res = cache.ensure('test.png', MockResource())
+#     res.cleanup = lambda self=res, x=cleans: x.do(increment)
+#     assert cache('test.png')
+#     assert cleans() == 0
+#     cache.clear() # clear forces resource cache to do call cleanup
+#     assert cleans() == 1
 
 def test_cache_clean():
     cleans = Wrapper(0)
@@ -87,4 +88,24 @@ def test_cache_clean():
     assert cleans() == 1
     assert count == 1
     assert remaining == 0
+
+def test_cache_leak():
+    cleans = Wrapper(0)
+    cache = Cache()
+    res = cache.ensure('test.png', MockResource())
+    res.cleanup = lambda self=res, x=cleans: x.do(increment)
+    assert cache.has('test.png')
+    with pytest.raises(AssertionError):
+        cache.finish()
+    assert cleans() == 0
+    
+def test_cache_finish():
+    cleans = Wrapper(0)
+    cache = Cache()
+    res = cache.ensure('test.png', MockResource())
+    res.cleanup = lambda self=res, x=cleans: x.do(increment)
+    res.deref()
+    assert cleans() == 0
+    cache.finish()
+    assert cleans() == 1
 

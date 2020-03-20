@@ -45,11 +45,11 @@ class Core(mglw.WindowConfig):
             for entity in self.cleanup_list:
                 entity.cleanup()
             self.cleanup_list = []
-    def transform_resource(self, Class, *args, **kwargs):
-        args = ([self] + list(args))
-        return Class, args, kwargs
+    def transform_resource(self, *args, **kwargs):
+        args = [self] + list(args)
+        return args, kwargs
     def resolve_resource(self, *args, **kwargs):
-        fn = filename_from_args(*args, **kwargs)
+        fn = filename_from_args(args, kwargs)
         assert fn
         fnl = fn.lower()
         for ext in ['.cson']:
