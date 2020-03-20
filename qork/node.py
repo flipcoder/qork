@@ -23,53 +23,69 @@ class Node:
         self.on_deinit = Signal()
         self.on_detach = Signal()
         self.on_event = Signal()
+        self.on_state = Signal()
         self.vel = vec3(0)
         self.accel = vec3(0)
         self.being_destroyed = False # scheduled to be destroyed?
         self.destroyed = False
         self.on_pend = Signal()
-        self.states = {}
+        self._states = {}
+        
         def calculate_world_matrix():
             if self.parent:
                 return self.parent.matrix(WORLD) * self.transform
             else:
                 return self.transform
-        self.world_transform = Lazy(calculate_world_matrix)
-        self.on_pend.connect(self.world_transform.pend)
-    def state(self, category, s=DUMMY):
+        
+        self.world_transform = Lazy(calculate_world_matrix, [self.on_pend])
+    def state(self, category, value=DUMMY):
+        # first arg is a list of states? set those instead
+        if isinstance(category, dict):
+            self._states = category
+            for state, value in self._states.items():
+                self.on_state(state, value)
+            return category
+        # otherwise, the args mean what they say
         if s is DUMMY:
-            return self.states[category]
-        elif s == None:
-            del self.states[category]
-        self.states[category] = s
-        self.on_state(s);
+            return self._states[category]
+        elif s is None:
+            del self._states[category]
+        if isinstance(str, category):
+            self._states[category] = value
+            self.on_state(value)
+        else:
+            assert False
         return s
+    def states(self, category, value=DUMMY):
+        return self.state(category, value)
     def event(self, *args, **kwargs):
         self.on_event(*args, **kwargs)
     def __call__(self, *args, **kwargs):
         self.event(*args, **kwargs)
-    def matrix(self, space = PARENT):
+    def matrix(self, space=PARENT):
         assert space != LOCAL
-        if space==PARENT:
+        if space == PARENT:
             return self.transform
         return self.world_transform()
     def rotate(self, turns, axis):
-        self.transform = glm.rotate(self.transform, turns * 2.0 * math.pi, axis)
+        self.transform = glm.rotate(
+            self.transform, turns * 2.0 * math.pi, axis
+        )
         self.pend()
-    def velocity(self, v = None):
-        if v == None:
+    def velocity(self, v=None):
+        if v is None:
             return self.vel
         self.vel = v
     def accelerate(self, a):
         self.accel += a
-    def acceleration(self, a = None):
-        if a == None:
+    def acceleration(self, a=None):
+        if a is None:
             return self.accel or vec3(0)
         self.accel = a
-    def scale(self, v = None, space = LOCAL):
-        if v == None:
+    def scale(self, v=None, space=LOCAL):
+        if v is None:
             assert False #
-        if type(v)==int or type(v)==float:
+        if type(v) == int or type(v) == float:
             v = vec3(float(v))
         if space == LOCAL:
             self.transform *= glm.scale(mat4(1.0), v)
@@ -78,13 +94,13 @@ class Node:
         else:
             assert False # not impl
         self.world_transform.pend()
-    def position(self, v = None, space = None):
-        if type(v) == int and space==None:
+    def position(self, v=None, space=None):
+        if type(v) == int and space is None:
             space = v
             v = None
-        if space==None:
+        if space is None:
             space = PARENT
-        if v == None: # get
+        if v is None: # get
             if space == PARENT:
                 return self.world_transform()[3].xyz
             elif space == WORLD:
@@ -111,9 +127,9 @@ class Node:
             self.components.logic(self, dt)
         
         new_vel = None
-        if self.accel != None:
+        if self.accel is not None:
             new_vel = vec3(0)
-            self.vel += self.accel/2.0 * dt
+            self.vel += self.accel / 2.0 * dt
         if glm.length(self.vel) > EPSILON: # velocity not zero
             self.move(self.vel * dt)
         if new_vel: # accelerated
@@ -123,7 +139,9 @@ class Node:
             ch.logic(dt)
         if self.detach_me:
             detach_me = self.detach_me
-            self.children = list(filter(lambda x: x not in detach_me, self.children))
+            self.children = list(filter(
+                lambda x: x not in detach_me, self.children
+            ))
             self.detach_me = []
             for node in detach_me:
                 node.on_detach(node)
@@ -132,14 +150,16 @@ class Node:
             self.detach()
             self.app.cleanup_list.append(self) # schedule Core to cal clean()
             self.destroyed = True
-    def safe_detach(self, func = None):
+    def safe_detach(self, func=None):
         if self.parent:
             self.parent.detach_me.append(self)
             if func:
                 self.on_detach.connect(func)
     def detach(self, node=None):
-        if node == None: # detach self
-            self.parent.children = list(filter(lambda x: x != self, self.parent.children))
+        if node is None: # detach self
+            self.parent.children = list(filter(
+                lambda x: x != self, self.parent.children
+            ))
             self.on_detach()
             self.parent = None
             self.pend()

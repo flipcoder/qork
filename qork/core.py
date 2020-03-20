@@ -55,11 +55,12 @@ class Core(mglw.WindowConfig):
         for ext in ['.cson']:
             with open(fn, 'rb') as f:
                 data = cson.load(f)
-                if data['type']=='sprite':
-                    return Sprite
+                if data['type'] == 'sprite':
+                    return Sprite, args, kwargs
         for ext in ['.png','.jpg']:
             if fnl.endswith(ext):
-                return Image
+                return Image, args, kwargs
+        return None, None, None
     def render(self, time, dt):
         self.dt = dt
         self.time = time
@@ -75,5 +76,7 @@ class Core(mglw.WindowConfig):
     def view(self):
         return self.camera.view()
     def matrix(self, m):
-        self.shader['ModelViewProjection'] = flatten(self.view_projection() * m)
+        self.shader['ModelViewProjection'] = flatten(
+            self.view_projection() * m
+        )
 

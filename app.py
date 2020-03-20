@@ -18,6 +18,11 @@ class Player(Mesh):
         self.load('data/player.cson')
         self.move(vec3(12,1,-10))
         self.scale(1.5)
+        self.states({
+            'life': 'alive',
+            'stance': 'stand',
+            'direction': 'up'
+        })
 
 class Map(Mesh):
     def __init__(self, app, **kwargs):
@@ -27,7 +32,6 @@ class Map(Mesh):
         self.filter = (gl.NEAREST, gl.NEAREST)
         self.load('data/map.png')
         self.rotate(0.25, vec3(-1,0,0))
-        self.move(vec3(0,0,0))
         self.scale(100)
 
 class App(Core):
@@ -35,41 +39,7 @@ class App(Core):
         super().__init__(**kwargs)
         self.btns = [False] * MAX_BUTTONS
         self.bg_color = (.25, .5, 1)
-        
-        self.shader = self.ctx.program(
-            vertex_shader='''
-                #version 330
-
-                uniform mat4 ModelViewProjection;
-                
-                in vec3 in_vert;
-                in vec2 in_text;
-
-                out vec2 v_text;
-
-                void main() {
-                    gl_Position = ModelViewProjection * vec4(in_vert, 1.0);
-                    v_text = in_text;
-                }
-            ''',
-            fragment_shader='''
-                #version 330
-
-                uniform sampler2D Texture;
-
-                in vec2 v_text;
-
-                out vec4 f_color;
-
-                void main() {
-                    vec4 t = texture(Texture, v_text);
-                    if(t.a < 0.75)
-                        discard;
-                    else
-                        f_color = t;
-                }
-            ''',
-        )
+        self.shader = self.ctx.program(**SHADER_BASIC)
 
         self.root = Node(self)
         self.root.attach(Map(self))
@@ -92,7 +62,6 @@ class App(Core):
 
     def key_event(self, key, action, modifiers):
         keys = self.wnd.keys
-        keybinds = self.keybinds
         if action == keys.ACTION_PRESS:
             i = 0
             for bind in self.keybinds:

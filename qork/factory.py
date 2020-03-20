@@ -9,6 +9,11 @@ class Factory:
         self.resolvers = [resolver] if resolver else []
         self.transform = transformer if transformer else None
     def register_transformer(self, func):
+        """
+        Register optional transform/normalizer function.
+        Can be used to normalize filenames and
+        add in additional parameters to Class ctor
+        """
         self.transform = func
     def register(self, func):
         """
@@ -18,19 +23,23 @@ class Factory:
         if callable(func):
             self.resolvers.append(func)
             return
-        for func in funcs:
-            self.register(func)
+        for f in func:
+            self.register(f)
     def __call__(self, *args, **kwargs):
         Class = None
         if not self.resolvers:
-            raise FactoryException("Unable to resolve resource: '" + str((args, kwargs)) +  "'")
+            raise FactoryException(
+                "Unable to resolve resource: '" + str((args, kwargs)) + "'"
+            )
         for resolve in self.resolvers:
-            Class = resolve(*args, **kwargs)
+            Class, args, kwargs = resolve(*args, **kwargs)
             if Class:
-                break
+                break # success
         if self.transform:
             Class, args, kwargs = self.transform(Class, *args, **kwargs)
         if not Class:
-            raise FactoryException("Unable to resolve resource: '" + str((args, kwargs)) +  "'")
+            raise FactoryException(
+                "Unable to resolve resource: '" + str((args, kwargs)) + "'"
+            )
         return Class(*args, **kwargs)
 

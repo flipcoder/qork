@@ -6,3 +6,4 @@ from .defs import *
 from .reactive import *
 from .util import *
 from .core import *
+from .shaders import *

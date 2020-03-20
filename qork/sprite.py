@@ -40,17 +40,17 @@ class Sprite(Resource):
         skin_id = 0
         for skin in data['skins']:
             sheet = Image.open('data/' + skin).convert('RGBA')
-            if sheet_sz == None:
-                sheet_sz = ivec2(sheet.size)/self.tile_size
+            if sheet_sz is None:
+                sheet_sz = ivec2(sheet.size) / self.tile_size
                 tile_count = (sheet_sz.x * sheet_sz.y)
                         
             for i in range(tile_count):
                 # crop frame from spritesheet
                 x = (i % sheet_sz.x) * self.tile_size.x
-                y = (i //sheet_sz.x) * self.tile_size.y
-                l = x + self.tile_size.x
+                y = (i // sheet_sz.x) * self.tile_size.y
+                L = x + self.tile_size.x
                 b = y + self.tile_size.y
-                img = sheet.crop((x,y,l,b))
+                img = sheet.crop((x,y,L,b))
                 # replace pink pixels with transparency
                 pixels = np.array(img)
                 for x in range(len(pixels)):
@@ -99,6 +99,7 @@ class Sprite(Resource):
         #             else:
         #                 seq[i] = hflip_imgs[tile]
         #         i += 1
-        #     seq = filter(lambda x: not isinstance(x, str), seq) # remove flags from sequence
+        #     # remove flags from sequence
+        #     seq = filter(lambda x: not isinstance(x, str), seq)
         # recursive_each(list, self.frames, visit)
 

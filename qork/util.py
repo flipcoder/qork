@@ -38,13 +38,13 @@ def filename_from_args(*args, **kwargs):
             fn = arg
             break
     if not fn: # if no filename, look it up in kwargs
-        fn = kwargs.get('fn') or kwargs.get('filename') 
+        fn = kwargs.get('fn') or kwargs.get('filename')
     return fn
 
 def fcmp(a, b):
     assert type(a) == type(b)
     if type(a) == float:
-        return abs(a - b)  < EPSILON
+        return abs(a - b) < EPSILON
     else:
         for c in range(len(a)):
             if abs(a[c] - b[c]) >= EPSILON:
@@ -72,8 +72,8 @@ def recursive_each(types, e, func, path=[]):
         func(e, path)
     elif isinstance(e, dict):
         for key, child in e.items():
-            recursive_each(types, child, func, path+[key])
+            recursive_each(types, child, func, path + [key])
     elif isinstance(e, list):
         for i in range(len(e)):
-            recursive_each(types, e[i], func, path+[i])
+            recursive_each(types, e[i], func, path + [i])
 

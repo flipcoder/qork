@@ -44,7 +44,7 @@ def test_node():
     assert fcmp(child.position(WORLD), vec3(2))
     assert child.parent == root
     child.detach()
-    assert child.parent == None
+    assert child.parent is None
     assert fcmp(child.position(WORLD), vec3(1))
     root.attach(child)
     child.safe_detach()

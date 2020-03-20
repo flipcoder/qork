@@ -27,7 +27,7 @@ class Signal:
     def connect(self, func, context='', **kwargs):
         assert func
         once = kwargs.get('once')
-        assert context!='' or not once # once requires context
+        assert context != '' or not once # once requires context
         if context:
             self.meta[context] = {
                 'hidden':  kwargs.get('hidden'),
@@ -91,7 +91,7 @@ class Signal:
             if breakout:
                 break
         for meta,ops in self.meta.items():
-            if ops['once'] == True:
+            if ops['once']:
                 self.disconnect(meta)
         if accumulated:
             return accumulator_func(accumulated)
@@ -155,7 +155,7 @@ class Lazy:
         self.fresh = True
         self.on_pend()
     def available(self):
-        return self.value != None
+        return self.value is not None
     def try_get(self):
         return self.value
 

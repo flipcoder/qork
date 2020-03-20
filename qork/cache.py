@@ -60,7 +60,7 @@ class Cache(Factory):
         assert isinstance(r(), Type)
         return r
     def count(self, fn):
-        if fn == None:
+        if fn is None:
             return len(self.resources)
         return self.resources[fn]._count
     def clear(self):
@@ -83,7 +83,7 @@ class Cache(Factory):
                 remove.append(fn)
                 count += 1
             else:
-                remaining+= 1
+                remaining += 1
         if remove:
             self.resources = filter(lambda r: r not in remove, self.resources)
         for res in self.cleanup_list:

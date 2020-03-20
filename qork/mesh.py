@@ -12,9 +12,11 @@ from .animator import *
 from copy import copy
 
 class MeshBuffer(Resource):
-    def __init__(self):
-        pass
-    def __init__(self, name, data, cache, ctx, shader, meshtype, *args, **kwargs):
+    def __init__(
+        self, name, data, cache, ctx, shader, meshtype, *args, **kwargs
+    ):
+        if len(args) == 1:
+            return
         super().__init__(*args, **kwargs)
         self.args = args
         self.kwargs = kwargs
@@ -30,11 +32,13 @@ class MeshBuffer(Resource):
     def generate(self):
         if self.generated:
             if self.vao:
-               self.vao.delete()
+                self.vao.delete()
             if self.vao:
                 self.vbo.delete()
         self.vbo = self.ctx.buffer(self.data.astype('f4').tobytes())
-        self.vao = self.ctx.simple_vertex_array(self.shader, self.vbo, 'in_vert', 'in_text')
+        self.vao = self.ctx.simple_vertex_array(
+            self.shader, self.vbo, 'in_vert', 'in_text'
+        )
         self.generated = True
     def render(self):
         if not self.generated:
@@ -66,9 +70,9 @@ class MeshBuffer(Resource):
         newdata = self.data.copy()
         for i in range(len(newdata) // 5):
             if 'h' in flags: # flip U coordinate
-                newdata[i*5+3] = 1.0 - newdata[i*5+3]
+                newdata[i * 5 + 3] = 1.0 - newdata[i * 5 + 3]
             if 'v' in flags: # flip V cordinate
-                newdata[i*5+4] = 1.0 - newdata[i*5+4]
+                newdata[i * 5 + 4] = 1.0 - newdata[i * 5 + 4]
         meshname = self.name + ':+' + flags
         meshdata = MeshBuffer(
             meshname,
@@ -113,11 +117,11 @@ class Mesh(Node):
         rot = kwargs.get('rot') or kwargs.get('rotation')
         initfunc = kwargs.get('init')
         
-        if pos != None:
+        if pos is not None:
             self.position(pos)
-        if scale != None:
+        if scale is not None:
             self.scale(scale)
-        if rot != None:
+        if rot is not None:
             self.rotate(*rot)
         
         if initfunc:
@@ -134,7 +138,8 @@ class Mesh(Node):
     def hvflip(self):
         self.meshdata = self.meshdata.hvflip()
     def load(self, fn=None):
-        if self.loaded: return
+        if self.loaded:
+            return
         
         fn = self.fn = fn or self.fn # use either filename from ctor or arg
 
@@ -162,9 +167,11 @@ class Mesh(Node):
                     if self.filter:
                         tex.filter = self.filter
                     skin[i] = tex
-        if type(self.data) == tuple: # data provided in tuple as seen in defs.py
+        # data provided in tuple as seen in defs.py
+        if type(self.data) == tuple:
             meshname = self.data[0]
-            if not self.cache.has(meshname): # does cache already have this mesh?
+            # does cache already have this mesh?
+            if not self.cache.has(meshname):
                 meshdata = MeshBuffer(
                     *self.data, # expand name and buffer
                     self.cache,

@@ -29,7 +29,7 @@ def mock_transformer(*args, **kwargs):
     """
     Inject userdata into MockResource ctor
     """
-    return MockResource, (['data']+list(args)), kwargs
+    return MockResource, (['data'] + list(args)), kwargs
 
 def test_cache_resolver():
     cache = Cache()

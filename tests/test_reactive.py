@@ -37,7 +37,7 @@ def test_lazy_capture():
     x = Lazy(lambda: 5)
     y = Lazy(lambda: x() + 1, [x])
     z = Lazy(lambda: y() + 1, [y])
-    assert z.value == None
+    assert z.value is None
     assert z() == 7
     x.set(2)
     print(z())
