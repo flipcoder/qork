@@ -19,11 +19,11 @@ class Factory:
             self.resolvers.append(func)
             return
         for func in funcs:
-            self.register_resolver(func)
+            self.register(func)
     def __call__(self, *args, **kwargs):
         Class = None
         if not self.resolvers:
-            raise FactoryException("Unable to resolve resource: '" + str((args, kwargs)) +  "'\n")
+            raise FactoryException("Unable to resolve resource: '" + str((args, kwargs)) +  "'")
         for resolve in self.resolvers:
             Class = resolve(*args, **kwargs)
             if Class:
@@ -31,6 +31,6 @@ class Factory:
         if self.transform:
             Class, args, kwargs = self.transform(Class, *args, **kwargs)
         if not Class:
-            raise FactoryException("Unable to resolve resource: '" + str((args, kwargs)) +  "'\n")
+            raise FactoryException("Unable to resolve resource: '" + str((args, kwargs)) +  "'")
         return Class(*args, **kwargs)
 

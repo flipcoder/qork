@@ -15,10 +15,11 @@ class Camera(Node):
             0.1, 1000.0
         ))
         self.view = Lazy(lambda self=self: glm.inverse(self.matrix(WORLD)))
-        self.view_projection = Lazy(lambda self=self: self.projection() * self.view())
+        self.view_projection = Lazy(
+            lambda self=self: self.projection() * self.view(),
+            [self.projection, self.view, self.app.on_resize]
+        )
         self.app.on_resize.connect(self.projection.pend, 'camera')
-        self.projection.on_pend.connect(self.view_projection.pend)
-        self.view.on_pend.connect(self.view_projection.pend)
         self.on_pend.connect(self.view.pend)
     
     @property

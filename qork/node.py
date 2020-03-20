@@ -37,7 +37,7 @@ class Node:
         self.world_transform = Lazy(calculate_world_matrix)
         self.on_pend.connect(self.world_transform.pend)
     def state(self, category, s=DUMMY):
-        if s == DUMMY:
+        if s is DUMMY:
             return self.states[category]
         elif s == None:
             del self.states[category]

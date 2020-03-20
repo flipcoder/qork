@@ -97,15 +97,43 @@ class Signal:
             return accumulator_func(accumulated)
         return triggered
 
+class Reactive:
+    def __init__(self, value=None, callbacks=[]):
+        self.value = value
+        self.on_change = Signal()
+        for func in callbacks:
+            self.on_change.connect(func)
+    def connect(self, func):
+        return self.on_change.connect(func)
+    def __call__(self, value=DUMMY):
+        if value is DUMMY:
+            return self.value
+        oldvalue = self.value
+        self.value = value
+        self.on_change(value, oldvalue) # new, old
+    def block(self, b):
+        self.on_change.block(b)
+    def do(self, func):
+        oldvalue = self.value
+        self.value = func(self.value)
+        self.on_change(self.value, oldvalue)
+        return self.value
+
 class Lazy:
-    def __init__(self, func):
+    def __init__(self, func, capture=[], callbacks=[]):
         self.func = func
         self.fresh = False
         self.value = None
         self.on_pend = Signal()
+        for sig in capture:
+            sig.connect(self.pend)
+        for func in callbacks:
+            self.on_pend.connect(func)
     def __call__(self):
         self.ensure()
         return self.value
+    def connect(self, func):
+        return self.on_pend.connect(func)
     def set(self, v):
         if callable(v):
             self.func = v
@@ -126,4 +154,8 @@ class Lazy:
         self.value = self.func()
         self.fresh = True
         self.on_pend()
+    def available(self):
+        return self.value != None
+    def try_get(self):
+        return self.value
 
