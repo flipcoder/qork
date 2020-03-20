@@ -10,6 +10,7 @@ from .cache import *
 from .sprite import *
 from .util import *
 from .reactive import *
+from .easymode import qork, load
 import cson
 import os
 
@@ -31,11 +32,13 @@ class Core(mglw.WindowConfig):
         mglw.run_window_config(cls)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        qork(self)
+        self.cache = Cache(self.resolve_resource, self.transform_resource)
+        load(self.cache)
         self.on_resize = Signal()
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
         self.camera = None
         self.bg_color = (0,0,0)
-        self.cache = Cache(self.resolve_resource, self.transform_resource)
         # self.renderpass = RenderPass()
     def logic(self, dt):
         self.root.logic(dt)

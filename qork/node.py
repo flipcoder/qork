@@ -5,13 +5,15 @@ from .reactive import *
 from glm import vec3, vec4, mat4
 from .defs import *
 from .util import *
+from .easymode import qork
 
 class Node:
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app=None, *args, **kwargs):
+        if app is None or isinstance(app, str): # None or filename
+            self.app = app = qork()
+        self.cache = app.cache
         self.args = args
         self.kwargs = kwargs
-        self.app = app
-        self.cache = app.cache
         self.ctx = app.ctx
         self.visible = True
         self.self_visible = True

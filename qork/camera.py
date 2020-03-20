@@ -5,7 +5,7 @@ import glm
 import math
 
 class Camera(Node):
-    def __init__(self, app, **kwargs):
+    def __init__(self, app=None, **kwargs):
         super().__init__(app, **kwargs)
         self.ortho = Reactive(False)
         self.projection = Lazy(lambda self=self: glm.perspectiveFov(

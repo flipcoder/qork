@@ -10,8 +10,8 @@ from copy import copy
 from qork import *
 
 class Player(Mesh):
-    def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.data = TEXTURED_QUAD_CENTERED
         self.mesh_type = gl.TRIANGLE_STRIP
         self.filter = (gl.NEAREST, gl.NEAREST)
@@ -25,8 +25,8 @@ class Player(Mesh):
         })
 
 class Map(Mesh):
-    def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.data = TEXTURED_QUAD
         self.mesh_type = gl.TRIANGLE_STRIP
         self.filter = (gl.NEAREST, gl.NEAREST)
@@ -41,11 +41,11 @@ class App(Core):
         self.bg_color = (.25, .5, 1)
         self.shader = self.ctx.program(**SHADER_BASIC)
 
-        self.root = Node(self)
-        self.root.attach(Map(self))
-        self.player = self.root.attach(Player(self))
+        self.root = Node()
+        self.root.attach(Map())
+        self.player = self.root.attach(Player())
         # self.camera = self.root.attach(Camera(self))
-        self.camera = self.player.attach(Camera(self))
+        self.camera = self.player.attach(Camera())
         self.camera.position(vec3(0,2,5))
         # self.camera.position(vec3(13,5,0))
         

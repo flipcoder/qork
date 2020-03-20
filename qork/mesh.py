@@ -93,7 +93,7 @@ class MeshBuffer(Resource):
         return flipped
 
 class Mesh(Node):
-    def __init__(self, app, fn=None, *args, **kwargs):
+    def __init__(self, app=None, fn=None, *args, **kwargs):
         super().__init__(app, *args, **kwargs)
         self.vertices = None
         self.layers = [] # layers -> skins -> images
