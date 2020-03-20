@@ -10,6 +10,7 @@ from qork.node import Node
 class MockApp:
     def __init__(self):
         self.ctx = None
+        self.cache = None
 
 def MockNode(*args, **kwargs):
     return Node(MockApp(), *args, **kwargs)
