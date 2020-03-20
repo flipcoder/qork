@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 import glm
+import sys
+if __debug__:
+    sys.argv += ['--vsync','off']
 import moderngl as gl
 import moderngl_window as mglw
 from .defs import *
@@ -10,12 +13,17 @@ from .reactive import *
 import cson
 import os
 
+# class RenderPass
+#     def __init__(self, camera):
+#         self.camera = camera
+
 class Core(mglw.WindowConfig):
     gl_version = (3, 3)
     window_size = (960, 540)
     aspect_ratio = 16 / 9
     resizable = True
     samples = 4
+    title = 'qork'
     resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
     
     @classmethod
@@ -27,8 +35,8 @@ class Core(mglw.WindowConfig):
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
         self.camera = None
         self.bg_color = (0,0,0)
-        self.cache = Cache(self.resolve_resource)
-        self.cache.register_transformer(self.transform_resource)
+        self.cache = Cache(self.resolve_resource, self.transform_resource)
+        # self.renderpass = RenderPass()
     def logic(self, dt):
         self.root.logic(dt)
         self.clean()
@@ -41,7 +49,7 @@ class Core(mglw.WindowConfig):
         args = ([self] + list(args))
         return Class, args, kwargs
     def resolve_resource(self, *args, **kwargs):
-        fn = filename(*args, **kwargs)
+        fn = filename_from_args(*args, **kwargs)
         assert fn
         fnl = fn.lower()
         for ext in ['.cson']:
@@ -58,20 +66,14 @@ class Core(mglw.WindowConfig):
         self.logic(dt)
         self.ctx.clear(*self.bg_color)
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
-        # if self.camera:
-        #     self.shader['Projection'] = flatten(self.camera.projection)
-        #     self.shader['View'] = flatten(glm.inverse(self.camera.matrix(WORLD)))
-        self.root.render()
+        if self.camera:
+            self.root.render()
     def view_projection(self):
-        if not self.camera:
-            return mat4(1)
         return self.projection() * self.view()
     def projection(self):
-        if not self.camera:
-            return mat4(1)
         return self.camera.projection()
     def view(self):
-        if not self.camera:
-            return mat4(1)
         return self.camera.view()
+    def matrix(self, m):
+        self.shader['ModelViewProjection'] = flatten(self.view_projection() * m)
 

@@ -3,10 +3,13 @@
 import itertools
 import types
 import glm
+from functools import reduce
+import operator
 from .defs import *
 
 class Dummy:
     pass
+
 DUMMY = Dummy()
 
 class Wrapper:
@@ -28,7 +31,7 @@ def is_lambda(func):
 def flatten(r):
     return tuple(itertools.chain(*r))
 
-def filename(*args, **kwargs):
+def filename_from_args(*args, **kwargs):
     fn = None
     for arg in args: # check args for filename (first string
         if isinstance(arg, str):
@@ -47,3 +50,30 @@ def fcmp(a, b):
             if abs(a[c] - b[c]) >= EPSILON:
                 return False
         return True
+
+def treedepth(tree):
+    if isinstance(tree, dict):
+        return max(map(treedepth, tree.values()) if tree else 0) + 1
+    return 0
+
+def treepath(tree, pth):
+    return reduce(operator.getitem, pth, tree)
+
+def isinstance_any(e, types):
+    for t in types:
+        if isinstance(e, t):
+            return True
+    return False
+
+def recursive_each(types, e, func, path=[]):
+    if type(types) == type:
+        types = [types]
+    if isinstance_any(e, types):
+        func(e, path)
+    elif isinstance(e, dict):
+        for key, child in e.items():
+            recursive_each(types, child, func, path+[key])
+    elif isinstance(e, list):
+        for i in range(len(e)):
+            recursive_each(types, e[i], func, path+[i])
+

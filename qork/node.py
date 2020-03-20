@@ -4,22 +4,19 @@ import math
 from .reactive import *
 from glm import vec3, vec4, mat4
 from .defs import *
+from .util import *
 
 class Node:
-    def __init__(self, app, **kwargs):
+    def __init__(self, app, *args, **kwargs):
+        self.fn = filename_from_args(args)
         self.app = app
+        self.cache = app.cache
         self.ctx = app.ctx
         self.visible = True
         self.self_visible = True
         self.children = []
         self.parent = None
         self.transform = mat4(1.0)
-        def calculate_world_matrix():
-            if self.parent:
-                return self.parent.matrix(WORLD) * self.transform
-            else:
-                return self.transform
-        self.world_transform = Lazy(calculate_world_matrix)
         self.components = []
         self.detach_me = []
         self.deinited = False
@@ -31,6 +28,22 @@ class Node:
         self.being_destroyed = False # scheduled to be destroyed?
         self.destroyed = False
         self.on_pend = Signal()
+        self.states = {}
+        def calculate_world_matrix():
+            if self.parent:
+                return self.parent.matrix(WORLD) * self.transform
+            else:
+                return self.transform
+        self.world_transform = Lazy(calculate_world_matrix)
+        self.on_pend.connect(self.world_transform.pend)
+    def state(self, category, s=DUMMY):
+        if s == DUMMY:
+            return self.states[category]
+        elif s == None:
+            del self.states[category]
+        self.states[category] = s
+        self.on_state(s);
+        return s
     def event(self, *args, **kwargs):
         self.on_event(*args, **kwargs)
     def __call__(self, *args, **kwargs):
@@ -77,14 +90,13 @@ class Node:
             elif space == WORLD:
                 return vec3(self.world_transform()[3].xyz)
             assert False
-        assert space == PARENT # other spaces are not yet impl
+        assert space == PARENT # not impl
         self.transform[3] = vec4(v, 1.0) # set
         self.pend()
     def move(self, v: vec3):
         self.transform[3] += vec4(v, 0.0)
         self.pend()
     def pend(self):
-        self.world_transform.pend()
         self.on_pend()
         for ch in self.children:
             ch.pend()

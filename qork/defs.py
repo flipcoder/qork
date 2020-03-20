@@ -28,6 +28,23 @@ QUAD = ('QUAD', np.array([
     1.0, 1.0, 0.0,
 ]))
 
+QUAD_CENTERED = ('QUAD_CENTERED', np.array([
+    # x    y    z
+    -1.0, -1.0,  0.0,
+     1.0, -1.0,  0.0,
+    -1.0,  1.0,  0.0,
+     1.0,  1.0,  0.0,
+]))
+
+TEXTURED_QUAD_CENTERED = ('TEXTURED_QUAD_CENTERED', np.array([
+    #x     y    z    u    v
+    -0.5, -0.5, 0.0, 0.0, 1.0,
+     0.5, -0.5, 0.0, 1.0, 1.0,
+    -0.5,  0.5, 0.0, 0.0, 0.0,
+     0.5,  0.5, 0.0, 1.0, 0.0
+]))
+
+
 TEXTURED_QUAD = ('TEXTURED_QUAD', np.array([
     # x    y    z    u    v
     0.0, 0.0, 0.0, 0.0, 1.0,
