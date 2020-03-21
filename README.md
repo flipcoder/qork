@@ -42,7 +42,7 @@ sudo pip install -r requirements.txt
 Run script example:
 
 ```
-python qork.py examples/easy.py
+./qork.py examples/easy.py
 ```
 
 Run full python example:
