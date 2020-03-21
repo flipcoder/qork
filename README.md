@@ -22,7 +22,7 @@ Features will change.  This is not yet stable enough for production.
 
 ## Running Locally (no installation)
 
-If you haven't already, get download qork and enter the qork folder:
+If you haven't already, download qork and enter the qork folder:
 
 ```
 git clone https://github.com/flipcoder/qork
