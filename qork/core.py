@@ -1,18 +1,22 @@
 #!/usr/bin/env python
 import glm
 import sys
-if __debug__:
-    sys.argv += ['--vsync','off']
+# if __debug__:
+#     sys.argv += ['--vsync','off']
 import moderngl as gl
 import moderngl_window as mglw
+from .corebase import *
+from .sprite import *
 from .defs import *
 from .cache import *
-from .sprite import *
 from .util import *
+from .node import *
+from .mesh import *
 from .reactive import *
-from .easymode import qork, load
+from .zero import qork_app
 import cson
 import os
+from os import path
 
 # class RenderPass
 #     def __init__(self, camera):
@@ -25,26 +29,50 @@ class Core(mglw.WindowConfig):
     resizable = True
     samples = 4
     title = 'qork'
-    resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
+    # resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
+    
+    def data_path(self, p=None):
+        if p is None:
+            return self._data_path
+        self._data_path = path.join(path.dirname(path.realpath(__file__)),p)
+        return self._data_path
     
     @classmethod
     def run(cls):
         mglw.run_window_config(cls)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        qork(self)
+        qork_app(self)
         self.cache = Cache(self.resolve_resource, self.transform_resource)
-        load(self.cache)
+        self._data_path = None
+        self.data_path('data')
         self.on_resize = Signal()
         self.cleanup_list = [] # nodes awaiting dtor/destuctor/deinit calls
-        self.camera = None
+        self.root = Node()
+        self.camera = None # default 3d camera
+        self.gui = None # default 3d camera
         self.bg_color = (0,0,0)
-        self.root = None # for easy add()
+        self.view_projection = Lazy(lambda: self.projection() * self.view())
         # self.renderpass = RenderPass()
+        # self.Entity = Factory(self.resolve_entity)
+        self.renderfrom = self.camera
+        self.states = [] # stack
+    def Entity(self, *args, **kwargs):
+        if args and isinstance(args[0], Node):
+            return args[0]
+        fn = filename_from_args(args, kwargs)
+        if fn:
+            return Mesh(*args, *kwargs)
+        elif isinstance(args[0], tuple): # prefab data
+            return Mesh(*args, *kwargs)
+        else:
+            return Node(*args, *kwargs)
     def add(self, node):
         return self.root.add(node)
-    def logic(self, dt):
-        self.root.logic(dt)
+    def update(self, t):
+        if t <= 0.0:
+            return
+        self.root.update(t)
         self.clean()
     def clean(self):
         if self.cleanup_list:
@@ -59,7 +87,7 @@ class Core(mglw.WindowConfig):
         assert fn
         fnl = fn.lower()
         for ext in ['.cson']:
-            with open(fn, 'rb') as f:
+            with open(path.join(self.data_path(), fn), 'rb') as f:
                 data = cson.load(f)
                 if data['type'] == 'sprite':
                     return Sprite, args, kwargs
@@ -68,19 +96,28 @@ class Core(mglw.WindowConfig):
                 return Image, args, kwargs
         return None, None, None
     def render(self, time, dt):
+        if dt < 0.0:
+            return
         self.dt = dt
         self.time = time
-        self.logic(dt)
+        self.update(dt)
         self.ctx.clear(*self.bg_color)
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
         if self.camera:
+            self.renderfrom = self.camera
+            self.view_projection.pend()
             self.root.render()
-    def view_projection(self):
-        return self.projection() * self.view()
+        if self.gui:
+            self.renderfrom = self.gui
+            self.view_projection.pend()
+            self.gui.render()
+        self.renderfrom = None
+    # def view_projection(self):
+    #     return self.projection() * self.view()
     def projection(self):
-        return self.camera.projection()
+        return self.renderfrom.projection()
     def view(self):
-        return self.camera.view()
+        return self.renderfrom.view()
     def matrix(self, m):
         self.shader['ModelViewProjection'] = flatten(
             self.view_projection() * m

@@ -12,6 +12,7 @@ class Animator:
         self.speed = self.animation['speed']
         
         self.frame = ([] * treedepth(self.frames))
-    def logic(self, t):
-        self.node.frame = int(self.app.time % 10)
+    def update(self, t):
+        pass
+        # self.node.frame = int(self.app.time % 10)
 

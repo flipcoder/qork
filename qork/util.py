@@ -33,12 +33,14 @@ def flatten(r):
 
 def filename_from_args(args, kwargs=None):
     fn = None
-    for arg in args: # check args for filename (first string
+    if not args:
+        return None
+    for arg in args: # check args for filename (first string)
         if isinstance(arg, str):
             fn = arg
             break
     if not fn and kwargs: # if no filename, look it up in kwargs
-        fn = kwargs.get('fn') or kwargs.get('filename')
+        fn = kwargs.get('fn') or kwargs.get('filename') or ''
     return fn
 
 def fcmp(a, b):
@@ -76,4 +78,22 @@ def recursive_each(types, e, func, path=[]):
     elif isinstance(e, list):
         for i in range(len(e)):
             recursive_each(types, e[i], func, path + [i])
+
+def to_vec3(*args):
+    # lenargs = len(args)
+    if isinstance(args[0], tuple) or isinstance(args[0], list):
+        args = args[0]
+    if isinstance(args, glm.vec3):
+        return args
+    elif isinstance(args, glm.vec2):
+        return glm.vec3(args, 0.0)
+    elif isinstance(args, glm.vec4):
+        return args.xyz
+    return glm.vec3(*args)
+
+# class classproperty:
+#     def __init__(self, func):
+#         self.func = func
+#     def __get__(self, instance, cls):
+#         return self.func(cls)
 

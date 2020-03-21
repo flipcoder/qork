@@ -2,19 +2,49 @@
 import glm
 import math
 from .reactive import *
-from glm import vec3, vec4, mat4
+from glm import vec2, vec3, vec4, mat4
 from .defs import *
 from .util import *
-from .easymode import qork
+from .zero import qork_app
+
+class MockApp:
+    def __init__(self):
+        self.cache = None
+        self.ctx = None
 
 class Node:
-    def __init__(self, app=None, *args, **kwargs):
-        if app is None or isinstance(app, str): # None or filename
-            self.app = app = qork()
+    def __init__(self, *args, **kwargs):
+        if args:
+            arg0 = args[0]
+            if arg0 is None or isinstance(arg0, str): # None or filename
+                self.app = app = qork_app()
+                if not app:
+                    self.app = app = MockApp()
+            else:
+                app = self.app = arg0
+        else:
+            self.app = app = qork_app()
+            if not app:
+                app = self.app = MockApp()
+        
+        try:
+            self.name
+        except AttributeError:
+            self.name = kwargs.get('name') or self.__class__.__name__
+        try:
+            # filename injected before super() call or resolved?
+            self.fn
+        except AttributeError:
+            self.fn = filename_from_args(args, kwargs)
+        
         self.cache = app.cache
+        self.ctx = app.ctx
         self.args = args
         self.kwargs = kwargs
-        self.ctx = app.ctx
+        # if not hasattr(app,'cache'):
+        #     self.cache = app.cache
+        # if not hasattr(app,'ctx'):
+        #     self.cache = app.ctx
         self.visible = True
         self.self_visible = True
         self.children = []
@@ -27,8 +57,9 @@ class Node:
         self.on_detach = Signal()
         self.on_event = Signal()
         self.on_state = Signal()
-        self.vel = vec3(0)
-        self.accel = vec3(0)
+        self.on_update = Signal()
+        self._vel = None
+        self._accel = None
         self.being_destroyed = False # scheduled to be destroyed?
         self.destroyed = False
         self.on_pend = Signal()
@@ -41,6 +72,18 @@ class Node:
                 return self.transform
         
         self.world_transform = Lazy(calculate_world_matrix, [self.on_pend])
+    
+    def connect(self, sig): # for Lazy and Reactive
+        return self.on_pend.connect(sig)
+    
+    def __getitem__(self, name):
+        if isinstance(name, int):
+            return self.children[name]
+        for ch in self.children:
+            if ch.name == name:
+                return ch
+        raise IndexError
+    
     def state(self, category, value=DUMMY):
         # first arg is a list of states? set those instead
         if isinstance(category, dict):
@@ -63,28 +106,66 @@ class Node:
         return self.state(category, value)
     def event(self, *args, **kwargs):
         self.on_event(*args, **kwargs)
-    def __call__(self, *args, **kwargs):
-        self.event(*args, **kwargs)
+    # def __call__(self, *args, **kwargs):
+    #     self.event(*args, **kwargs)
     def matrix(self, space=PARENT):
         assert space != LOCAL
         if space == PARENT:
             return self.transform
         return self.world_transform()
-    def rotate(self, turns, axis):
+    def rotate(self, turns, axis=Z):
         self.transform = glm.rotate(
             self.transform, turns * 2.0 * math.pi, axis
         )
         self.pend()
-    def velocity(self, v=None):
+    def __str__(self):
+        return self.name
+        
+    @property
+    def velocity(self):
+        return self._vel or vec3(0)
+    
+    @velocity.setter
+    def velocity(self, *v):
         if v is None:
-            return self.vel
-        self.vel = v
-    def accelerate(self, a):
-        self.accel += a
-    def acceleration(self, a=None):
+            self._vel = None
+            return None
+        self._vel = to_vec3(*v)
+        return self._vel or vec3(0)
+
+    @property
+    def vel(self):
+        return self.velocity()
+    
+    @vel.setter
+    def vel(self, *v):
+        return self.velocity(*v)
+    
+    def accelerate(self, *a):
+        self._accel += to_vec3(*a)
+        return self._accel
+    
+    @property
+    def acceleration(self):
+        return self._accel or vec3(0)
+    
+    @acceleration.setter
+    def accceleration(self, a):
         if a is None:
-            return self.accel or vec3(0)
-        self.accel = a
+            return self._accel or vec3(0)
+        self._accel = a
+
+    @property
+    def accel(self):
+        return self._accel or vec3(0)
+    
+    @accel.setter
+    def accel(self, a):
+        if a is None:
+            return self._accel or vec3(0)
+        self._accel = a
+
+    
     def scale(self, v=None, space=LOCAL):
         if v is None:
             assert False #
@@ -97,7 +178,8 @@ class Node:
         else:
             assert False # not impl
         self.world_transform.pend()
-    def position(self, v=None, space=None):
+    
+    def _position(self, v=None, space=None):
         if type(v) == int and space is None:
             space = v
             v = None
@@ -112,36 +194,67 @@ class Node:
         assert space == PARENT # not impl
         self.transform[3] = vec4(v, 1.0) # set
         self.pend()
-    def move(self, v: vec3):
-        self.transform[3] += vec4(v, 0.0)
+        return v
+    
+    @property
+    def position(self):
+        return self._position()
+    
+    @position.setter
+    def position(self, *p):
+        return self._position(to_vec3(*p))
+    @property
+    def world_position(self):
+        return self._position(WORLD)
+    
+    @property
+    def pos(self, *p):
+        return self._position()
+    @pos.setter
+    def pos(self, *args):
+        return self._position(to_vec3(*args))
+    @property
+    def world_pos(self):
+        return self._position(WORLD)
+    
+    def move(self, *v):
+        self.transform[3] += vec4(to_vec3(*v), 0.0)
         self.pend()
+    
     def pend(self):
         self.on_pend()
         for ch in self.children:
             ch.pend()
-    def attach(self, node):
-        assert not node.parent
-        self.children.append(node)
-        node.parent = self
-        return node
-        self.pend()
-    def add(self, node): # alias for attach
-        return self.attach(node)
-    def logic(self, dt):
+    def attach(self, *args, **kwargs):
+        if args and isinstance(args[0], Node):
+            node = args[0]
+            assert not node.parent
+            self.children.append(node)
+            node.parent = self
+            self.pend()
+            return node
+        else:
+            return self.attach(self.app.Entity(*args, **kwargs))
+    def add(self, *args, **kwargs): # alias for attach
+        return self.attach(*args, **kwargs)
+    def update(self, dt):
         for component in self.components:
-            self.components.logic(self, dt)
-        
+            self.components.update(self, dt)
+ 
         new_vel = None
-        if self.accel is not None:
-            new_vel = vec3(0)
-            self.vel += self.accel / 2.0 * dt
-        if glm.length(self.vel) > EPSILON: # velocity not zero
-            self.move(self.vel * dt)
-        if new_vel: # accelerated
-            self.vel = new_vel
+        if self._accel is not None:
+            new_vel = self._vel
+            self._vel += self._accel / 2.0 * dt
+            new_vel += self._accel * dt
+        if self._vel is not None: # velocity not zero
+            self.move(self._vel * dt)
+        if new_vel is not None: # accelerated
+            self._vel = new_vel
+        
+        self.on_update(self, dt)
 
         for ch in self.children:
-            ch.logic(dt)
+            ch.update(dt)
         if self.detach_me:
             detach_me = self.detach_me
             self.children = list(filter(
@@ -150,6 +263,7 @@ class Node:
             self.detach_me = []
             for node in detach_me:
                 node.on_detach(node)
+        
     def destroy(self):
         if not self.being_destroyed:
             self.detach()

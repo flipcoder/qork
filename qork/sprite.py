@@ -1,20 +1,21 @@
 #!/usr/bin/env python
-import numpy as np
 from .resource import *
 from .util import *
 from glm import ivec2, vec2
 import cson
 from PIL import Image
 from copy import copy
+from os import path
 # from dataclasses import dataclass
 
 class Sprite(Resource):
-    def __init__(self, app, fn, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        assert self.app
+        fn = self.fn
         assert fn.lower().endswith('.cson')
-        with open(fn, 'rb') as f:
+        with open(path.join(self.app.data_path(), fn), 'rb') as f:
             data = self.data = cson.load(f)
-        
         self.skins = data['skins']
         self.skin = 0
         self.tile_size = ivec2(data['tile_size'])
@@ -39,7 +40,7 @@ class Sprite(Resource):
         sheet_sz = None
         skin_id = 0
         for skin in data['skins']:
-            sheet = Image.open('data/' + skin).convert('RGBA')
+            sheet = Image.open(path.join(self.app.data_path(), skin)).convert('RGBA')
             if sheet_sz is None:
                 sheet_sz = ivec2(sheet.size) / self.tile_size
                 tile_count = (sheet_sz.x * sheet_sz.y)

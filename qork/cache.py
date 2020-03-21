@@ -42,7 +42,8 @@ class Cache(Factory):
         data.deref = lambda data=data: deref(data)
         data._cache = self
         data._count = 1
-        self.resources[fn] = data
+        if fn: # empty filenames are temp, don't cache
+            self.resources[fn] = data
         return data
     def overwrite(self, fn, data):
         if fn in self.resources:
@@ -53,15 +54,18 @@ class Cache(Factory):
         data.deref = lambda data=data: deref(data)
         data._cache = self
         data._count = 1
-        self.resources[fn] = data
+        if fn:
+            self.resources[fn] = data
         return data
     def typed(self, Type, *args, **kwargs):
         r = self.__call__(self, *args, **kwargs)
         assert isinstance(r(), Type)
         return r
-    def count(self, fn):
+    def count(self, fn=None):
         if fn is None:
             return len(self.resources)
+        elif fn == '':
+            return 0 # temp resources (empty name) bypass cache
         return self.resources[fn]._count
     # def clear(self):
     #     count = 0

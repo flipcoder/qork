@@ -143,7 +143,7 @@ class Lazy:
             self.value = v
             self.fresh = True
             self.on_pend()
-    def pend(self):
+    def pend(self, *args): # *args just in case signal calls this
         self.on_pend()
         self.fresh = False
         self.value = None

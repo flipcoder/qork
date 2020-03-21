@@ -10,20 +10,19 @@ from .sprite import *
 from .util import *
 from .animator import *
 from copy import copy
+from os import path
 
 class MeshBuffer(Resource):
     def __init__(
-        self, name, data, cache, ctx, shader, meshtype, *args, **kwargs
+        self, app, name, data, shader, meshtype, *args, **kwargs
     ):
         if len(args) == 1:
+            assert False
             return
-        super().__init__(*args, **kwargs)
-        self.args = args
-        self.kwargs = kwargs
-        self.name = name
-        self.cache = cache
+        super().__init__(app, name, *args, **kwargs)
+        self.cache = app.cache
         self.data = data
-        self.ctx = ctx
+        self.ctx = app.ctx
         self.shader = shader
         self.mesh_type = meshtype
         self.flipped = {}
@@ -62,7 +61,7 @@ class MeshBuffer(Resource):
     def hvflip(self):
         return self.flip('hv')
     def flip(self, flags):
-        if ':+' in self.name:
+        if ':+' in self.fn:
             assert False # already flipped, not yet impl
         flags = str(sorted(flags)) # normalize flags
         if flags in self.flipped:
@@ -73,12 +72,12 @@ class MeshBuffer(Resource):
                 newdata[i * 5 + 3] = 1.0 - newdata[i * 5 + 3]
             if 'v' in flags: # flip V cordinate
                 newdata[i * 5 + 4] = 1.0 - newdata[i * 5 + 4]
-        meshname = self.name + ':+' + flags
+        if self.fn: # if not temp name, append flags to cached name
+            meshname = self.fn + ':+' + flags
         meshdata = MeshBuffer(
+            self.app,
             meshname,
             newdata,
-            self.cache,
-            self.ctx,
             self.shader,
             self.mesh_type,
             *self.args,
@@ -93,11 +92,11 @@ class MeshBuffer(Resource):
         return flipped
 
 class Mesh(Node):
-    def __init__(self, app=None, fn=None, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
         self.vertices = None
         self.layers = [] # layers -> skins -> images
-        self.fn = fn
         self.skin = 0
         self.sprite = None # frame data here if mesh is a sprite
         self.animator = None
@@ -113,7 +112,7 @@ class Mesh(Node):
         scale = kwargs.get('scale')
         self.filter = kwargs.get('filter')
         self.data = kwargs.get('data')
-        scale = kwargs.get('scale')
+        
         rot = kwargs.get('rot') or kwargs.get('rotation')
         initfunc = kwargs.get('init')
         
@@ -126,9 +125,8 @@ class Mesh(Node):
         
         if initfunc:
             initfunc(self)
-        
         if self.fn:
-            load()
+            self.load()
     def flip(self, flags):
         self.meshdata = self.meshdata.hflip(flags)
     def hflip(self):
@@ -138,8 +136,7 @@ class Mesh(Node):
     def hvflip(self):
         self.meshdata = self.meshdata.hvflip()
     def load(self, fn=None):
-        if self.loaded:
-            return
+        assert not self.loaded
         
         fn = self.fn = fn or self.fn # use either filename from ctor or arg
 
@@ -153,12 +150,15 @@ class Mesh(Node):
             # self.scale(self.sprite['size'])
         else: # not sprite
             if isinstance(fn, str):
-                fn = [fn]
+                fns = [fn]
             if not self.image: # mesh image not preloaded?
                 self.layers = self.layers or [[[]]] # layers -> skins -> images
-                for img in fn:
+                for img in fns:
                     # [0][0] = default layer and skin (image list)
-                    self.layers[0][0].append(Image.open(img).convert('RGBA'))
+                    # p = path.join(self.app.data_path(), img)
+                    img = Image.open(path.join(self.app.data_path(),img))
+                    img = img.convert('RGBA')
+                    self.layers[0][0].append(img)
         for layer in self.layers:
             for skin in layer:
                 for i in range(len(skin)): # for img in skin:
@@ -167,29 +167,43 @@ class Mesh(Node):
                     if self.filter:
                         tex.filter = self.filter
                     skin[i] = tex
-        # data provided in tuple as seen in defs.py
-        if type(self.data) == tuple:
-            meshname = self.data[0]
-            # does cache already have this mesh?
+        # if no data and not temp name
+        meshname = ''
+        
+        # no prefab or temp name? load a quad for image
+        if not isinstance(self.data, Prefab) or (not self.fn or '.' not in self.fn):
+            self.data = TEXTURED_QUAD_CENTERED
+            self.mesh_type = gl.TRIANGLE_STRIP
+            self.filter = (gl.NEAREST, gl.NEAREST)
+            meshname = self.data.name
+
+        # does cache already have this mesh?
+        if self.data:
             if not self.cache.has(meshname):
                 meshdata = MeshBuffer(
-                    *self.data, # expand name and buffer
-                    self.cache,
-                    self.ctx,
+                    self.app,
+                    self.data.name,
+                    self.data.data,
                     self.app.shader,
                     self.mesh_type
                 )
-                self.meshdata = self.cache.ensure(meshname, meshdata)
+                self.meshdata = self.cache.ensure(
+                    meshname, meshdata
+                )
             else:
                 self.meshdata = self.cache(meshname)
+        else:
+            self.meshdata = None
+        
         if self.sprite:
             self.animator = Animator(self)
         self.loaded = True
-    def logic(self, t):
-        super().logic(t)
+    def update(self, t):
+        super().update(t)
         if self.animator:
-            self.animator.logic(t)
+            self.animator.update(t)
     def render(self):
+        assert self.loaded
         if self.visible and self.meshdata:
             self.app.matrix(self.matrix(WORLD))
             for i in range(len(self.layers)):

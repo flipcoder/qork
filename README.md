@@ -18,9 +18,58 @@ I'm just getting started, so check back later!
 - Reactive Types (signals, reactive variables, observer-based lazy evaulation)
 - Sprite Animation
 
-## Usage
+## Easy Mode Usage
 
-Classes:
+Qork has a "zero mode", inspired by pygame-zero,
+No boilerplate is required here, but you have to
+run your program through the qork script instead of python.
+You can use a shebang line if you want to execute it directly
+on Linux and Mac or rename it to a .qork file and associate
+that with qork on windows. This is optional.
+
+Here's the shebang line:
+
+```
+#!/usr/bin/env qork
+```
+
+Let's load a player image and display it on the screen:
+
+```
+player = add('player.png')
+```
+
+Let's set the camera position:
+camera.pos = (1,2,3)
+
+Provide an x,y,z coordinate as a 2d or 3d tuple, or pyglm vec2/vec3 object.
+
+A camera is automatically placed in the scene so that any spawned elements
+will be visible by default.
+
+Let's set the player velocity to the Y direction at a speed of 2
+
+```
+player.velocity = Y * 2
+```
+
+Or we could do this by changing the position every frame.  This is
+what our automatically called update() function does.
+
+```
+def update(t):
+    player.pos += Y * 2 * t
+```
+
+When you change position every frame instead of setting velocity,
+remember to multiply it by t. This will allow for variable fps.
+t is the time since the last frame in seconds (so it's a decimal number).
+This will scale the movements to the amount they need to be to stay constant.
+
+## Advanced Usage
+
+To make your own object classes, inherit from Mesh:
+
 ```
 class Player(Mesh):
     def __init__(self, app, **kwargs):
