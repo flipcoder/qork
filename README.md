@@ -1,6 +1,6 @@
 # qork
 
-MIT License
+MIT License. See LICENSE for details.
 
 Copyright (c) 2020 Grady O'Connell
 
@@ -8,7 +8,8 @@ Qork is a (very new) python game framework built with ModernGL.
 
 It is modeled after my C++ game engine, [Qor](https://github.com/flipcoder/qor).
 
-I'm just getting started, so check back later!
+This is VERY NEW and some things are only partially implemented.
+Features will change.  This is not yet stable enough for production.
 
 ## Features
 
@@ -16,23 +17,65 @@ I'm just getting started, so check back later!
 - Resource Cache (ref-counted)
 - Object Events
 - State Machines
-- Reactive Types (signals, reactive variables, observer-based lazy evaulation)
+- Reactive Types (signals, reactive variables, observer-based lazy evaluation)
 - Sprite Animation
 
-## Install
+## Running Locally (no installation)
 
+If you haven't already, get download qork and enter the qork folder:
 
-### Linux
+```
+git clone https://github.com/flipcoder/qork
+cd qork
+```
 
-You can run the qork examples in place or install it using the setup file:
+Make sure you have a new version of python 3.  Qork does not work with Python 2.
+
+Get dependencies:
+
+```
+sudo pip install -r requirements.txt
+```
+
+(Example images are not yet included! You can use your own images. I will fix this soon!)
+
+Run script example:
+
+```
+python qork.py examples/easy.py
+```
+
+Run full python example:
+
+```
+./examples/basic.py
+```
+
+## Installation
+
+If you haven't already, download qork and enter the qork folder:
+
+```
+git clone https://github.com/flipcoder/qork
+cd qork
+```
+
+If you wish to install qork, simply run:
 
 ```
 sudo python setup.py install
 ```
 
+After installation, on unix systems, you should be able to run qork
+applications and scripts if you mark them as executable:
+
+```
+chmod +x ./examples/*.py
+```
+
 ## Getting Started
 
-Qork has a easy/zero mode, inspired by pygame-zero,
+Qork has a easy/zero-mode, inspired by pygame-zero,
 No boilerplate is required here, but you have to
 run your program through the qork script instead of python.
 You can use a shebang line if you want to execute it directly
@@ -178,6 +221,18 @@ node.rotate(.5, Y) # rotate half turn in 3D around Y axis
 
 The second parameter to rotate can take any vector.
 
+### Tags
+
+...
+
+### States
+
+...
+
+### Events
+
+...
+
 ## Camera
 
 In easy/zero mode, the camera is a global called `camera`.
@@ -190,15 +245,7 @@ camera.fov = 80 # change field of view
 camera.mode = '2D' # go into 2D mode (not yet implemented)
 ```
 
-## Tags
-
-...
-
-## States
-
-...
-
-## Events
+## Input
 
 ...
 
