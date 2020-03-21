@@ -18,6 +18,21 @@ I'm just getting started, so check back later!
 - Reactive Types (signals, reactive variables, observer-based lazy evaulation)
 - Sprite Animation
 
+## Install
+
+
+### Linux
+
+You can run the qork examples in place or install it using the setup file:
+
+```
+sudo python setup.py install
+```
+
+```
+
+```
+
 ## Easy Mode Usage
 
 Qork has a "zero mode", inspired by pygame-zero,
@@ -65,6 +80,8 @@ When you change position every frame instead of setting velocity,
 remember to multiply it by t. This will allow for variable fps.
 t is the time since the last frame in seconds (so it's a decimal number).
 This will scale the movements to the amount they need to be to stay constant.
+
+That's the entire script!  Run it with qork.
 
 ## Advanced Usage
 

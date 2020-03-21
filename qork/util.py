@@ -91,6 +91,9 @@ def to_vec3(*args):
         return args.xyz
     return glm.vec3(*args)
 
+V = to_vec3
+M = glm.mat4
+
 # class classproperty:
 #     def __init__(self, func):
 #         self.func = func

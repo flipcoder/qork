@@ -1,10 +1,13 @@
 #!/usr/bin/python
 import sys
-sys.path.append('.')
-sys.path.append('..')
+# if len(sys.argv)==0:
+#     sys.argv = ['qork']
+# sys.path.append('.')
+# sys.path.append('..')
 import qork
 from qork import *
 from qork.zero import *
+from os import path
 
 key_event = None
 init = None
@@ -14,15 +17,14 @@ camera = None
 view = None
 gui = None
 root = None
-script_path = None
+_script_path = None
 data_path = 'data'
+_script = None
+_on_run = None
 
 # def set_camera(c = None):
 #     global camera
 #     camera = c
-
-_script = None
-_on_run = None
 
 class ZeroMode(Core):
     def preload(self):
@@ -30,14 +32,15 @@ class ZeroMode(Core):
         camera = self.camera = add(Camera())
     
     def __init__(self, **_kwargs):
-        global script_path
+        global _script_path
         global init, render, update, camera, view, root, gui
         
         super().__init__(**_kwargs)
         qork_app(self)
         self._data_path = None
-        self.script_path = script_path
-        self.data_path('data')
+        self.script_path = _script_path
+        d = path.join(path.dirname(path.dirname(self.script_path)),'data')
+        self.data_path(d)
         
         bg_color = self.bg_color = (0,0,0)
         shader = self.shader = self.ctx.program(**SHADER_BASIC)
@@ -156,12 +159,17 @@ class ZeroMode(Core):
         # if draw:
         #     draw()
 
-if __name__=='__main__':
+def main():
+    global _script
+    global _script_path
     _script = sys.argv[-1]
     if _script == __file__:
         print('qork <script.py>')
         sys.exit(1)
-    script_path = sys.argv[-1]
+    _script_path = sys.argv[-1]
     sys.argv = sys.argv[:-1]
     ZeroMode.run()
+    
+if __name__=='__main__':
+    main()
 
