@@ -120,6 +120,12 @@ class Node:
         self.pend()
     def __str__(self):
         return self.name
+
+    def stop(self):
+        was_moving = bool(self.vel or self.accel)
+        self.vel = None
+        self.accel = None
+        return was_moving
         
     @property
     def velocity(self):

@@ -1,6 +1,7 @@
 # qork
 
 MIT License
+
 Copyright (c) 2020 Grady O'Connell
 
 Qork is a (very new) python game framework built with ModernGL.
@@ -29,13 +30,9 @@ You can run the qork examples in place or install it using the setup file:
 sudo python setup.py install
 ```
 
-```
+## Getting Started
 
-```
-
-## Easy Mode Usage
-
-Qork has a "zero mode", inspired by pygame-zero,
+Qork has a easy/zero mode, inspired by pygame-zero,
 No boilerplate is required here, but you have to
 run your program through the qork script instead of python.
 You can use a shebang line if you want to execute it directly
@@ -83,19 +80,152 @@ This will scale the movements to the amount they need to be to stay constant.
 
 That's the entire script!  Run it with qork.
 
-## Advanced Usage
+## Nodes
+
+### Create and Add
+
+```
+node = create() # create an empty node without adding it to the scene
+
+node = Node() # same as above
+
+node = add() # create and add an empty node to the scene
+
+node = add(Node()) # same as above
+
+node = add('player.png') # create object based on image, and add to scene
+
+```
+
+### Positioning
+
+
+Positioning can be set using either 3D or 2D tuples/lists or any unpackable type.
+Internally, vec3 (from glm) is used.
+
+```
+node.position = (0,0) # 2D
+
+node.position = vec2(0,0)
+    
+node.position = (0,0,0) # 3D
+    
+node.position = vec3(0,0,0)
+
+node.move(1,2,3) # relative movement (changes position)
+    
+node.move(vec2(1,2))
+
+node.move(vec3(1,2,3))
+
+```
+
+You can use `pos` instead of position if you prefer.
+
+### Velocity/Acceleration
+
+Global vectors X, Y and Z are basis vectors that point in that direction.
+
+The below code will start node moving at 1unit/sec in the positive X
+
+```
+node.velocity = X
+
+node.acceleration = Z
+
+node.acceleration = (1,2) # 2d
+
+node.acceleration = (1,2,3) # 3d
+
+node.stop() # stops velocity and acceleration
+```
+
+You can use `vel` and `accel` if you prefer.
+
+### Attaching
+
+Nodes can be attached to another, so they are moved along with the parent.
+
+```
+parent = add()
+child = parent.add()
+```
+
+Node positions are relative to their parents, so if you want to get
+the real world position of a node, use `world_position`
+
+```
+print(child.world_position)
+```
+
+### Detaching
+
+...
+
+### Rotation/Scaling
+
+Qork angles are based on **turns**. Rotating .5 is half a turn.
+
+This will be changeable in the future.
+
+This is similar to multiplying a value by 2*PI radians or 360 degrees.
+
+```
+node.rotate(.25) # rotate quarter turn in 2D
+
+node.rotate(.5, Y) # rotate half turn in 3D around Y axis
+```
+
+The second parameter to rotate can take any vector.
+
+## Camera
+
+In easy/zero mode, the camera is a global called `camera`.
+
+```
+camera.position = (0,0,5) # back up the camera by 5 units
+
+camera.fov = 80 # change field of view
+
+camera.mode = '2D' # go into 2D mode (not yet implemented)
+```
+
+## Tags
+
+...
+
+## States
+
+...
+
+## Events
+
+...
+
+## Resource Cache
+
+Resources are automatically cached for later reuse and reference counted.
+
+## Reactive Classes
+
+### Signal
+
+...
+
+### Reactive
+
+...
+
+### Lazy
+
+...
+
+
+## Custom Objects
 
 To make your own object classes, inherit from Mesh:
 
 ```
-class Player(Mesh):
-    def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
-        self.data = TEXTURED_QUAD_CENTERED
-        self.load('data/player.cson') # spritesheet
-        self.move(vec3(12,1,-10))
-        self.scale(1.5)
-
 class Map(Mesh):
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
@@ -106,7 +236,10 @@ class Map(Mesh):
 
 ```
 
+## Spritesheets
+
 Spritesheet example (cson format):
+
 ```
 type: 'sprite'
 size: [ 16, 16 ]
@@ -134,13 +267,13 @@ animation:
 
 ```
 
+Load a spritesheet with add() and make it do the walk animation:
 
-Make some nodes and attach them:
+Note: This is not yet fully implemented.
+
 ```
-add(Map())
-player = add(Player())
-camera = player.add(Camera())
-camera.position(vec3(0,2,5))
+player = add('player.cson')
+player.state('stance','walk')
 ```
 
 More to come soon!  Work in progress!

@@ -11,7 +11,9 @@ def qork_app(a=None):
 def cache(*args, **kwargs):
     return APP.cache(*args, **kwargs)
 def add(*args, **kwargs):
-    return APP.add(APP.Entity(*args, **kwargs))
+    return APP.add(APP.create(*args, **kwargs))
+def create(*args, **kwargs):
+    return APP.create(*args, **kwargs)
 
 # QORK_SCRIPT = False
 # def qork_script(self, *args):

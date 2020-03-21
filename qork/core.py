@@ -56,11 +56,13 @@ class Core(mglw.WindowConfig):
         self.bg_color = (0,0,0)
         self.view_projection = Lazy(lambda: self.projection() * self.view())
         # self.renderpass = RenderPass()
-        # self.Entity = Factory(self.resolve_entity)
+        # self.create = Factory(self.resolve_entity)
         self.renderfrom = self.camera
         self.states = [] # stack
-    def Entity(self, *args, **kwargs):
-        if args and isinstance(args[0], Node):
+    def create(self, *args, **kwargs):
+        if not args:
+            return Node(**kwargs)
+        if isinstance(args[0], Node):
             return args[0]
         fn = filename_from_args(args, kwargs)
         if fn:
