@@ -1,6 +1,6 @@
 # qork
 
-MIT License. See LICENSE for details.
+MIT License. See LICENSE file for details.
 
 Copyright (c) 2020 Grady O'Connell
 
