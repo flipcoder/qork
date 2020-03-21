@@ -11,7 +11,7 @@ camera.vel = -Z
 def update(t):
     if camera.position.z < level.position.z:
         print('You hit the ground!')
-        quit()
+        return quit()
     player.rotate(t * 0.1)
     camera.rotate(t * 0.1)
 
