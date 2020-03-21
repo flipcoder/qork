@@ -34,7 +34,8 @@ class Core(mglw.WindowConfig):
     def data_path(self, p=None):
         if p is None:
             return self._data_path
-        self._data_path = path.join(path.dirname(path.realpath(__file__)),p)
+        folder = self.script_path or sys.argv[0]
+        self._data_path = path.join(path.dirname(path.realpath(folder)),p)
         return self._data_path
     
     @classmethod
@@ -42,6 +43,7 @@ class Core(mglw.WindowConfig):
         mglw.run_window_config(cls)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.script_path = None # script path is using script
         qork_app(self)
         self.cache = Cache(self.resolve_resource, self.transform_resource)
         self._data_path = None

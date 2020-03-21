@@ -14,6 +14,7 @@ camera = None
 view = None
 gui = None
 root = None
+script_path = None
 data_path = 'data'
 
 # def set_camera(c = None):
@@ -28,22 +29,18 @@ class EasyMode(Core):
         global camera
         camera = self.camera = add(Camera())
     
-    def data_path(self, p=None):
-        if p is None:
-            return self._data_path
-        self._data_path = super().data_path(p)
-        return self._data_path
-    
     def __init__(self, **_kwargs):
+        global script_path
+        global init, render, update, camera, view, root, gui
+        
         super().__init__(**_kwargs)
         qork_app(self)
         self._data_path = None
+        self.script_path = script_path
         self.data_path('data')
         
         bg_color = self.bg_color = (0,0,0)
         shader = self.shader = self.ctx.program(**SHADER_BASIC)
-
-        global init, render, update, camera, view, root, gui
         
         root = self.root
         self.preload()
@@ -164,6 +161,7 @@ if __name__=='__main__':
     if _script == __file__:
         print('qork <script.py>')
         sys.exit(1)
+    script_path = sys.argv[-1]
     sys.argv = sys.argv[:-1]
     EasyMode.run()
 

@@ -12,6 +12,15 @@ def cache(*args, **kwargs):
     return APP.cache(*args, **kwargs)
 def add(*args, **kwargs):
     return APP.add(APP.Entity(*args, **kwargs))
+
+# QORK_SCRIPT = False
+# def qork_script(self, *args):
+#     global QORK_SCRITP
+#     if not args:
+#         return QORK_SCRIPT
+#     QORK_SCRIPT = bool(args[0])
+#     return QORK_SCRIPT
+
 # def remove(node, *kwargs):
 #     return node.remove_if((lambda n: n==node), **kwargs)
 

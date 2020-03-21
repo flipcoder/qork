@@ -43,7 +43,6 @@ class Level(Mesh):
 class App(Core):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.data_path('../data')
         
         self.btns = [False] * MAX_BUTTONS
         self.bg_color = (.25, .5, 1)
