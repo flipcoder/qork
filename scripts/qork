@@ -98,6 +98,7 @@ class ZeroMode(Core):
             'camera': camera,
             'core': self,
             'data_path': data_path,
+            'quit': lambda: sys.exit(0) # temp
         }
         loc = {}
         exec(buf, globe, loc)

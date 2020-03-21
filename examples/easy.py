@@ -2,8 +2,16 @@
 
 camera.pos = (0,0,5)
 player = add('player.png')
-camera.velocity = -Z
+level = add('map.png')
+level.scale(10)
+level.pos = Z * -10
+level.vel = Z
+camera.vel = -Z
 
 def update(t):
-    print(camera.position)
+    if camera.position.z < level.position.z:
+        print('You hit the ground!')
+        quit()
+    player.rotate(t * 0.1)
+    camera.rotate(t * 0.1)
 

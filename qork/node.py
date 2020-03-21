@@ -139,7 +139,8 @@ class Node:
     
     @vel.setter
     def vel(self, *v):
-        return self.velocity(*v)
+        self.velocity = v
+        return self.velocity
     
     def accelerate(self, *a):
         self._accel += to_vec3(*a)
