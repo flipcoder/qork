@@ -49,13 +49,20 @@ class ZeroMode(Core):
         self.preload()
         hooks = ['init','render','update','key_event','mouse_event']
         
-        buf = open(_script).read()
+        with open(_script) as scriptfile:
+            buf = scriptfile.read()
         # for func in ['init','render','update','key_event']:
         #     buf = 'global '+func+'\n' + buf
         oldbuf = copy(buf)
 
+        buflines = oldbuf.split('\n')
+        if buflines:
+            if buflines[0].startswith('#!') and buflines[0].endswith('python'):
+                print('Not a qork script. Run with python.')
+                sys.exit(1)
+        
         # extract globals
-        for line in oldbuf.split('\n'):
+        for line in buflines:
             if not line.startswith(' ') and not line.startswith('\t'):
                 tok = line.split(' ')
                 if not tok:
@@ -163,7 +170,7 @@ def main():
     global _script
     global _script_path
     _script = sys.argv[-1]
-    if _script == __file__:
+    if len(sys.argv)==1 or _script == __file__:
         print('qork <script.py>')
         sys.exit(1)
     _script_path = sys.argv[-1]
