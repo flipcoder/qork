@@ -48,9 +48,9 @@ class App(Core):
         self.bg_color = (.25, .5, 1)
         self.shader = self.ctx.program(**SHADER_BASIC)
 
-        self.level = self.root.add(Level(self))
-        self.player = self.root.add(Player(self))
-        self.camera = self.player.add(Camera(self))
+        self.level = add(Level())
+        self.player = add(Player())
+        self.camera = self.player.add(Camera())
         self.camera.position = (0,2,5)
         # self.camera.position(vec3(13,5,0))
         
