@@ -4,7 +4,7 @@ MIT License. See LICENSE file for details.
 
 Copyright (c) 2020 Grady O'Connell
 
-Qork is a (very new) python game framework built with ModernGL.
+Qork is a (very new) 3D/2D python game framework built with ModernGL.
 
 It is modeled after my C++ game engine, [Qor](https://github.com/flipcoder/qor).
 

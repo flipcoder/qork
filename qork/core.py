@@ -13,7 +13,8 @@ from .util import *
 from .node import *
 from .mesh import *
 from .reactive import *
-from .zero import qork_app
+from .signal import *
+from .easy import qork_app
 import cson
 import os
 from os import path
@@ -41,6 +42,7 @@ class Core(mglw.WindowConfig):
     @classmethod
     def run(cls):
         mglw.run_window_config(cls)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.script_path = None # script path is using script
@@ -60,19 +62,36 @@ class Core(mglw.WindowConfig):
         self.renderfrom = self.camera
         self.states = [] # stack
     def create(self, *args, **kwargs):
+        if args and isinstance(args[0], int):
+            r = []
+            args = list(args)
+            count = args[0]
+            args = args[1:] # pop count from arg list
+            for c in range(count):
+                r.append(self.create(*args, **kwargs))
+            return r
         if not args:
-            return Node(**kwargs)
+            return Node(*args, **kwargs)
         if isinstance(args[0], Node):
             return args[0]
         fn = filename_from_args(args, kwargs)
         if fn:
-            return Mesh(*args, *kwargs)
+            return Mesh(*args, **kwargs)
         elif isinstance(args[0], tuple): # prefab data
-            return Mesh(*args, *kwargs)
+            return Mesh(*args, **kwargs)
         else:
-            return Node(*args, *kwargs)
-    def add(self, node):
-        return self.root.add(node)
+            return Node(*args, **kwargs)
+    def add(self, *args, **kwargs):
+        if args and isinstance(args[0], int): # count
+            r = []
+            count = args[0]
+            args = list(args)
+            args = args[1:]
+            for c in range(count):
+                node = self.create(*args, **kwargs)
+                r.append(self.root.add(node))
+            return r
+        return self.root.add(self.create(*args, **kwargs))
     def update(self, t):
         if t <= 0.0:
             return

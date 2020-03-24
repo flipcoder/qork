@@ -13,7 +13,8 @@ class Camera(Node):
             self.calculate_projection,
             [self.ortho, self._mode]
         )
-        self.app.on_resize.connect(self.projection.pend, str(self))
+        self.slots = []
+        self.slots.append(self.app.on_resize.connect(self.projection.pend))
         self._fov = Reactive(80.0, [self.projection.on_pend])
         self.view = Lazy(
             lambda self=self: glm.inverse(self.matrix(WORLD)),
@@ -53,5 +54,7 @@ class Camera(Node):
         return m
 
     def cleanup():
-        self.app.on_resize.disconnect(str(self))
+        for slot in self.slots:
+            slot.disconnect()
+        self.slots = []
 

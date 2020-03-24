@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import moderngl_window as mglw
-from .zero import qork_app
+from .easy import qork_app
 from .util import *
 
 class Resource:

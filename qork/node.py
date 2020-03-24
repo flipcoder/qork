@@ -2,10 +2,11 @@
 import glm
 import math
 from .reactive import *
+from .signal import *
 from glm import vec2, vec3, vec4, mat4
 from .defs import *
 from .util import *
-from .zero import qork_app
+from .easy import qork_app
 
 class MockApp:
     def __init__(self):
@@ -14,8 +15,13 @@ class MockApp:
 
 class Node:
     def __init__(self, *args, **kwargs):
+        
         if args:
             arg0 = args[0]
+            
+            # sanity check -- make sure count was popped by create()/add()
+            assert not isinstance(arg0, int)
+            
             if arg0 is None or isinstance(arg0, str): # None or filename
                 self.app = app = qork_app()
                 if not app:
@@ -73,8 +79,8 @@ class Node:
         
         self.world_transform = Lazy(calculate_world_matrix, [self.on_pend])
     
-    def connect(self, sig): # for Lazy and Reactive
-        return self.on_pend.connect(sig)
+    def connect(self, sig, weak=True): # for Lazy and Reactive
+        return self.on_pend.connect(sig, weak)
     
     def __getitem__(self, name):
         if isinstance(name, int):
@@ -233,6 +239,8 @@ class Node:
         for ch in self.children:
             ch.pend()
     def attach(self, *args, **kwargs):
+        if args and isinstance(args[0], int):
+            assert False # not yet impl here
         if args and isinstance(args[0], Node):
             node = args[0]
             assert not node.parent
@@ -241,7 +249,7 @@ class Node:
             self.pend()
             return node
         else:
-            return self.attach(self.app.Entity(*args, **kwargs))
+            return self.attach(self.app.create(*args, **kwargs))
     def add(self, *args, **kwargs): # alias for attach
         return self.attach(*args, **kwargs)
     def update(self, dt):
@@ -253,7 +261,7 @@ class Node:
             new_vel = self._vel
             self._vel += self._accel / 2.0 * dt
             new_vel += self._accel * dt
-        if self._vel is not None: # velocity not zero
+        if self._vel is not None: # velocity not 0
             self.move(self._vel * dt)
         if new_vel is not None: # accelerated
             self._vel = new_vel
@@ -280,7 +288,7 @@ class Node:
         if self.parent:
             self.parent.detach_me.append(self)
             if func:
-                self.on_detach.connect(func)
+                self.on_detach.connect(func, weak=False)
     def detach(self, node=None):
         if node is None: # detach self
             self.parent.children = list(filter(

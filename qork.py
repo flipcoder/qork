@@ -1,3 +1,3 @@
 #!/usr/bin/python
-import qork.boilerplate
-qork.boilerplate.main()
+import qork.zero
+qork.zero.main()

@@ -19,7 +19,7 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        qork=qork.boilerplate:main
+        qork=qork.zero:main
     ''',
     zip_safe=False
 )

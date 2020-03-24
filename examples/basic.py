@@ -11,7 +11,7 @@ from glm import vec3, mat4, normalize
 from PIL import Image
 from copy import copy
 from qork import *
-from qork.zero import *
+from qork.easy import *
 import os
 from os import path
 

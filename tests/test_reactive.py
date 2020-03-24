@@ -11,27 +11,27 @@ from qork.reactive import *
 def increment(x):
     return x + 1
 
-def test_signal():
-    x = Wrapper(0)
-    sig = Signal()
+# def test_signal():
+#     x = Wrapper(0)
+#     sig = Signal()
     
-    # connection and calling
-    sig.connect(lambda x=x: x.do(increment))
-    sig()
-    assert x() == 1
-    sig()
-    assert x() == 2
-    sig.clear()
-    assert not sig.slots
+#     # connection and calling
+#     sig.connect(lambda x=x: x.do(increment))
+#     sig()
+#     assert x() == 1
+#     sig()
+#     assert x() == 2
+#     sig.clear()
+#     assert not sig.slots
 
-    # trigger only once
-    x = Wrapper(0)
-    sig.once(lambda x=x: x.do(increment), 'x')
-    sig()
-    assert x() == 1
-    assert not sig.slots # just once!
-    sig()
-    assert x() == 1 # nope!
+#     # trigger only once
+#     x = Wrapper(0)
+#     sig.once(lambda x=x: x.do(increment))
+#     sig()
+#     assert x() == 1
+#     assert not sig.slots # just once!
+#     sig()
+#     assert x() == 1 # nope!
 
 def test_lazy_capture():
     x = Lazy(lambda: 5)
@@ -48,7 +48,7 @@ def test_lazy_capture():
 def test_reactive():
     x = Wrapper(0)
     sig = Signal()
-    sig.connect(lambda a,b,x=x: x.do(increment))
+    sig.connect(lambda a,b,x=x: x.do(increment), weak=False)
     
     y = Reactive(100, [sig])
     y(500)
