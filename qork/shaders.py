@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 # vp, fp
-SHADER_BASIC = {'vertex_shader':'''
+SHADER_BASIC = {
+    "vertex_shader": """
     #version 330
 
     uniform mat4 ModelViewProjection;
@@ -15,7 +16,8 @@ SHADER_BASIC = {'vertex_shader':'''
         gl_Position = ModelViewProjection * vec4(in_vert, 1.0);
         v_text = in_text;
     }
-''','fragment_shader':'''
+""",
+    "fragment_shader": """
     #version 330
 
     uniform sampler2D Texture;
@@ -31,5 +33,5 @@ SHADER_BASIC = {'vertex_shader':'''
         else
             f_color = t;
     }
-'''}
-
+""",
+}

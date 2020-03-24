@@ -6,59 +6,64 @@ import cson
 from PIL import Image
 from copy import copy
 from os import path
+
 # from dataclasses import dataclass
+
 
 class Sprite(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert self.app
         fn = self.fn
-        assert fn.lower().endswith('.cson')
-        with open(path.join(self.app.data_path(), fn), 'rb') as f:
+        assert fn.lower().endswith(".cson")
+        with open(path.join(self.app.data_path(), fn), "rb") as f:
             data = self.data = cson.load(f)
-        self.skins = data['skins']
+        self.skins = data["skins"]
         self.skin = 0
-        self.tile_size = ivec2(data['tile_size'])
-        self.size = ivec2(data['size'])
-        self.origin = vec2(data['origin'])
-        self.mask = vec2(data['mask'])
-        
-        self.animation = data['animation']
-        self.frames = self.animation['frames']
-        self.speed = self.animation['speed']
+        self.tile_size = ivec2(data["tile_size"])
+        self.size = ivec2(data["size"])
+        self.origin = vec2(data["origin"])
+        self.mask = vec2(data["mask"])
+
+        self.animation = data["animation"]
+        self.frames = self.animation["frames"]
+        self.speed = self.animation["speed"]
         images = []
         self.layers = [[[]]]
-        self.extra = [] # extra generated images, like hflip
-        
+        self.extra = []  # extra generated images, like hflip
+
         # @dataclass
         # class SpriteFlags:
         #     once: bool = False
         class SpriteFlags:
             pass
+
         self.flags = {}
-        
+
         sheet_sz = None
         skin_id = 0
-        for skin in data['skins']:
-            sheet = Image.open(path.join(self.app.data_path(), skin)).convert('RGBA')
+        for skin in data["skins"]:
+            sheet = Image.open(path.join(self.app.data_path(), skin)).convert("RGBA")
             if sheet_sz is None:
                 sheet_sz = ivec2(sheet.size) / self.tile_size
-                tile_count = (sheet_sz.x * sheet_sz.y)
-                        
+                tile_count = sheet_sz.x * sheet_sz.y
+
             for i in range(tile_count):
                 # crop frame from spritesheet
                 x = (i % sheet_sz.x) * self.tile_size.x
                 y = (i // sheet_sz.x) * self.tile_size.y
                 L = x + self.tile_size.x
                 b = y + self.tile_size.y
-                img = sheet.crop((x,y,L,b))
+                img = sheet.crop((x, y, L, b))
                 # replace pink pixels with transparency
                 pixels = np.array(img)
                 for x in range(len(pixels)):
                     for y in range(len(pixels[x])):
-                        if pixels[x][y][0] == 255 and \
-                            pixels[x][y][1] == 0 and \
-                            pixels[x][y][2] == 255:
+                        if (
+                            pixels[x][y][0] == 255
+                            and pixels[x][y][1] == 0
+                            and pixels[x][y][2] == 255
+                        ):
                             pixels[x][y][0] = 0
                             pixels[x][y][1] = 0
                             pixels[x][y][2] = 0
@@ -103,4 +108,3 @@ class Sprite(Resource):
         #     # remove flags from sequence
         #     seq = filter(lambda x: not isinstance(x, str), seq)
         # recursive_each(list, self.frames, visit)
-

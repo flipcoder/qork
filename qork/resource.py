@@ -4,6 +4,7 @@ import moderngl_window as mglw
 from .easy import qork_app
 from .util import *
 
+
 class Resource:
     def __init__(self, *args, **kwargs):
         self.fn = filename_from_args(args, kwargs)
@@ -16,6 +17,6 @@ class Resource:
             self.app = args[0]
         self.args = args
         self.kwargs = kwargs
+
     def cleanup(self):
         pass
-

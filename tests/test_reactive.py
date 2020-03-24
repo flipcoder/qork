@@ -1,20 +1,23 @@
 #!/usr/bin/pytest
 import pytest
 import sys
-sys.path.append('..')
+
+sys.path.append("..")
 
 from glm import vec3
 from qork.util import *
 from qork.node import Node
 from qork.reactive import *
 
+
 def increment(x):
     return x + 1
+
 
 # def test_signal():
 #     x = Wrapper(0)
 #     sig = Signal()
-    
+
 #     # connection and calling
 #     sig.connect(lambda x=x: x.do(increment))
 #     sig()
@@ -33,6 +36,7 @@ def increment(x):
 #     sig()
 #     assert x() == 1 # nope!
 
+
 def test_lazy_capture():
     x = Lazy(lambda: 5)
     y = Lazy(lambda: x() + 1, [x])
@@ -45,13 +49,13 @@ def test_lazy_capture():
     y.set(2)
     assert z() == 3
 
+
 def test_reactive():
     x = Wrapper(0)
     sig = Signal()
-    sig.connect(lambda a,b,x=x: x.do(increment), weak=False)
-    
+    sig.connect(lambda a, b, x=x: x.do(increment), weak=False)
+
     y = Reactive(100, [sig])
     y(500)
     assert x() == 1
     assert y() == 500
-
