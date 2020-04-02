@@ -142,7 +142,7 @@ class ZeroMode(Core):
             "quit": lambda: sys.exit(0),  # temp
         }
         self.loc = {}
-        exec("import builtins", self.globe, self.loc)
+        # exec("import builtins", self.globe, self.loc)
         exec(buf, self.globe, self.loc)
 
         # g = globals()

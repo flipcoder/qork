@@ -1,6 +1,5 @@
 #!/usr/bin/env qork
 from random import random
-import builtins
 
 # load the ball nd paddles
 paddle = add(2, "player.png", scale=(1, 3, 1))

@@ -73,17 +73,8 @@ def treepath(tree, pth):
     return reduce(operator.getitem, pth, tree)
 
 
-def isinstance_any(e, types):
-    for t in types:
-        if isinstance(e, t):
-            return True
-    return False
-
-
 def recursive_each(types, e, func, path=[]):
-    if type(types) == type:
-        types = [types]
-    if isinstance_any(e, types):
+    if isinstance(e, types):
         func(e, path)
     elif isinstance(e, dict):
         for key, child in e.items():
