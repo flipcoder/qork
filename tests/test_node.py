@@ -49,11 +49,11 @@ def test_node():
     world.children._blocked += 1
     child.detach()
     world.children._blocked -= 1
-    assert child in world.children
-    world.children._blocked == 0
+    assert child in world
+    assert world.children._blocked == 0
     world.children.refresh()
-    print(child in iter(c.get() for c in world.children._slots))
-    assert child not in world.children
+    print(child in world)
+    assert child not in world
 
 
 def test_node_velocity():

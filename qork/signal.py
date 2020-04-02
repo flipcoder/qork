@@ -123,8 +123,6 @@ def queued(func):
 
 
 class Container:
-    QUEUE_MAX = 256
-
     def __init__(self, Type=list, *args, **kwargs):
 
         self._slots = Type()
@@ -159,9 +157,6 @@ class Container:
                     self.queued[i] = []
                 else:
                     break
-                if i >= QUEUE_MAX:
-                    print("WARNING: queue maxed out")
-                    assert False
                 i += 1
             self.queued = [[], []]
             self._queue_blocked -= 1
