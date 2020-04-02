@@ -26,25 +26,25 @@ def test_signal_queue():
 
     # queued connection
     s = Signal()
-    s.blocked += 1
+    s._blocked += 1
     a = s.connect(lambda: print("queued"), weak=False)
-    assert len(s.queued) == 1
+    assert len(s._queued) == 1
     s()  # nothing
-    s.blocked -= 1
-    for slot in s.queued:
+    s._blocked -= 1
+    for slot in s._queued:
         slot()
-    s.queued = []
+    s._queued = []
     s()  # "queued"
 
     # queued disconnection
-    s.blocked += 1
+    s._blocked += 1
     a.disconnect()
     assert len(s) == 1  # still attached
-    assert len(s.queued) == 1
-    s.blocked -= 1
-    for q in s.queued:
+    assert len(s._queued) == 1
+    s._blocked -= 1
+    for q in s._queued:
         q()
-    s.queued = []
+    s._queued = []
     assert len(s) == 0
 
 
@@ -68,6 +68,6 @@ def test_signal_once():
 
     s = Signal()
     w = s.once(lambda: print("test"))
-    assert len(s.slots) == 1
+    assert len(s._slots) == 1
     s()
     # assert len(s.slots) == 0

@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+from collections import defaultdict
+from qork.signal import Signal
+from qork.reactive import *
+
 APP = None
 
 
@@ -19,17 +23,9 @@ def add(*args, **kwargs):
     return APP.add(*args, **kwargs)
 
 
+def remove(*args, **kwargs):
+    return APP.remove(*args, **kwargs)
+
+
 def create(*args, **kwargs):
     return APP.create(*args, **kwargs)
-
-
-# QORK_SCRIPT = False
-# def qork_script(self, *args):
-#     global QORK_SCRITP
-#     if not args:
-#         return QORK_SCRIPT
-#     QORK_SCRIPT = bool(args[0])
-#     return QORK_SCRIPT
-
-# def remove(node, *kwargs):
-#     return node.remove_if((lambda n: n==node), **kwargs)

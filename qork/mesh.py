@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from .node import *
-import numpy as np
 from PIL import Image
 import moderngl as gl
 from .defs import *
@@ -11,6 +10,7 @@ from .util import *
 from .animator import *
 from copy import copy
 from os import path
+import struct
 
 
 class MeshBuffer(Resource):
@@ -20,13 +20,64 @@ class MeshBuffer(Resource):
             return
         super().__init__(app, name, *args, **kwargs)
         self.cache = app.cache
-        self.data = data
+        self._data = Reactive(data)
         self.ctx = app.ctx
         self.shader = shader
         self.mesh_type = meshtype
         self.flipped = {}
         self.generated = False
         self.vbo = self.vao = None
+        self.solid = kwargs.pop("solid", False)
+        self._box = Lazy(self.calculate_box, [self._data])
+        self.on_pend = Signal()
+
+    @property
+    def box(self):
+        return self._box()
+
+    @property
+    def data(self):
+        return self._data()
+
+    @data.setter
+    def data(self, d):
+        self._data(d)
+        self.on_pend()
+
+    def __iadd__(self, sig):
+        self.on_pend += sig
+
+    def __isub__(self, sig):
+        self.on_pend -= sig
+
+    def connect(self, sig, weak=True):
+        return self.on_pend.connect(sig, weak)
+
+    def disconnect(self, sig, weak=True):
+        return self.on_pend.disconnect(sig, weak)
+
+    def calculate_box(self):
+        d = self._data()
+        if not d:
+            return None
+        mini = vec3(float("inf"))
+        maxi = -mini
+        for i in range(0, len(d), 5):
+            for c in range(3):
+                idx = i + c
+                if d[idx] < mini[c]:
+                    mini[c] = d[idx]
+                if d[idx] > maxi[c]:
+                    maxi[c] = d[idx]
+
+        # check for infs and nans
+        for c in (*mini, *maxi):
+            if c != c or c == float("inf") or c == float("-inf"):
+                print("warning: invalid box for", self)
+                self.on_pend()
+                return None
+
+        return [mini, maxi]
 
     def generate(self):
         if self.generated:
@@ -34,7 +85,9 @@ class MeshBuffer(Resource):
                 self.vao.delete()
             if self.vao:
                 self.vbo.delete()
-        self.vbo = self.ctx.buffer(self.data.astype("f4").tobytes())
+        # self.vbo = self.ctx.buffer(self.data.astype("f4").tobytes())
+        self.vbo = self.ctx.buffer(struct.pack("f" * len(self.data), *self.data))
+        # self.vbo = self.ctx.buffer(self.data.bytes())
         self.vao = self.ctx.simple_vertex_array(
             self.shader, self.vbo, "in_vert", "in_text"
         )
@@ -112,10 +165,14 @@ class Mesh(Node):
         self.vao = None
         self.mesh_type = kwargs.get("mesh_type")
 
+        self.data_con = None
+
         pos = kwargs.get("position") or kwargs.get("pos")
-        scale = kwargs.get("scale")
+        scale = to_vec3(kwargs.get("scale"))
         self.filter = kwargs.get("filter")
-        self.data = kwargs.get("data")
+        self._data = Reactive(kwargs.get("data"))
+        # if self._data():
+        #     self.connections += self._data().data.connect(self.set_box)
 
         rot = kwargs.get("rot") or kwargs.get("rotation")
         initfunc = kwargs.get("init")
@@ -131,6 +188,16 @@ class Mesh(Node):
             initfunc(self)
         if self.fn:
             self.load()
+
+    # meshdata
+    @property
+    def data(self):
+        return self._data() if self._data else None
+
+    # meshdata
+    @data.setter
+    def data(self, d):
+        self._data(d)
 
     def flip(self, flags):
         self.meshdata = self.meshdata.hflip(flags)
@@ -205,6 +272,10 @@ class Mesh(Node):
         if self.sprite:
             self.animator = Animator(self)
         self.loaded = True
+
+        reset_local_box = lambda d: self.set_local_box(d)
+        self.meshdata_con = self.meshdata.connect(reset_local_box)
+        reset_local_box(self.meshdata.box)
 
     def update(self, t):
         super().update(t)

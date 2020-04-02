@@ -56,19 +56,12 @@ class Sprite(Resource):
                 b = y + self.tile_size.y
                 img = sheet.crop((x, y, L, b))
                 # replace pink pixels with transparency
-                pixels = np.array(img)
-                for x in range(len(pixels)):
-                    for y in range(len(pixels[x])):
-                        if (
-                            pixels[x][y][0] == 255
-                            and pixels[x][y][1] == 0
-                            and pixels[x][y][2] == 255
-                        ):
-                            pixels[x][y][0] = 0
-                            pixels[x][y][1] = 0
-                            pixels[x][y][2] = 0
-                            pixels[x][y][3] = 0
-                img = Image.fromarray(pixels)
+                px = img.load()
+                for y in range(img.height):
+                    for x in range(img.width):
+                        if px[x, y] == (255, 0, 255, 255):
+                            px[x, y] = (0, 0, 0, 0)
+                # img = Image.fromarray(pixels)
                 images.append(img)
             self.layers[0][skin_id] = images
             skin_id += 1

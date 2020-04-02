@@ -1,6 +1,7 @@
 moderngl
 moderngl-window
-numpy
 PIL
 pyglm
 cson
+overrides
+pycairo

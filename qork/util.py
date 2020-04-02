@@ -5,6 +5,7 @@ import types
 import glm
 from functools import reduce
 import operator
+import random
 from .defs import *
 
 
@@ -93,19 +94,95 @@ def recursive_each(types, e, func, path=[]):
 
 
 def to_vec3(*args):
-    # lenargs = len(args)
     if isinstance(args[0], tuple) or isinstance(args[0], list):
         args = args[0]
-    if isinstance(args, glm.vec3):
+    lenargs = len(args)
+    ta = type(args)
+    if ta in (float, int):
+        return glm.vec3(args)
+    if ta == glm.vec3:
         return args
-    elif isinstance(args, glm.vec2):
+    elif ta == glm.vec2:
         return glm.vec3(args, 0.0)
-    elif isinstance(args, glm.vec4):
+    elif ta == glm.vec4:
         return args.xyz
-    return glm.vec3(*args)
+    else:
+        if lenargs == 3:
+            return glm.vec3(*args)
+        elif lenargs == 1:
+            return glm.vec3(args[0])
+        elif lenargs == 2:
+            return glm.vec3(*args, 0)
+        elif lenargs == 4:
+            return glm.vec3(*args[:3])
+
+    print(args)
+
+    assert False
 
 
-V = to_vec3
+# def component_scalar(s, i):
+#     if type(s) in (float,int):
+#         return s
+#     return s[i]
+
+
+def randp3xz(scale=1):
+    if type(scale) in (float, int):
+        scale = vec3(scale)
+    return glm.vec3(random.random() * scale[0], 0, random.random() * scale[2])
+
+
+def randp3yz(scale=1):
+    if type(scale) in (float, int):
+        scale = vec3(scale)
+    return glm.vec3(0, random.random() * scale[1], random.random() * scale[2])
+
+
+def randp3yz(scale=1):
+    if type(scale) in (float, int):
+        scale = vec3(scale)
+    return glm.vec3(random.random() * scale[0], random.random() * scale[1], 0)
+
+
+def randp3(scale=1):
+    if type(scale) in (float, int):
+        scale = vec3(scale)
+    return glm.vec3(
+        random.random() * scale[0],
+        random.random() * scale[1],
+        random.random() * scale[2],
+    )
+
+
+def randv3xz(scale=1):
+    return glm.normalize(glm.vec3(nrand(), 0, nrand())) * scale
+
+
+def randv3yz(scale=1):
+    return glm.normalize(glm.vec3(0, nrand(), nrand())) * scale
+
+
+def randv3xy(scale=1):
+    return glm.normalize(glm.vec3(nrand(), nrand(), 0)) * scale
+
+
+def randv3(scale=1):
+    return glm.normalize(glm.vec3(nrand(), nrand(), nrand())) * scale
+
+
+def randf(s=1):
+    return random.random() * s
+
+
+def nrand(s=1):
+    return (random.random() * 2 - 1) * s
+
+
+def ncolor(s=1):
+    return vec4(randv3(), 1.0)
+
+
 M = glm.mat4
 
 # class classproperty:

@@ -10,6 +10,7 @@ except ModuleNotFoundError:
 
 from qork import *
 from qork.easy import *
+from qork.util import *
 from os import path
 
 key_event = None
@@ -19,7 +20,7 @@ update = None
 camera = None
 view = None
 gui = None
-root = None
+world = None
 _script_path = None
 data_path = "data"
 _script = None
@@ -35,9 +36,13 @@ class ZeroMode(Core):
         global camera
         camera = self.camera = add(Camera())
 
+    @classmethod
+    def run(cls):
+        mglw.run_window_config(cls)
+
     def __init__(self, **_kwargs):
         global _script_path
-        global init, render, update, camera, view, root, gui
+        global init, render, update, camera, view, world, gui
 
         super().__init__(**_kwargs)
         qork_app(self)
@@ -49,9 +54,12 @@ class ZeroMode(Core):
         bg_color = self.bg_color = (0, 0, 0)
         shader = self.shader = self.ctx.program(**SHADER_BASIC)
 
-        root = self.root
+        world = self.world
         self.preload()
-        hooks = ["init", "render", "update", "key_event", "mouse_event"]
+        # "key_event", "mouse_event"
+        hooks = ["init", "render", "update", "script"]
+
+        self.camera.position = (0, 0, 5)
 
         with open(_script) as scriptfile:
             buf = scriptfile.read()
@@ -103,24 +111,39 @@ class ZeroMode(Core):
         def data_path(p=None):
             return self.data_path(p)
 
-        globe = {
+        self.globe = {
             **qork.__dict__,
             **easy.__dict__,
+            **util.__dict__,
+            **decorators.__dict__,
             "QORK_SCRIPT": True,
             "glm": glm,
             "vec2": glm.vec2,
             "vec3": glm.vec3,
+            "V2": glm.vec2,
+            "V3": glm.vec3,
+            "V": V,
             "init": init,
+            "key": qork_app().get_key,
+            "key_down": qork_app().get_key_down,
+            "key_up": qork_app().get_key_up,
+            "keys": qork_app().get_keys,
+            "keys_down": qork_app().get_keys_down,
+            "keys_up": qork_app().get_keys_up,
+            "KEY": qork_app().wnd.keys,
             "update": update,
             "render": render,
-            "root": root,
+            "world": world,
             "camera": camera,
+            # "overlap": qork.easy.overlap,
+            # "add": qork.easy.add,
             "core": self,
             "data_path": data_path,
             "quit": lambda: sys.exit(0),  # temp
         }
-        loc = {}
-        exec(buf, globe, loc)
+        self.loc = {}
+        exec("import builtins", self.globe, self.loc)
+        exec(buf, self.globe, self.loc)
 
         # g = globals()
         # self.scope = {}
@@ -141,33 +164,29 @@ class ZeroMode(Core):
         def empty(*args):
             pass
 
-        for hook in hooks:
-            try:
-                globals()[hook] = globe[hook]
-            except KeyError:
-                globals()[hook] = empty
+        # for hook in hooks:
+        #     try:
+        #         globals()[hook] = self.globe[hook]
+        #     except KeyError:
+        #         globals()[hook] = empty
 
+        self.update_hook = self.globe["update"]
         # self.scope['update'] = update
         # self.scope['render'] = render
 
         if init:
             init()
 
-    def key_event(self, key, action, modifiers):
-        if key_event:
-            key_event(key, action, modifiers)
+    # def key_event(self, key, action, modifiers):
+    # if key_event:
+    # key_event(key, action, modifiers)
 
     def update(self, t):
         super().update(t)
         # if logic:
         #     logic(t)
-        if update:
-            # update(t)
-            # exec('update(t)')
-            update(t)
-            # g = {**(globals()), **{'t':t}}
-            # exec('update(t)', g, self.scope)
-        # exec(self._update, self._locals, self._globals)
+        if self.update_hook:
+            exec("update(" + str(t) + ")", self.globe, self.loc)
 
     def render(self, time, t):
         super().render(time, t)

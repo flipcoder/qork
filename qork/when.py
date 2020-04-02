@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 import weakref
 
-from qork.signal import Signal
-from qork.defs import *
+from .signal import Signal
+from .defs import *
+
+
+def map_range(val, r1, r2):
+    return (val - r1[0]) / (r1[1] - r1[0]) * (r2[1] - r2[0]) + r2[0]
 
 
 class When(Signal):
@@ -20,10 +24,10 @@ class When(Signal):
             slot = slot()
             if not slot:
                 if isinstance(self.sig, weakref.ref):
-                    sig = sig()
+                    sig = self.sig()
                     if not sig:
                         return
-                self.sig.disconnect(sig)
+                self.sig.disconnect(wref)
                 return
 
         if slot.start_t != 0:  # not infinite timer
@@ -32,21 +36,29 @@ class When(Signal):
         if slot.fade:
             slot.t = max(0.0, slot.t)
             p = 1.0 - (slot.t / slot.start_t)
-            slot(p)
+            slot(
+                map_range(
+                    # apply easing functin
+                    (slot.ease(p) if slot.ease else p),
+                    (0.0, 1.0),  # from range
+                    slot.range_,  # to range
+                )
+            )
             if slot.t < EPSILON:
+                if slot.fade_end:
+                    slot.fade_end()
                 slot.disconnect()  # queued
                 return
         else:
             # not a fade
-            while slot.t < EPSILON:
+            if slot.t < EPSILON:
                 if not slot.once or slot.count == 0:
                     slot()
                 if slot.once:
                     slot.disconnect()  # queued
                     return
-                if slot.start_t == 0:
-                    break
-                slot.t += slot.start_t  # wrap
+                slot.t = min(0, slot.t + slot.start_t)  # wrap
+                # warning: events may be missed for small time vals
 
     def update(self, dt):
         """
@@ -68,19 +80,21 @@ class When(Signal):
         slot.fade = False
         slot.ease = None
         slot.once = once
+        # slot.fade_end = None
+        # slot.range_ = None
         return slot
 
     def once(self, t, func, weak=True):
-        return self.every(t, func, weak, True)
+        return self.every(t, func, weak, once=True)
 
-    def fade(self, length, func, ease=None, weak=True):
+    def fade(self, length, range_, func, end_func=None, ease=None, weak=False):
         """
         Every frame, call function with fade value [0,1] fade value
         """
-        # slot = super().once(func, weak)
-        # slot = super().connect(func, weak)
-        slot = self.every(0, func, weak)
+        slot = self.every(0, func, weak=weak)
         slot.start_t = slot.t = float(length)
         slot.fade = True
-        # slot.ease = ease
+        slot.fade_end = end_func
+        slot.range_ = range_
+        slot.ease = ease
         return slot

@@ -15,17 +15,19 @@ from .node import *
 from .mesh import *
 from .reactive import *
 from .signal import *
+from .partitioner import *
 from .easy import qork_app
 import cson
 import os
 from os import path
+from collections import defaultdict
 
 # class RenderPass
 #     def __init__(self, camera):
 #         self.camera = camera
 
 
-class Core(mglw.WindowConfig):
+class Core(mglw.WindowConfig, Partitioner):
     gl_version = (3, 3)
     window_size = (960, 540)
     aspect_ratio = 16 / 9
@@ -34,6 +36,10 @@ class Core(mglw.WindowConfig):
     title = "qork"
     # resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
 
+    @classmethod
+    def run(cls):
+        mglw.run_window_config(cls)
+
     def data_path(self, p=None):
         if p is None:
             return self._data_path
@@ -41,20 +47,28 @@ class Core(mglw.WindowConfig):
         self._data_path = path.join(path.dirname(path.realpath(folder)), p)
         return self._data_path
 
-    @classmethod
-    def run(cls):
-        mglw.run_window_config(cls)
-
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self.script_path = None  # script path is using script
-        qork_app(self)
         self.cache = Cache(self.resolve_resource, self.transform_resource)
+
+        qork_app(self)
+
+        self.wnd = kwargs.get("wnd")
+        self.ctx = kwargs.get("ctx")
+        self.timer = kwargs.get("timer")
+
+        # super(mglw.WindowConfig, self).__init__(self)
+        Partitioner.__init__(self)
+
         self._data_path = None
         self.data_path("data")
         self.on_resize = Signal()
+        self.on_update = Signal()
+        self.on_render = Signal()
+        # self.on_collision_enter = Signal()
+        # self.on_collision_leave = Signal()
         self.cleanup_list = []  # nodes awaiting dtor/destuctor/deinit calls
-        self.root = Node()
+        self.world = Node()
         self.camera = None  # default 3d camera
         self.gui = None  # default 3d camera
         self.bg_color = (0, 0, 0)
@@ -62,7 +76,52 @@ class Core(mglw.WindowConfig):
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
         self.renderfrom = self.camera
-        self.states = []  # stack
+        self.state = None
+
+        # signal dicts
+        class KeySignal:
+            def __init__(self):
+                self.on_press = Signal()
+                self.on_release = Signal()
+                self.while_pressed = Signal()
+
+        self.key_events = defaultdict(KeySignal)
+
+        self.keys = set()
+        self.keys_down = set()
+        self.keys_up = set()
+
+        self.K = self.wnd.keys
+
+        super(Partitioner, self).__init__()
+
+    def get_key(self, k):
+        return k in self.keys
+
+    def get_key_down(self, k):
+        return k in self.keys_down
+
+    def get_key_up(self, k):
+        return k in self.keys_up
+
+    def get_keys(self):
+        return self.keys
+
+    def get_keys_down(self):
+        return self.keys_down
+
+    def get_keys_up(self):
+        return self.keys_up
+
+    def key_event(self, key, action, mod):
+        if action == self.K.ACTION_PRESS:
+            self.keys_down.add(key)
+            self.keys.add(key)
+            self.key_events[key].on_press()
+        elif action == self.K.ACTION_RELEASE:
+            self.keys_up.add(key)
+            self.keys.remove(key)
+            self.key_events[key].on_release()
 
     def create(self, *args, **kwargs):
         if args and isinstance(args[0], int):
@@ -92,22 +151,30 @@ class Core(mglw.WindowConfig):
             args = list(args)
             args = args[1:]
             for c in range(count):
-                node = self.create(*args, **kwargs)
-                r.append(self.root.add(node))
+                node = self.create(*args, num=c, **kwargs)
+                r.append(self.world.add(node))
             return r
-        return self.root.add(self.create(*args, **kwargs))
+        return self.world.add(self.create(*args, **kwargs))
 
     def update(self, t):
         if t <= 0.0:
             return
-        self.root.update(t)
-        self.clean()
 
-    def clean(self):
-        if self.cleanup_list:
-            for entity in self.cleanup_list:
-                entity.cleanup()
-            self.cleanup_list = []
+        for key in self.keys:
+            if key:
+                self.key_events[key].while_pressed(key, t)
+
+        if self.state:
+            self.state.update(t)
+
+        Partitioner.update(self, t)
+
+        self.on_update(t)
+
+        self.world.update(t)
+
+        self.keys_down = type(self.keys_down)()
+        self.keys_up = type(self.keys_up)()
 
     def transform_resource(self, *args, **kwargs):
         args = [self] + list(args)
@@ -132,13 +199,14 @@ class Core(mglw.WindowConfig):
             return
         self.dt = dt
         self.time = time
-        self.update(dt)
+        self.update(dt)  # intentional
         self.ctx.clear(*self.bg_color)
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
+        self.on_render()
         if self.camera:
             self.renderfrom = self.camera
             self.view_projection.pend()
-            self.root.render()
+            self.world.render()
         if self.gui:
             self.renderfrom = self.gui
             self.view_projection.pend()

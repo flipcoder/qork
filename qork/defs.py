@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import numpy as np
 import glm
+from enum import Enum
 
 # buttons
 LEFT = 0
@@ -10,9 +10,16 @@ UP = 2
 DOWN = 3
 JUMP = 4
 CROUCH = 5
-TURN_LEFT = 6
-TURN_RIGHT = 7
-MAX_BUTTONS = 8
+USE = 7
+TURN_LEFT = 8
+TURN_RIGHT = 9
+MAX_BUTTONS = 10
+
+Space = Enum("Space", "LOCAL PARENT WORLD")
+
+LOCAL = Space.LOCAL
+PARENT = Space.PARENT
+WORLD = Space.WORLD
 
 # space
 LOCAL = 0
@@ -21,6 +28,16 @@ WORLD = 2
 
 EPSILON = 0.00001
 
+
+def V(*args):
+    lenargs = len(args)
+    if lenargs == 2:
+        return glm.vec2(*args)
+    elif lenargs == 4:
+        return glm.vec4(*args)
+    return glm.vec3(*args)
+
+
 class Prefab:
     def __init__(self, *args):
         lenargs = len(args)
@@ -28,43 +45,49 @@ class Prefab:
             self.name = args[0]
             self.data = args[1]
         else:
-            self.name = ''
+            self.name = ""
             self.data = args[0]
 
-QUAD = Prefab('QUAD', np.array([
+
+# fmt: off
+
+QUAD = Prefab('QUAD', [
 #     x    y    z
     0.0, 0.0, 0.0,
     1.0, 0.0, 0.0,
     0.0, 1.0, 0.0,
     1.0, 1.0, 0.0,
-]))
+])
 
-QUAD_CENTERED = Prefab('QUAD_CENTERED', np.array([
+QUAD_CENTERED = Prefab('QUAD_CENTERED', [
 #      x    y    z
     -1.0, -1.0,  0.0,
      1.0, -1.0,  0.0,
     -1.0,  1.0,  0.0,
      1.0,  1.0,  0.0,
-]))
+])
 
-TEXTURED_QUAD_CENTERED = Prefab('TEXTURED_QUAD_CENTERED', np.array([
+TEXTURED_QUAD_CENTERED = Prefab('TEXTURED_QUAD_CENTERED', [
 #      x     y    z    u    v
     -0.5, -0.5, 0.0, 0.0, 1.0,
      0.5, -0.5, 0.0, 1.0, 1.0,
     -0.5,  0.5, 0.0, 0.0, 0.0,
      0.5,  0.5, 0.0, 1.0, 0.0
-]))
+])
 
 
-TEXTURED_QUAD = Prefab('TEXTURED_QUAD', np.array([
+TEXTURED_QUAD = Prefab('TEXTURED_QUAD', [
 #     x    y    z    u    v
     0.0, 0.0, 0.0, 0.0, 1.0,
     1.0, 0.0, 0.0, 1.0, 1.0,
     0.0, 1.0, 0.0, 0.0, 0.0,
     1.0, 1.0, 0.0, 1.0, 0.0,
-]))
+])
 
-X = glm.vec3(1,0,0)
-Y = glm.vec3(0,1,0)
-Z = glm.vec3(0,0,1)
+# fmt: on
 
+X = glm.vec3(1, 0, 0)
+Y = glm.vec3(0, 1, 0)
+Z = glm.vec3(0, 0, 1)
+
+AXIS = (X, Y, Z)

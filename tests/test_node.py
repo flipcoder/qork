@@ -15,53 +15,53 @@ class MockApp:
         self.cache = None
 
 
-# def MockNode(*args, **kwargs):
-#     return Node(MockApp(), *args, **kwargs)
-
-
 def test_node():
-    root = Node()
+    world = Node()
 
     # move/position
-    assert fcmp(root.position, vec3(0))
-    root.move(vec3(1, 2, 3))
-    assert fcmp(root.position, vec3(1, 2, 3))
-    root.move(vec3(1, 2, 3))
-    assert fcmp(root.position, vec3(2, 4, 6))
+    assert fcmp(world.position, vec3(0))
+    world.move(vec3(1, 2, 3))
+    assert fcmp(world.position, vec3(1, 2, 3))
+    world.move(vec3(1, 2, 3))
+    assert fcmp(world.position, vec3(2, 4, 6))
 
     # reset
-    root.pos = vec3(0)
-    assert fcmp(root.position, vec3(0))
+    world.pos = vec3(0)
+    assert fcmp(world.position, vec3(0))
 
     # attach
     child = Node(MockApp())
-    root.position = vec3(0)
-    assert not root.children
-    root.attach(child)
-    assert root.children
-    root.position = (1, 2, 3)
+    world.position = vec3(0)
+    assert not world.children
+    world.attach(child)
+    world.position = (1, 2, 3)
     child.position = vec3(1)
     assert fcmp(child.world_pos, vec3(2, 3, 4))
-    root.position = vec3(0)
+    world.position = vec3(0)
     assert fcmp(child.world_pos, vec3(1))
-    root.position = vec3(1)
+    world.position = vec3(1)
     assert fcmp(child.world_pos, vec3(2))
-    assert child.parent == root
+    assert child.parent == world
     child.detach()
     assert child.parent is None
     assert fcmp(child.world_pos, vec3(1))
-    root.attach(child)
-    child.safe_detach()
-    assert child in root.children
-    root.update(1)  # will run scheduled safe detaches
-    assert child not in root.children
+    world.attach(child)
+    world.children._blocked += 1
+    child.detach()
+    world.children._blocked -= 1
+    assert child in world.children
+    world.children._blocked == 0
+    world.children.refresh()
+    print(child in iter(c.get() for c in world.children._slots))
+    assert child not in world.children
 
 
 def test_node_velocity():
-    root = Node()
-    root.velocity = (1, 2, 3)  # use tuple
-    assert fcmp(root.position, vec3(0))
-    root.update(1)
-    root.velocity = vec3(3, 2, 1)  # use vec3 ctor
-    root.update(1)
-    assert fcmp(root.position, vec3(4))
+    world = Node()
+    world.velocity = (1, 2, 3)  # use tuple
+    assert fcmp(world.position, vec3(0))
+    world.update(1)
+    assert fcmp(world.position, vec3(1, 2, 3))
+    assert world.position == vec3(1, 2, 3)
+    world.update(1)
+    assert world.position == vec3(2, 4, 6)

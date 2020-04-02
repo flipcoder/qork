@@ -60,7 +60,7 @@ def test_when_fade():
     c = Counter()
     s = When()
 
-    s.fade(1, lambda t: c.increment(t), None, weak=False)
+    s.fade(1, (0, 1), lambda t: c.increment(t), None, weak=False)
 
     s.update(0.2)
 
@@ -72,7 +72,7 @@ def test_when_fade2():
     c = Counter()
     s = When()
 
-    a = s.fade(1, lambda t: c.increment(t), ease=None, weak=False)
+    a = s.fade(1, (0, 1), lambda t: c.increment(t), ease=None, weak=False)
     assert len(s) == 1
 
     s.update(0.1)
