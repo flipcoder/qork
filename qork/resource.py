@@ -18,5 +18,9 @@ class Resource:
         self.args = args
         self.kwargs = kwargs
 
+    @property
+    def count(self):
+        return self.cache.count(self)
+
     def cleanup(self):
         pass

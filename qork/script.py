@@ -10,9 +10,9 @@ import traceback
 
 
 class Script:
-    def __init__(self, app, ctx, script, use_input=True, script_args=None):
-        self.app = app
-        self.ctx = ctx
+    def __init__(self, script, obj=None, use_input=True, script_args=None):
+        # self.app = app
+        self.obj = obj
         self.when = When()
         self.slots = []
 
@@ -21,7 +21,7 @@ class Script:
         self.fn = script
         self.resume_condition = None
         self.script_args = script_args
-        self.scripts = Signal()  # extra scripts attached to this one
+        self.scripts = Container()  # extra scripts attached to this one
 
         # these are accumulated between yields
         # this is different from get_pressed()
@@ -31,7 +31,8 @@ class Script:
         self.use_input = use_input
 
         if use_input:
-            self.event_slot = self.app.on_event.connect(self.event)
+            pass
+            # self.event_slot = self.app.on_event.connect(self.event)
         else:
             self.event_slot = None
 
@@ -45,9 +46,9 @@ class Script:
     def push(self, fn):
         print(fn)
         if self.script_args:
-            script = Script(self.app, self.ctx, fn, self.use_input, *self.script_args)
+            script = Script(fn, self.obj, self.use_input, *self.script_args)
         else:
-            script = Script(self.app, self.ctx, fn, self.use_input)
+            script = Script(fn, self.obj, self.use_input)
 
         self.scripts += script
 
@@ -57,16 +58,16 @@ class Script:
     def resume(self):
         self.paused = False
 
-    def event(self, ev):
-        if ev.type == pygame.KEYDOWN:
-            self.keys_down.add(ev.key)
-            self.keys.add(ev.key)
-        elif ev.type == pygame.KEYUP:
-            self.keys_up.add(ev.key)
-            try:
-                self.keys.remove(ev.key)
-            except KeyError:
-                pass
+    # def event(self, ev):
+    #     if ev.type == pygame.KEYDOWN:
+    #         self.keys_down.add(ev.key)
+    #         self.keys.add(ev.key)
+    #     elif ev.type == pygame.KEYUP:
+    #         self.keys_up.add(ev.key)
+    #         try:
+    #             self.keys.remove(ev.key)
+    #         except KeyError:
+    # pass
 
     def running(self):
         return self._script is not None
@@ -74,38 +75,38 @@ class Script:
     def done(self):
         return self._script is None
 
-    def key(self, k):
-        # if we're in a script: return keys since last script yield
-        # assert self.script.inside
+    # def key(self, k):
+    #     # if we're in a script: return keys since last script yield
+    #     # assert self.script.inside
 
-        assert self.inside  # please only use this in scripts
-        assert self.event_slot  # input needs to be enabled (default)
+    #     assert self.inside  # please only use this in scripts
+    #     # assert self.event_slot  # input needs to be enabled (default)
 
-        if isinstance(k, str):
-            return ord(k) in self.keys
-        return k in self.keys
+    #     if isinstance(k, str):
+    #         return ord(k) in self.keys
+    #     return k in self.keys
 
-    def key_down(self, k):
-        # if we're in a script: return keys since last script yield
-        # assert self.script.inside
+    # def key_down(self, k):
+    #     # if we're in a script: return keys since last script yield
+    #     # assert self.script.inside
 
-        assert self.inside  # please only use this in scripts
-        assert self.event_slot  # input needs to be enabled (default)
+    #     assert self.inside  # please only use this in scripts
+    #     # assert self.event_slot  # input needs to be enabled (default)
 
-        if isinstance(k, str):
-            return ord(k) in self.keys_down
-        return k in self.keys_down
+    #     if isinstance(k, str):
+    #         return ord(k) in self.keys_down
+    #     return k in self.keys_down
 
-    def key_up(self, k):
-        # if we're in a script: return keys since last script yield
-        # assert self.script.inside
+    # def key_up(self, k):
+    #     # if we're in a script: return keys since last script yield
+    #     # assert self.script.inside
 
-        assert self.inside  # please only use this in scripts
-        assert self.event_slot  # input needs to be enabled (default)
+    #     assert self.inside  # please only use this in scripts
+    #     # assert self.event_slot  # input needs to be enabled (default)
 
-        if isinstance(k, str):
-            return ord(k) in self.keys_up
-        return k in self.keys_up
+    #     if isinstance(k, str):
+    #         return ord(k) in self.keys_up
+    #     return k in self.keys_up
 
     # This makes scripting cleaner than checking script.keys directly
     # We need these so scripts can do "keys = script.keys"
@@ -127,48 +128,11 @@ class Script:
         return self._script
 
     @script.setter
-    def script(self, script=None):
-        # print("Script:", script, self.script_args)
+    def script(self, script):
         self.slots = []
         self.paused = False
 
-        if isinstance(script, str):
-            lib = importlib.import_module("game.scripts." + script)
-            run = False
-            if not hasattr(lib, "script"):
-                # no run method? look for cls
-                # for name, cls in lib.__dict__.items():
-                #     if name.startswith("Level"):
-                #         try:
-                #             int(name[len("Level") :])
-                #         except ValueError:
-                #             continue  # not a level number
-                #         if self.script_args:
-                #             self._script = iter(cls(*self.script_args, self))
-                #         else:
-                #             self._script = iter(cls(self))
-                #         break
-            else:
-                self.inside = True
-                if self.script_args:
-                    self._script = run(*self.script_args, self)
-                else:
-                    self._script = run(self)
-                self.inside = False
-                # self.locals = {}
-                # exec(open(path.join(SCRIPTS_DIR, script + ".py")).read(), globals(), self.locals)
-
-                # if "run" not in self.locals:
-                #     assert False
-                # self.inside = True
-                # self._script = self.locals["run"](self.app, self.ctx, self)
-        elif isinstance(script, type):
-            # So we can pass a Level class
-            if self.script_args:
-                self._script = iter(script(*self.script_args, self))
-            else:
-                self._script = iter(script(self))
-        elif callable(script):  # function
+        if callable(script):  # function
             if self.script_args:
                 self._script = script(*self.script_args, self)
             else:
@@ -223,16 +187,16 @@ class Script:
         # extra scripts
         if self.scripts:
             self.scripts.each(lambda x, dt: x.update(dt), dt)
-            self.scripts.slots = list(
-                filter(lambda x: not x.get().done(), self.scripts.slots)
+            self.scripts._slots = list(
+                filter(lambda x: not x.get().done(), self.scripts._slots)
             )
 
         self.inside = False
 
         if ran_script:
             # clear accumulated keys
-            self.key_down = set()
-            self.key_up = set()
+            # self.key_down = set()
+            # self.key_up = set()
             self.dt = 0
 
         return ran_script

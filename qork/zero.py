@@ -21,10 +21,10 @@ camera = None
 view = None
 gui = None
 world = None
-_script_path = None
-data_path = "data"
-_script = None
-_on_run = None
+# _script_path = None
+# data_path = "data"
+# _script = None
+# _on_run = None
 
 # def set_camera(c = None):
 #     global camera
@@ -34,7 +34,7 @@ _on_run = None
 class ZeroMode(Core):
     def preload(self):
         global camera
-        camera = self.camera = add(Camera())
+        camera = self._camera = add(Camera())
 
     @classmethod
     def run(cls):
@@ -46,20 +46,20 @@ class ZeroMode(Core):
 
         super().__init__(**_kwargs)
         qork_app(self)
-        self._data_path = None
         self.script_path = _script_path
         d = path.join(path.dirname(path.dirname(self.script_path)), "data")
-        self.data_path(d)
+        self.data_path([".", d])
 
         bg_color = self.bg_color = (0, 0, 0)
-        shader = self.shader = self.ctx.program(**SHADER_BASIC)
+        self.shader = self.ctx.program(**SHADER_BASIC)
+        # self.gui = Canvas(size=Lazy(lambda: self.size, [self.on_resize]))
+        # self._gui = Canvas()
 
-        world = self.world
         self.preload()
         # "key_event", "mouse_event"
-        hooks = ["init", "render", "update", "script"]
+        # hooks = ["init", "render", "update", "script"]
 
-        self.camera.position = (0, 0, 5)
+        # self._camera.position = (0, 0, 5)
 
         with open(_script) as scriptfile:
             buf = scriptfile.read()
@@ -93,7 +93,8 @@ class ZeroMode(Core):
                         continue
                     if var.endswith("]"):  # array
                         continue
-                    buf = "global " + var + "\n" + buf
+                    if "(" not in var:
+                        buf = "global " + var + "\n" + buf
                 elif lentok >= 2 and tok[1] == "=":
                     if "." in tok[0]:
                         continue
@@ -111,6 +112,7 @@ class ZeroMode(Core):
         def data_path(p=None):
             return self.data_path(p)
 
+        app = qork_app()
         self.globe = {
             **qork.__dict__,
             **easy.__dict__,
@@ -124,16 +126,24 @@ class ZeroMode(Core):
             "V3": glm.vec3,
             "V": V,
             "init": init,
-            "key": qork_app().get_key,
-            "key_down": qork_app().get_key_down,
-            "key_up": qork_app().get_key_up,
-            "keys": qork_app().get_keys,
-            "keys_down": qork_app().get_keys_down,
-            "keys_up": qork_app().get_keys_up,
-            "KEY": qork_app().wnd.keys,
+            "mouse": app.mouse,
+            "hold_click": app.hold_click,
+            "click": app.click,
+            "unclick": app.unclick,
+            "mouse_buttons": app.get_mouse_buttons,
+            "mouse_buttons_pressed": app.get_mouse_buttons_pressed,
+            "mouse_buttons_released": app.get_mouse_buttons_released,
+            "key": app.get_key,
+            "key_pressed": app.get_key_pressed,
+            "key_released": app.get_key_released,
+            "keys": app.get_keys,
+            "keys_pressed": app.get_keys_pressed,
+            "keys_released": app.get_keys_released,
+            "KEY": app.wnd.keys,
             "update": update,
             "render": render,
             "world": world,
+            "gui": gui,
             "camera": camera,
             # "overlap": qork.easy.overlap,
             # "add": qork.easy.add,
@@ -144,6 +154,8 @@ class ZeroMode(Core):
         self.loc = {}
         # exec("import builtins", self.globe, self.loc)
         exec(buf, self.globe, self.loc)
+        self.globe = {**self.globe, **self.loc}
+        self.loc = {}
 
         # g = globals()
         # self.scope = {}
@@ -170,12 +182,12 @@ class ZeroMode(Core):
         #     except KeyError:
         #         globals()[hook] = empty
 
-        self.update_hook = self.globe["update"]
-        # self.scope['update'] = update
-        # self.scope['render'] = render
+        self.update_hook = self.globe.get("update", None)
+        self.init_hook = self.globe.get("init", None)
+        self.render_hook = self.globe.get("render", None)
 
-        if init:
-            init()
+        if self.init_hook:
+            self.init_hook()
 
     # def key_event(self, key, action, modifiers):
     # if key_event:
@@ -183,8 +195,6 @@ class ZeroMode(Core):
 
     def update(self, t):
         super().update(t)
-        # if logic:
-        #     logic(t)
         if self.update_hook:
             exec("update(" + str(t) + ")", self.globe, self.loc)
 
@@ -192,8 +202,6 @@ class ZeroMode(Core):
         super().render(time, t)
         if render:
             render()
-        # if draw:
-        #     draw()
 
 
 def main():

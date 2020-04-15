@@ -3,14 +3,51 @@
 import itertools
 import types
 import glm
+import math
+import enum
+import glm
+from glm import sign
 from functools import reduce
 import operator
 import random
 from .defs import *
 
 
+# WIP
+def mixin(mix, attr=None):
+    def mixin_decorator(cls):
+        for method in mix.__dict__:
+            if method.startswith("__"):
+                continue
+
+            def injected_func(self, *args, **kwargs):
+                func = getattr(getattr(self, attr), method)
+                return func(*args, **kwargs)
+
+            if method not in cls.__dict__:
+                print(cls, method, injected_func)
+                setattr(cls, method, injected_func)
+        return cls
+
+    return mixin_decorator
+
+
 class Dummy:
     pass
+
+
+class ErrorCode(Exception):
+    def __init__(self, code, enum, codes=None):
+        super().__init__()
+        self.code = code
+        self.enum = enum
+        self.codes = None
+
+    def __str__(self):
+        if self.codes:
+            return self.enum.__name__ + ": " + self.code.value
+        else:
+            return self.enum.__name__ + ": " + self.code.name
 
 
 DUMMY = Dummy()
@@ -29,6 +66,26 @@ class Wrapper:
     def do(self, func):
         self.value = func(self.value)
         return self.value
+
+
+class MockApp:
+    def __init__(self):
+        self.cache = None
+        self.ctx = None
+
+
+def map_range(val, r1, r2):
+    return (val - r1[0]) / (r1[1] - r1[0]) * (r2[1] - r2[0]) + r2[0]
+
+
+# def mixin(cls):
+#     def update(self, mixin):
+#         print("hi")
+
+#     cls.__or__ = update
+#     cls.__ior__ = update
+#     cls.__ror__ = update
+#     return cls
 
 
 def is_lambda(func):
@@ -53,11 +110,13 @@ def filename_from_args(args, kwargs=None):
 
 
 def fcmp(a, b):
-    assert type(a) == type(b)
-    if type(a) == float:
+    """
+    Float compare and component-wise float vector compare
+    """
+    if type(a) in (float, int):
         return abs(a - b) < EPSILON
     else:
-        for c in range(len(a)):
+        for c in range(min(len(a), len(b))):
             if abs(a[c] - b[c]) >= EPSILON:
                 return False
         return True
@@ -85,8 +144,12 @@ def recursive_each(types, e, func, path=[]):
 
 
 def to_vec3(*args):
-    if isinstance(args[0], tuple) or isinstance(args[0], list):
-        args = args[0]
+    if args is None:
+        return None
+    if type(args[0]) in (tuple, list):
+        return to_vec3(*args[0])
+    if args[0] is None:
+        return
     lenargs = len(args)
     ta = type(args)
     if ta in (float, int):
@@ -100,10 +163,10 @@ def to_vec3(*args):
     else:
         if lenargs == 3:
             return glm.vec3(*args)
-        elif lenargs == 1:
-            return glm.vec3(args[0])
         elif lenargs == 2:
             return glm.vec3(*args, 0)
+        elif lenargs == 1:
+            return glm.vec3(args[0])
         elif lenargs == 4:
             return glm.vec3(*args[:3])
 
@@ -158,22 +221,155 @@ def randv3xy(scale=1):
     return glm.normalize(glm.vec3(nrand(), nrand(), 0)) * scale
 
 
+random_direction_2D = randv3xy
+
+
 def randv3(scale=1):
     return glm.normalize(glm.vec3(nrand(), nrand(), nrand())) * scale
 
 
-def randf(s=1):
-    return random.random() * s
+def random_direction_2D(speed=1):
+    return randv3xy(speed)
 
 
-def nrand(s=1):
-    return (random.random() * 2 - 1) * s
+def random_direction_3D(speed=1):
+    return randv3(speed)
+
+
+def randb():
+    return random.getrandbits(1)
+
+
+def nrandb():
+    return 1 if random.getrandbits(1) else -1
+
+
+def randf(*args):
+    """
+    Random float value in range [args[0], args[1]]
+    Or: random float value, scaled 
+    """
+    lenargs = len(args)
+    if lenargs == 1:
+        return randf((0, args[0]))
+    return args[0] + random.random() * (args[1] - args[0])
+
+
+def nrand(*args):
+    """
+    Random float in range [-1,1]
+    Or: Random float in range [-s, s]
+    Or: Random float in range [-args[0], args[1]]
+    """
+    lenargs = len(args)
+    if lenargs == 0:
+        return randf(-1, 1)
+    elif lenargs == 1:
+        return randf(-args[0], args[0])  # 0 0 one arg = range scale
+    elif lenargs == 2:
+        return randf(-args[0], args[1])  # 0 1 two args = range start/end
+
+    assert False
+
+
+nrandf = nrand
 
 
 def ncolor(s=1):
     return vec4(randv3(), 1.0)
 
 
+def nbool(s=1):
+    """
+    Converts bool to -1 or 1 based on False or True.
+    Scalable by speciying `s`
+    """
+    return s if b else -s
+
+
+def deadzone(f, dz=0.5):
+    """
+    map a value from a normalized range to one with a deadzone radius dz
+    Values from the deadzone edge and up with will be (0,1)
+    """
+    if type(f) == float:
+        if f <= d:
+            return 0
+        return sign(f) * map_range(abs(f), (dz, 1), (0, 1))
+
+    assert False  # not yet impl
+
+
+def frange(start, stop=None, step=1.0):
+    """
+    Floating-point range(), beware of float precision
+    range(5) -> 0, 1, 2, 3, 4 (f)
+    range(2,5) -> 2, 3, 4 (f)
+    range(5,1,-1) -> 5, 4, 3, 2 (f)
+    """
+    if stop is None:
+        stop = start
+        start = 0.0
+
+    count = 0
+    f = start
+    assert glm.sign(stop - start) == glm.sign(step)
+    while f < stop:
+        yield f
+        f += step
+        count += 1
+
+
+def to_degrees(self, turns):
+    """
+    Converts turns to degrees
+    """
+    return turns * 360.0
+
+
+def degrees(self, deg):
+    """
+    Converts degrees to turns
+    """
+    return d / 360.0
+
+
+def to_radians(self, turns):
+    """
+    Converts turns to radians
+    """
+    return turns * math.tau
+
+
+def radians(self, rad):
+    """
+    Converts radians to turns
+    """
+    return rad / math.tau
+
+
+def weakmethod(func):
+    """
+    Weak Method decorator
+    class A:
+        @weakmethod
+        def test(weakself, *args):
+            pass
+    """
+
+    def f(weakself, *args, **kwargs):
+        self = weakself()
+        if self:
+            return getattr(self, func.__name__)(*args, **kwargs)
+        # elif throws:
+        #     raise throws
+
+    return f
+
+
+FlowControl = enum.Enum("FlowControl", "continue skip repeat restart break exit")
+
+VEC3ZERO = glm.vec3(0)
 M = glm.mat4
 
 # class classproperty:

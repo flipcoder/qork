@@ -5,9 +5,11 @@ from .reactive import *
 from .signal import *
 from glm import vec2, vec3, vec4, mat4
 from .defs import *
+from .corebase import *
 from .util import *
 from .easy import qork_app
 import weakref
+from .script import Script
 
 
 class MockApp:
@@ -16,20 +18,40 @@ class MockApp:
         self.ctx = None
 
 
+class Nodes(Container):
+    def __init__(self, *args):
+        super().__init__()
+        if not args:
+            return
+        self += args
+        cls = args[0].__class__
+        self.scale = lambda *_args: self.do(lambda: cls.scale(self, *_args))
+
+    def do(self, func, *args):
+        for n in self:
+            func(*args)
+
+
 class Node:
     def __init__(self, *args, **kwargs):
         if args:
             arg0 = args[0]
 
-            # sanity check -- make sure count was popped by create()/add()
-            assert not isinstance(arg0, int)
-
-            if arg0 is None or isinstance(arg0, str):  # None or filename
-                self.app = app = qork_app()
-                if not app:
-                    self.app = app = MockApp()
-            else:
+            if isinstance(arg0, CoreBase):
                 app = self.app = arg0
+            else:
+                app = self.app = qork_app()
+            # # sanity check -- make sure count was popped by create()/add()
+            # assert not isinstance(arg0, int)
+
+            # if arg0 is None or isinstance(arg0, str):  # None or filename
+            #     self.app = app = qork_app()
+            #     if not app:
+            #         self.app = app = MockApp()
+            # elif isinstance(arg0, (tuple,float,vec3,vec2)):
+            #     return qork_app()
+            # else:
+            #     app = self.app = arg0
         else:
             self.app = app = qork_app()
             if not app:
@@ -45,10 +67,16 @@ class Node:
         except AttributeError:
             self.fn = filename_from_args(args, kwargs)
 
+        self.scripts = Container()
+
+        self._inherit_transform = Reactive(True)
+        self.root = None
         self.cache = app.cache
         self.ctx = app.ctx
         self.args = args
         self.kwargs = kwargs
+
+        self._size = kwargs.pop("size", None)
 
         self.children = Container()
         self.components = Container()
@@ -63,16 +91,17 @@ class Node:
         self.self_visible = True
         self._parent = None
         self.is_root = False
-        self.transform = mat4(1.0)
+        self._matrix = Reactive(mat4(1.0))
         # self.detach_me = []
         self.deinited = False
 
         self.on_deinit = Signal()
-        self.on_detach = Signal()
+        self.on_detach_child = Signal()  # child arg
+        self.on_detach_self = Signal()  # parent arg
         self.on_event = Signal()
         self.on_state = Signal()
         self.on_update = Signal()
-        self.on_pend = Signal()
+        # self.on_pend = Signal()
 
         self.overlap = Signal()
         self.old_pos = vec3(0)
@@ -84,13 +113,40 @@ class Node:
         self.connections = Connections()
         # self.scripts = Signal()
 
-        self.world_transform = Lazy(self.calculate_world_matrix, [self.on_pend])
+        self._world_matrix = Lazy(
+            self.calculate_world_matrix, [self._matrix, self._inherit_transform]
+        )
 
         # self.local_box = Lazy(self.local_box, [self.on_pend])
         self._local_box = Reactive()
         self._world_box = Lazy(
-            self.calculate_world_box, [self.on_pend, self._local_box]
+            self.calculate_world_box,
+            [self._matrix, self._local_box, self._inherit_transform],
         )
+
+        # allow connections through .on_pend
+        self.on_pend = self._matrix.on_change
+
+        pos = kwargs.pop("position", None) or kwargs.pop("pos", None)
+        rot = kwargs.pop("rot", None) or kwargs.pop("rotation", None)
+        scale = kwargs.pop("scale", None)
+
+        if pos is not None:
+            self.position(pos)
+        if scale is not None:
+            self.scale(to_vec3(scale))
+        if rot is not None:
+            self.rotate(*rot)
+
+        if kwargs:
+            print(kwargs)
+            assert False
+
+    @property
+    def size(self):
+        if isinstance(self._size, (Lazy, Reactive)):
+            return self._size()
+        return self._size
 
     def __iter__(self, recursive=False, onlyself=False):
         yield self
@@ -109,14 +165,14 @@ class Node:
             return None
         r = [vec3(), vec3()]  # min, max
         for i, v in enumerate(lbox):  # min, max
-            r[i] = (self.matrix(WORLD) * vec4(v, 1)).xyz
+            r[i] = (self.world_matrix * vec4(v, 1)).xyz
         return r
 
     def calculate_world_matrix(self):
         if self.parent:
-            return self.parent.matrix(WORLD) * self.transform
+            return self.parent.world_matrix * self.matrix
         else:
-            return self.transform
+            return self.matrix
 
     @property
     def world_box(self):
@@ -131,7 +187,7 @@ class Node:
         return self._local_box()
 
     @local_box.setter
-    def local_box(self, b):
+    def ocal_box(self, b):
         self._local_box = b  # !
 
     def set_local_box(self, b):
@@ -157,8 +213,11 @@ class Node:
     # def max(self, s):
     #     self.box[1] = s
 
-    def connect(self, sig, weak=True):  # for Lazy and Reactive
-        return self.on_pend.connect(sig, weak)
+    def connect(self, sig, weak=True, on_remove=None):  # for Lazy and Reactive
+        return self._matrix.connect(sig, weak, on_remove)
+
+    def disconnect(self, sig):  # for Lazy and Reactive
+        self._matrix -= sig
 
     def __iadd__(self, con):
         self.connections += con
@@ -207,17 +266,54 @@ class Node:
     def event(self, *args, **kwargs):
         self.on_event(*args, **kwargs)
 
-    # def __call__(self, *args, **kwargs):
-    #     self.event(*args, **kwargs)
-    def matrix(self, space=PARENT):
-        assert space != LOCAL
-        if space == PARENT:
-            return self.transform
-        return self.world_transform()
+    @property
+    def inherit_transform(self):
+        return self._inherit_transform()
+
+    @inherit_transform.setter
+    def inherit_transform(self, b):
+        self._inherit_transform(b)
+
+    @property
+    def matrix(self):
+        return self._matrix()
+
+    @matrix.setter
+    def matrix(self, t):
+        self._matrix(t)
+
+    @property
+    def local_matrix(self):
+        return self._matrix()
+
+    @property
+    def parent_matrix(self):
+        p = self.parent
+        if p:
+            self.parent.matrix
+        return glm.mat4(1)
+
+    @property
+    def parent_world_matrix(self):
+        p = self.parent
+        if p:
+            self.parent.world_matrix
+        return glm.mat4(1)
+
+    @local_matrix.setter
+    def local_matrix(self, m):
+        self._matrix(m)
+
+    @property
+    def world_matrix(self):
+        if self.inherit_transform:
+            return self._world_matrix()
+
+    # def matrix(self, space=PARENT):
+    #     return matrix(self, parent)
 
     def rotate(self, turns, axis=Z):
-        self.transform = glm.rotate(self.transform, turns * 2.0 * math.pi, axis)
-        self.pend()
+        self._matrix(glm.rotate(self.matrix, turns * 2.0 * math.pi, axis))
 
     def __str__(self):
         return self.name
@@ -275,11 +371,13 @@ class Node:
 
     def reset_orientation(self, v=None, space=LOCAL):
         for i in range(3):
-            self.transform[i] = vec4(AXIS[i], 0)
+            self._matrix.value[i] = vec4(AXIS[i], 0)
+            self._matrix.pend()
 
     def reset_scale(self):
         for i in range(3):
-            self.transform[i] = vec4(glm.normalize(self.transform[i].xyz))
+            self._matrix.value[i] = vec4(glm.normalize(self._matrix.value[i].xyz), 0)
+            self._matrix.pend()
 
     def rescale(self, v=None, space=LOCAL):
         self.reset_scale()
@@ -291,12 +389,14 @@ class Node:
         if type(v) in (int, float):
             v = vec3(float(v))
         if space == LOCAL:
-            self.transform *= glm.scale(mat4(1.0), v)
+            self._matrix.value *= glm.scale(mat4(1.0), v)
+            self._matrix.pend()
         elif space == PARENT:
-            self.transform = glm.scale(mat4(1.0), v) * self.transform
+            self._matrix.value = glm.scale(mat4(1.0), v) * self.matrix
+            self._tranfform.pend()
         else:
             assert False  # not impl
-        self.world_transform.pend()
+        # self._matrix.pend()
 
     def _position(self, v=None, space=None):
         if type(v) == int and space is None:
@@ -306,13 +406,13 @@ class Node:
             space = PARENT
         if v is None:  # get
             if space == PARENT:
-                return self.world_transform()[3].xyz
+                return self._matrix()[3].xyz
             elif space == WORLD:
-                return vec3(self.world_transform()[3].xyz)
+                return vec3(self._world_matrix()[3].xyz)
             assert False
         assert space == PARENT  # not impl
-        self.transform[3] = vec4(v, 1.0)  # set
-        self.pend()
+        self._matrix.value[3] = vec4(v, 1.0)  # set
+        self._matrix.pend()
         return v
 
     @property
@@ -422,7 +522,7 @@ class Node:
         return self._position(WORLD)
 
     def move(self, *v):
-        self.transform[3] += vec4(to_vec3(*v), 0.0)
+        self.matrix[3] += vec4(to_vec3(*v), 0.0)
         self.pend()
 
     def pend(self):
@@ -433,10 +533,10 @@ class Node:
 
     @property
     def parent(self):
-        if not self._parent:
+        if self._parent is None:
             return None
         p = self._parent()
-        if not p:
+        if p is None:
             self._parent = None
             return None
         return p
@@ -449,10 +549,15 @@ class Node:
         if args and isinstance(args[0], int):
             assert False  # not yet impl here
         if args and isinstance(args[0], Node):
+            if node.parent():
+                self.detach()
+            else:
+                node.parent = None
             node = args[0]
             assert not node.parent
             self.children += node
             node._parent = weakref.ref(self)
+            node.root = node._parent.root or node._parent
             self.pend()
             return node
         else:
@@ -469,9 +574,9 @@ class Node:
         for component in self.components:
             component.update(self, dt)
 
-        if self._accel:
+        if fcmp(self._accel, vec3zero):
             self.velocity += self._accel * dt
-        if self._vel:
+        if fcmp(self._vel, vec3zero):
             self.position += self._vel * dt
 
         self.on_update(self, dt)
@@ -497,20 +602,26 @@ class Node:
     #         if func:
     #             self.on_detach.connect(func, weak=False)
 
-    def detach(self, node=None):
+    def detach(self, node=None, collapse=True):
         if node is None:  # detach self
+            if collapse:
+                wm = self.world_matrix
             if self.parent:
-                self.parent.children -= node
-                assert node not in self.parent.children
+                self.parent.detach(node)
+            if collapse and self.inherit_transform:
+                self.matrix = wm
+
             # self.parent.children = list(
             #     filter(lambda x: x != self, self.parent.children)
             # )
-            self.on_detach()
             self._parent = None
             self.pend()
-        else:
-            assert node._parent == self
-            node.detach()
+        else:  # detach child
+            self.children -= node
+            self.on_detach_child(node)
+            node.on_detach_self(self)
+            # assert node._parent == self
+            # node.detach()
 
     # def safe_remove(self, node=None):
     #     return self.safe_detach(node)
@@ -525,9 +636,12 @@ class Node:
             for ch in self.children:
                 ch.render()
 
-    def clean(self):  # called by Core as an explicit destructor
-        if not self.deinited:
-            self.on_deinit()
-            for ch in self.children:
-                ch.deinit()
-            self.deinited = True
+    # def cleanup(self):  # called by Core as an explicit destructor
+    #     if not self.deinited:
+    #         self.on_deinit()
+    #         for ch in self.children:
+    #             ch.cleanup()
+    #         self.deinited = True
+
+    # def __del__(self):
+    #     self.cleanup()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pytest
 import sys
 import math
 import pytest
@@ -7,18 +7,7 @@ sys.path.append("..")
 
 from qork.when import When
 from qork.defs import *
-
-
-class Counter:
-    def __init__(self):
-        self.x = 0
-
-    def increment(self, v=None):
-        print("inc ", v)
-        if v is not None:
-            self.x += v
-            return
-        self.x += 1
+from test_helpers import *
 
 
 def test_when():
@@ -26,14 +15,13 @@ def test_when():
     c = Counter()
     s = When()
     slot = s.every(2, lambda: c.increment())
-    assert slot.t == 2
+    assert math.isclose(slot.t, 2)
     assert c.x == 0
     s.update(1)
     assert math.isclose(slot.t, 1)
     assert c.x == 0
     s.update(1)
-    print(slot.t)
-    assert math.isclose(slot.t, 2)
+    assert math.isclose(slot.t, 0)
     assert c.x == 1
     s.update(1)
     assert c.x == 1
@@ -51,6 +39,7 @@ def test_once():
     assert c.x == 1
     s.update(10)
     assert c.x == 1
+    s.refresh()
     assert len(s) == 0
     assert slot.count == 1
 
@@ -87,3 +76,7 @@ def test_when_fade2():
     # because of interpolation
     assert c.x == pytest.approx(0.3, EPSILON)
     assert len(s) == 1
+
+
+# def test_when_decorator():
+#     pass

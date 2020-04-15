@@ -4,9 +4,11 @@ MIT License. See LICENSE file for details.
 
 Copyright (c) 2020 Grady O'Connell
 
-Qork is a (very new) 3D/2D python game framework built with ModernGL.
+Qork is a (very new) 3D/2D python OpenGL framework built with ModernGL and other libs.
 
-It is modeled after my C++ game engine, [Qor](https://github.com/flipcoder/qor).
+It is designed to be extremely easy to use for gamejams, prototypes and full projects alike.
+
+My hope is that it will be easy enough to teach real programming and design patterns to kids.
 
 This is VERY NEW and some things are only partially implemented.
 Features will change.  This is not yet stable enough for production.
@@ -19,6 +21,16 @@ Features will change.  This is not yet stable enough for production.
 - State Machines
 - Reactive Types (signals, reactive variables, observer-based lazy evaluation)
 - Sprite Animation
+
+## Integration
+
+- glm
+- pillow
+- bullet
+- CSON
+- cairo (pyCairo)
+- OpenAL (python-openal)
+- pytweening
 
 ## Running Locally (no installation)
 
@@ -221,9 +233,26 @@ node.rotate(.5, Y) # rotate half turn in 3D around Y axis
 
 The second parameter to rotate can take any vector.
 
-### Tags
+### Names and Tags
 
-...
+An object can have any named tag and you can filter objects with these tags.
+
+```
+obj = add()
+
+obj.name = 'Name'
+obj.tag('Tag')
+
+find('Name') # -> [obj]
+find(name='Name') # -> [obj]
+
+find('#Tag') # -> [obj]
+find(tag='Tag') # -> [obj]
+find_one('#Nothing') # -> []
+
+find_one('#Tag') # -> obj
+find_one('#Nothing') # -> None
+```
 
 ### States
 
@@ -242,7 +271,7 @@ camera.position = (0,0,5) # back up the camera by 5 units
 
 camera.fov = 80 # change field of view
 
-camera.mode = '2D' # go into 2D mode (not yet implemented)
+camera.ortho = True # go into ortho mode (not yet implemented)
 ```
 
 ## Input
@@ -268,6 +297,24 @@ Resources are automatically cached for later reuse and reference counted.
 ...
 
 
+## Composites
+
+QOrk supports the composite design pattern.  That means, you can treat containers of
+objects as a single object, where every function
+you call on those trigger the objects with that function.
+
+These objects may of may not be attached with each other in the scenegraph.
+
+```py
+ten_objects = add(10) # make 10 objects
+ten_objects.scale(2) # scale all of these objects by 2
+
+for obj in ten_objects: # loop through them like a list
+    print(obj)
+```
+
+# Scripts
+
 ## Custom Objects
 
 To make your own object classes, inherit from Mesh:
@@ -288,30 +335,28 @@ class Map(Mesh):
 Spritesheet example (cson format):
 
 ```
-type: 'sprite'
+type: 'Sprite'
 size: [ 16, 16 ]
 tile_size: [ 16, 16 ]
 origin: [ 0.5, 0.75 ]
 mask: [ 0.25, 0.5, 0.75, 1.0 ]
 states: ['life', 'direction', 'stance']
-animation:
-    speed: 10.0
-    frames:
-        alive:
-            down:
-                stand: ['default',0]
-                walk: [0,1,0,2]
-            up:
-                stand: [3]
-                walk: [3,4,3,5]
-            left:
-                stand: [6]
-                walk: [6,7,6,8]
-            right:
-                stand: ['hflip',6]
-                walk: ['hflip',6,7,6,8]
-        dead: ['once',9,10,11]
-
+animation_speed: 10.0
+frames:
+    alive:
+        down:
+            stand: ['default',0]
+            walk: [0,1,0,2]
+        up:
+            stand: [3]
+            walk: [3,4,3,5]
+        left:
+            stand: [6]
+            walk: [6,7,6,8]
+        right:
+            stand: ['hflip',6]
+            walk: ['hflip',6,7,6,8]
+    dead: ['once',9,10,11]
 ```
 
 Load a spritesheet with add() and make it do the walk animation:
@@ -320,8 +365,9 @@ Note: This is not yet fully implemented.
 
 ```
 player = add('player.cson')
-player.state('stance','walk')
+player.state['stance'] = 'walk'
 ```
 
 More to come soon!  Work in progress!
+
 

@@ -7,9 +7,10 @@ sys.path.append("..")
 from glm import vec3
 from qork.util import *
 from qork.node import Node
+from qork.corebase import CoreBase
 
 
-class MockApp:
+class MockApp(CoreBase):
     def __init__(self):
         self.ctx = None
         self.cache = None
@@ -52,7 +53,6 @@ def test_node():
     assert child in world
     assert world.children._blocked == 0
     world.children.refresh()
-    print(child in world)
     assert child not in world
 
 

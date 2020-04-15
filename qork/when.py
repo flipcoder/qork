@@ -3,10 +3,7 @@ import weakref
 
 from .signal import Signal
 from .defs import *
-
-
-def map_range(val, r1, r2):
-    return (val - r1[0]) / (r1[1] - r1[0]) * (r2[1] - r2[0]) + r2[0]
+from .util import map_range
 
 
 class When(Signal):

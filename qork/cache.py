@@ -2,16 +2,12 @@
 
 from .factory import *
 from .resource import *
+import sys
 
 
-class CacheException(Exception):
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-
-
-def deref(self):
-    assert self._count > 0
-    self._count -= 1
+# def deref(self):
+#     assert self._count > 0
+#     self._count -= 1
 
 
 class Cache(Factory):
@@ -29,13 +25,13 @@ class Cache(Factory):
         assert fn
         if fn in self.resources:
             r = self.resources[fn]
-            r._count += 1
+            # r._count += 1
             return r
         r = super().__call__(*args, **kwargs)
         r._cache = self
-        r._count = 1
-        assert not hasattr(r, "deref")
-        r.deref = deref
+        # r._count = 1
+        # assert not hasattr(r, "deref")
+        # r.deref = deref
         self.resources[fn] = r
         return r
 
@@ -43,11 +39,12 @@ class Cache(Factory):
         return fn in self.resources
 
     def ensure(self, fn, data):
-        if fn in self.resources:
-            return self.resources[fn]
-        data.deref = lambda data=data: deref(data)
+        res = self.resources.get(fn, None)
+        if res is not None:
+            return res
+        # data.deref = lambda data=data: deref(data)
         data._cache = self
-        data._count = 1
+        # data._count = 1
         if fn:  # empty filenames are temp, don't cache
             self.resources[fn] = data
         return data
@@ -55,12 +52,12 @@ class Cache(Factory):
     def overwrite(self, fn, data):
         if fn in self.resources:
             res = self.resources[fn]
-            if hasattr(res, "cleanup") and callable(res.cleanup):
-                res.cleanup()
+            # if hasattr(res, "cleanup") and callable(res.cleanup):
+            #     res.cleanup()
             del self.resources[fn]
-        data.deref = lambda data=data: deref(data)
+        # data.deref = lambda data=data: deref(data)
         data._cache = self
-        data._count = 1
+        # data._count = 1
         if fn:
             self.resources[fn] = data
         return data
@@ -75,7 +72,12 @@ class Cache(Factory):
             return len(self.resources)
         elif fn == "":
             return 0  # temp resources (empty name) bypass cache
-        return self.resources[fn]._count
+        try:
+            c = sys.getrefcount(self.resources[fn]) - 1
+            print("c", c)
+            return c
+        except KeyError:
+            return 0
 
     # def clear(self):
     #     count = 0
@@ -95,22 +97,21 @@ class Cache(Factory):
         count = 0
         remaining = 0
         for fn, res in self.resources.items():
-            if res._count == 0:
-                if hasattr(res, "cleanup") and callable(res.cleanup):
-                    res.cleanup()
+            c = self.count(res)
+            if c == 0:
+                # if hasattr(res, "cleanup") and callable(res.cleanup):
+                #     res.cleanup()
                 remove.append(fn)
                 count += 1
             else:
                 remaining += 1
-        if remove:
-            self.resources = list(filter(lambda r: r not in remove, self.resources))
-        cleanup_list = self.cleanup_list[:]
-        for res in cleanup_list:
-            if hasattr(res, "cleanup") and callable(res.cleanup):
-                res.cleanup()
+        for fn in remove:
+            del self.resources[fn]
             count += 1
-        self.cleanup_list = []
         return count, remaining
+
+    def __contains__(self, obj):
+        return obj in self.resources
 
     def finish(self):
         total = 0

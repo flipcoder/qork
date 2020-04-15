@@ -80,11 +80,11 @@ class MeshBuffer(Resource):
         return [mini, maxi]
 
     def generate(self):
-        if self.generated:
-            if self.vao:
-                self.vao.delete()
-            if self.vao:
-                self.vbo.delete()
+        # if self.generated:
+        # if self.vao:
+        #     self.vao.delete()
+        # if self.vao:
+        #     self.vbo.delete()
         # self.vbo = self.ctx.buffer(self.data.astype("f4").tobytes())
         self.vbo = self.ctx.buffer(struct.pack("f" * len(self.data), *self.data))
         # self.vbo = self.ctx.buffer(self.data.bytes())
@@ -98,17 +98,17 @@ class MeshBuffer(Resource):
             self.generate()
         self.vao.render(self.mesh_type)
 
-    def cleanup(self):
-        flipped = self.flipped
-        self.flipped = {}  # prevent recursion
-        if self.generated:
-            if self.vao:
-                self.vao.delete()
-            if self.vao:
-                self.vbo.delete()
-        for flip in flipped:
-            flip.cleanup()
-            flip.cleanup = None
+    # def __del__(self):
+    #     flipped = self.flipped
+    #     self.flipped = {}  # prevent recursion
+    # if self.generated:
+    # if self.vao:
+    #     self.vao.delete()
+    # if self.vao:
+    #     self.vbo.delete()
+    # for flip in flipped:
+    # flip.cleanup()
+    # flip.cleanup = None
 
     def hflip(self):
         return self.flip("h")
@@ -156,7 +156,7 @@ class Mesh(Node):
         self.layers = []  # layers -> skins -> images
         self.skin = 0
         self.sprite = None  # frame data here if mesh is a sprite
-        self.animator = None
+        self.material = None
         self.image = None
         self.frame = 0
         self.loaded = False
@@ -167,22 +167,12 @@ class Mesh(Node):
 
         self.data_con = None
 
-        pos = kwargs.get("position") or kwargs.get("pos")
-        scale = to_vec3(kwargs.get("scale"))
         self.filter = kwargs.get("filter")
         self._data = Reactive(kwargs.get("data"))
         # if self._data():
         #     self.connections += self._data().data.connect(self.set_box)
 
-        rot = kwargs.get("rot") or kwargs.get("rotation")
         initfunc = kwargs.get("init")
-
-        if pos is not None:
-            self.position(pos)
-        if scale is not None:
-            self.scale(scale)
-        if rot is not None:
-            self.rotate(*rot)
 
         if initfunc:
             initfunc(self)
@@ -229,10 +219,19 @@ class Mesh(Node):
                 fns = [fn]
             if not self.image:  # mesh image not preloaded?
                 self.layers = self.layers or [[[]]]  # layers -> skins -> images
-                for img in fns:
+                for img_fn in fns:
                     # [0][0] = default layer and skin (image list)
                     # p = path.join(self.app.data_path(), img)
-                    img = Image.open(path.join(self.app.data_path(), img))
+                    img = None
+                    for dp in self.app._data_paths:
+                        try:
+                            img = Image.open(path.join(dp, img_fn))
+                        except FileNotFoundError:
+                            continue
+                        break
+                    if not img:
+                        raise FileNotFoundError
+                    print(img)
                     img = img.convert("RGBA")
                     self.layers[0][0].append(img)
         for layer in self.layers:
@@ -255,7 +254,7 @@ class Mesh(Node):
 
         # does cache already have this mesh?
         if self.data:
-            if not self.cache.has(meshname):
+            if not meshname in self.cache:
                 meshdata = MeshBuffer(
                     self.app,
                     self.data.name,
@@ -270,30 +269,33 @@ class Mesh(Node):
             self.meshdata = None
 
         if self.sprite:
-            self.animator = Animator(self)
+            self.material = Animator(self)
         self.loaded = True
 
-        reset_local_box = lambda d: self.set_local_box(d)
-        self.meshdata_con = self.meshdata.connect(reset_local_box)
-        reset_local_box(self.meshdata.box)
+        self.meshdata_con = self.meshdata.connect(self.set_local_box)
+        self.set_local_box(self.meshdata.box)
 
     def update(self, t):
         super().update(t)
-        if self.animator:
-            self.animator.update(t)
+        if self.material:
+            self.material.update(t)
 
     def render(self):
         assert self.loaded
         if self.visible and self.meshdata:
-            self.app.matrix(self.matrix(WORLD))
+            self.app.matrix(
+                self.world_matrix if self.inherit_transform else self.matrix
+            )
+
+            # TODO: move this to Material/Animator
             for i in range(len(self.layers)):
                 self.layers[i][self.skin][self.frame].use(i)
+
             self.meshdata.render()
         super().render()
 
-    def cleanup(self):
-        for r in self.resources:
-            if r:
-                r.deref()
-        self.resources = []
-        super().cleanup()
+    # def __del__(self):
+    #     super().cleanup()
+    #     for r in self.resources:
+    #         if r:
+    #             r.deref()

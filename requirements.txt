@@ -5,3 +5,6 @@ pyglm
 cson
 overrides
 pycairo
+pytweening
+python-openal
+assign

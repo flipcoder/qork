@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from .util import *
+from .material import Material
 
 
-class Animator:
+class Animator(Material):
     def __init__(self, node):
         self.node = node
         self.app = node.app

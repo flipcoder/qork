@@ -1,33 +1,46 @@
 #!/usr/bin/env qork
-from random import random
 
-# load the ball nd paddles
-paddle = add(2, "player.png", scale=(1, 3, 1))
-ball = add("player.png", scale=0.5)
+camera.ortho = True
+
+# load the ball and paddles
+paddle = add(2, "player.png", scale=(0.2, 0.5, 0.2))
+ball = add("player.png", scale=0.15)
 
 # position the paddles
-paddle[0].x = -5
-paddle[1].x = 5
+paddle[0].x = -1
+paddle[1].x = 1
 
 score = [0] * 2
 
-# move the ball in a random direction at speed of 10
-ball.vel = randv3xy(10)
+speed = 2
+paddle_speed = 2
+
+from glm import normalize
+
+
+def init():
+    global speed
+    speed = 2
+    ball.pos = (0, 0, 0)
+    ball.vel = random_direction_2D(speed)
 
 
 def update(t):
-    if abs(ball.y) > 4:
+    normalize
+    if abs(ball.y) > 1:
+        ball.y = ball.old_pos.y
         ball.vy = -ball.vy
-    if abs(ball.x) > 8:
+    if abs(ball.x) > 1:
         score[ball.x > 0] += 1
-        ball.pos = (0, 0, 0)
-        ball.vel = randv3xy(10)
+        init()
 
-    paddle[0].vy = (key(KEY.W) - key(KEY.S)) * 10
-    paddle[1].vy = (key(KEY.UP) - key(KEY.DOWN)) * 10
+    paddle[0].vy = (key(KEY.W) - key(KEY.S)) * paddle_speed
+    paddle[1].vy = (key(KEY.UP) - key(KEY.DOWN)) * paddle_speed
 
 
 @overlap(ball, paddle)
 def hit(ball, paddle, dt):
+    global speed
     ball.x = ball.old_pos.x
-    ball.vx = -ball.vx
+    speed += 0.2
+    ball.vel = glm.normalize(ball.pos - paddle.pos) * speed

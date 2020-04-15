@@ -87,7 +87,7 @@ class App(Core):
         else:
             v = vec3(0)
 
-        v = (vec4(v, 1.0) * glm.inverse(self.camera.matrix(WORLD))).xyz
+        v = (vec4(v, 1.0) * glm.inverse(self.camera.world_matrix)).xyz
         v.y *= 0.5
         control.velocity = v
 
