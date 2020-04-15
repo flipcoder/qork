@@ -10,6 +10,7 @@ from .util import *
 from .easy import qork_app
 import weakref
 from .script import Script
+from typing import Optional
 
 
 class MockApp:
@@ -70,7 +71,7 @@ class Node:
         self.scripts = Container()
 
         self._inherit_transform = Reactive(True)
-        self.root = None
+        self._root: Optional[weakref.ref] = None
         self.cache = app.cache
         self.ctx = app.ctx
         self.args = args
@@ -90,7 +91,6 @@ class Node:
         self.num = kwargs.pop("num", 0)
         self.self_visible = True
         self._parent = None
-        self.is_root = False
         self._matrix = Reactive(mat4(1.0))
         # self.detach_me = []
         self.deinited = False
@@ -532,14 +532,16 @@ class Node:
                 ch.pend()
 
     @property
+    def root(self):
+        return self._root() if self._root else None
+
+    @root.setter
+    def root(self, r):
+        self._root = weakref.ref(r)
+
+    @property
     def parent(self):
-        if self._parent is None:
-            return None
-        p = self._parent()
-        if p is None:
-            self._parent = None
-            return None
-        return p
+        return self._parent() if self._parent else None
 
     @parent.setter
     def parent(self, p):
@@ -549,15 +551,13 @@ class Node:
         if args and isinstance(args[0], int):
             assert False  # not yet impl here
         if args and isinstance(args[0], Node):
-            if node.parent():
+            if args[0].parent:
                 self.detach()
-            else:
-                node.parent = None
             node = args[0]
             assert not node.parent
             self.children += node
-            node._parent = weakref.ref(self)
-            node.root = node._parent.root or node._parent
+            node.parent = self
+            node._root = self._root # weakref
             self.pend()
             return node
         else:
@@ -574,9 +574,9 @@ class Node:
         for component in self.components:
             component.update(self, dt)
 
-        if fcmp(self._accel, vec3zero):
+        if not fcmp(self._accel, VEC3ZERO):
             self.velocity += self._accel * dt
-        if fcmp(self._vel, vec3zero):
+        if not fcmp(self._vel, VEC3ZERO):
             self.position += self._vel * dt
 
         self.on_update(self, dt)
