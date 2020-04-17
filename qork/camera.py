@@ -9,15 +9,28 @@ from enum import Enum
 class Camera(Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._ortho = Reactive(False)  # nperspective, northo, ortho, perspective
-        self.projection = Lazy(self.calculate_projection, [self._ortho, self.app._size])
+        self._ortho = Reactive(False)
+        self.projection = Lazy(
+            self.calculate_projection,
+            [self._ortho, self.app._size],
+            [self.app.view_projection],
+        )
         # self.connections += self.app.size.connect(self.projection)
         self._fov = Reactive(80 / 360, [self.projection])
         self.view = Lazy(self.calculate_view, [self])
         self.view_projection = Lazy(
             lambda self=self: self.projection() * self.view(),
             [self.projection, self.view],
+            [self.app.view_projection],
         )
+
+        # self.connections += (
+        #     self.projection.connect(self.app.view_projection.pend),
+        #     self.view.connect(self.app.view_projection.pend)
+        # )
+        # self.connections += self.connect(self.app.view_projection.pend)
+
+        self.app.view_projection.pend()
 
     # @depends(self)
     def calculate_view(self):
@@ -48,7 +61,7 @@ class Camera(Node):
         FOV angle is in TURNS, not degrees or radians.
         Use fov(util.degrees(d)) or fov(util.radians(r)) if you prefer.
         """
-        assert EPSILON < v < 1 + EPSILON
+        assert 0 < v < 1 + EPSILON
         self._fov(v)
 
     @property

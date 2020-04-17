@@ -225,7 +225,10 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
             self.key_events[key].on_press()
         elif action == self.K.ACTION_RELEASE:
             self.keys_released.add(key)
-            self.keys.remove(key)
+            try:
+                self.keys.remove(key)
+            except KeyError:
+                pass
             self.key_events[key].on_release()
 
     def mouse_press_event(self, x, y, btn):
@@ -352,9 +355,11 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
     #     return self._camera
 
     def projection(self):
+        # self.renderfrom.projection.pend()
         return self.renderfrom.projection()
 
     def view(self):
+        # self.renderfrom.view.pend()
         return self.renderfrom.view()
 
     def matrix(self, m):

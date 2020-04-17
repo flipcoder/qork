@@ -100,24 +100,30 @@ class Reactive:
         if callbacks:
             for cb in callbacks:
                 try:
-                    self.on_change += lambda *a, **kw: cb.pend()
+                    self.on_pend += cb.pend
                 except AttributeError:
-                    self.on_change += cb
+                    self.on_pend += cb
 
-        if callable(self.value):
-            self.value = self.value()
-            self.pend()
+        # self.is_func = callable(self.value)
+        # self.cached = None
+
+        # if self.is_func:
+        #     self.value = self.value()
+        #     self.pend()
 
     @weakmethod
     def weak_remove(self, slot):
         self.connections -= slot
 
     def set(self, value):
+        # self.is_func = callable(v)
         self.value = self.transform(value) if self.transform else value
+        # if self.is_func:
+        # self.cached = self.value()
 
     def pend(self):
-        self.on_pend()
         self.on_change(self.value)
+        self.on_pend()
 
     def connect(self, func, weak=True, on_remove=None):
         return self.on_pend.connect(func, weak=weak, on_remove=on_remove)
@@ -274,11 +280,16 @@ class Lazy:
             )
         for func in callbacks:
             try:
+                func = func.pend
+            except AttributeError:
+                pass
+
+            try:
                 func.connections
             except AttributeError:
-                self.on_pend += func
+                self += func
                 continue
-            func.connections += self.on_pend(func)
+            func.connections += self.connect(func)
 
     @weakmethod
     def weak_remove(self, slot):
@@ -298,6 +309,14 @@ class Lazy:
             self.value = v
             self.fresh = True
         self.on_pend()
+
+    def __iadd__(self, func):
+        self.on_pend.connect(func, weak=False)
+        return self
+
+    def __isub__(self, func):
+        self.on_pend.disconnect(func)
+        return self
 
     def connect(self, func, weak=True, on_remove=None):
         return self.on_pend.connect(func, weak, on_remove=on_remove)

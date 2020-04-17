@@ -48,6 +48,8 @@ class Node:
             self.fn
         except AttributeError:
             self.fn = filename_from_args(args, kwargs)
+            # if '.' not in self.fn:
+            #     self.connections += self.watch_resource(self.fn, self.modify)
 
         try:
             self.name
@@ -429,7 +431,7 @@ class Node:
 
     @property
     def z(self):
-        return self.position.y
+        return self.position.z
 
     @z.setter
     def z(self, v):

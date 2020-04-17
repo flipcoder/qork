@@ -5,6 +5,10 @@ from .resource import *
 import gc
 import sys
 
+from collections import defaultdict
+
+from qork.reactive import *
+
 
 # def deref(self):
 #     assert self._count > 0
@@ -15,7 +19,8 @@ class Cache(Factory):
     def __init__(self, resolver=None, transformer=None):
         super().__init__(resolver, transformer)
         self.resources = {}
-        self.cleanup_list = []
+        # self.cleanup_list = []
+        self.on_reload = Container(Type=lambda: defaultdict(Signal))
 
     def __len__(self):
         return len(self.resources)

@@ -130,18 +130,16 @@ def queued(func):
 
 
 class Container:
-    def __init__(
-        self, ContainerType=list, ElementType=None, adapter=None, *args, **kwargs
-    ):
+    def __init__(self, adapter=None, Type=list, ElementType=None, *args, **kwargs):
         """
         A safely-iterable container where all operations during iterations
         are queued and processed after.
         Similar to signal, but does not support slot weakrefs.
         """
 
-        self.ContainerType = ContainerType
-        self.ElementType = ElementType
-        self._slots = ContainerType()
+        self.Type = Type
+        self.T = ElementType
+        self._slots = Type()
         self._blocked = 0
         self._queue_blocked = 0
         self._queued = [[], []]  # two ping-pong queues
@@ -171,14 +169,16 @@ class Container:
         return do_decorator
 
     def iterslots(self):
-        if self.ContainerType == dict:
+        if self.Type == list:
+            return iter(self._slots)
+        else:
             return iter(self._slots.values())
-        return iter(self._slots)
 
     def items(self):
-        if self.ContainerType == dict:
+        if self.Type == list:
+            return enumerate(self._slots)
+        else:
             return iter(self._slots.items())
-        return enumerate(self._slots)
 
     def __len__(self):
         return len(self._slots)
@@ -279,7 +279,7 @@ class Container:
     def disconnect(self, slot):
 
         # delete by key
-        if self.ContainerType == dict and type(slot) == str:
+        if self.Type == dict and type(slot) == str:
             del self._slots[slot]
             return
 
@@ -305,7 +305,7 @@ class Container:
     @queued
     def clear_type(self, Type):
         for slot in self._slots:
-            if isinstance(slot.get(), ContainerType):
+            if isinstance(slot.get(), Type):
                 slot.disconnect()
 
     @queued

@@ -9,7 +9,7 @@ except ModuleNotFoundError:
     import qork
 
 import traceback
-import asyncio    
+import asyncio
 
 from qork import *
 from qork.easy import *
@@ -69,13 +69,13 @@ class ZeroMode(Core):
         # "key_event", "mouse_event"
         # hooks = ["init", "render", "update", "script"]
 
-        self.camera.position = (0, 0, 0)
+        # self.camera.position = (0, 0, 0)
 
         if _script:
             with open(_script) as scriptfile:
                 buf = scriptfile.read()
         else:
-            buf = ''
+            buf = ""
         # for func in ['init','render','update','key_event']:
         #     buf = 'global '+func+'\n' + buf
         oldbuf = copy(buf)
@@ -201,7 +201,7 @@ class ZeroMode(Core):
 
         self.prompt = asyncio.get_event_loop()
         self.prompt.create_task(self.run_prompt())
-        
+
         if self.init_hook:
             self.init_hook()
 
@@ -211,7 +211,7 @@ class ZeroMode(Core):
             # with patch_stdout:
             result = None
             try:
-                result = await session.prompt_async('> ')
+                result = await session.prompt_async("> ")
             except:
                 self.quit()
                 break
@@ -227,8 +227,8 @@ class ZeroMode(Core):
         super().update(t)
         if self.update_hook:
             # TODO: make this faster
-            exec('update('+str(t)+')', self.globe, self.loc)
-        
+            exec("update(" + str(t) + ")", self.globe, self.loc)
+
         self.prompt.call_soon(self.prompt.stop)
         self.prompt.run_forever()
 
@@ -245,12 +245,12 @@ def main():
     _script = sys.argv[-1]
     if len(sys.argv) == 1 or _script == __file__:
         _script = None
-        _script_path = '.'
+        _script_path = "."
     else:
         _script_path = _script
         sys.argv = sys.argv[:-1]
     ZeroMode.run()
 
+
 if __name__ == "__main__":
     main()
-
