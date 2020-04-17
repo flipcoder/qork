@@ -118,14 +118,14 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
         # self.on_collision_leave = Signal()
         # self.cleanup_list = []  # nodes awaiting dtor/destuctor/deinit calls
         self.world = Node()
+        self.world.is_root = True
         self.gui = None
-        self._camera = None  # default 3d camera
+        self.renderfrom = self.camera = None  # default 3d camera
         self._view = None  # default gui camera
         self.bg_color = (0, 0, 0)
         self.view_projection = Lazy(lambda: self.projection() * self.view())
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
-        self.renderfrom = self.camera
         self.state = None
 
         # signal dicts
@@ -337,8 +337,8 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
         self.post_update(dt)
         self.ctx.clear(*self.bg_color)
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
-        if self.world and self._camera:
-            self.renderfrom = self._camera
+        if self.world and self.camera:
+            self.renderfrom = self.camera
             self.world.render()
         if self.gui and self.view:
             self.renderfrom = self._view
@@ -348,8 +348,8 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
     # def view_projection(self):
     #     return self.projection() * self.view()
 
-    def camera(self):
-        return self._camera
+    # def camera(self):
+    #     return self._camera
 
     def projection(self):
         return self.renderfrom.projection()

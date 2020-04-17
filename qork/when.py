@@ -7,6 +7,10 @@ from .util import map_range
 
 
 class When(Signal):
+    """
+    Fast time-based event handler
+    """
+
     def __init__(self):
         super().__init__()
         self.time = 0
@@ -16,23 +20,23 @@ class When(Signal):
         Does timer checking on a specific slot
         """
 
-        if isinstance(slot, weakref.ref):
+        if type(slot) == weakref.ref:
             wref = slot
             slot = slot()
             if not slot:
-                if isinstance(self.sig, weakref.ref):
+                if type(self.sig) == weakref.ref:
                     sig = self.sig()
                     if not sig:
                         return
                 self.sig.disconnect(wref)
                 return
 
-        if slot.start_t != 0:  # not infinite timer
-            slot.t -= dt
+        if slot.duration != 0:  # not infinite timer
+            slot.remaining_t -= dt
 
         if slot.fade:
-            slot.t = max(0.0, slot.t)
-            p = 1.0 - (slot.t / slot.start_t)
+            slot.remaining_t = max(0.0, slot.remaining_t)
+            p = 1.0 - (slot.remaining_t / slot.duration)
             slot(
                 map_range(
                     # apply easing functin
@@ -41,21 +45,20 @@ class When(Signal):
                     slot.range_,  # to range
                 )
             )
-            if slot.t < EPSILON:
+            if slot.remaining_t < EPSILON:
                 if slot.fade_end:
                     slot.fade_end()
                 slot.disconnect()  # queued
                 return
         else:
             # not a fade
-            if slot.t < EPSILON:
+            if slot.remaining_t < EPSILON:
                 if not slot.once or slot.count == 0:
                     slot()
                 if slot.once:
                     slot.disconnect()  # queued
                     return
-                slot.t = min(0, slot.t + slot.start_t)  # wrap
-                # warning: events may be missed for small time vals
+                slot.remaining_t = min(0, slot.remaining_t + slot.duration)  # wrap
 
     def update(self, dt):
         """
@@ -63,6 +66,7 @@ class When(Signal):
         """
         self.time += dt
         super().each_slot(lambda slot: self.update_slot(slot, dt))
+        self.refresh()
 
     def __call__(self, dt):
         return self.update(self, dt)
@@ -73,7 +77,7 @@ class When(Signal):
         The first call is in t seconds.
         """
         slot = self.connect(func, weak)
-        slot.t = slot.start_t = float(t)
+        slot.remaining_t = slot.duration = float(t)
         slot.fade = False
         slot.ease = None
         slot.once = once
@@ -84,12 +88,14 @@ class When(Signal):
     def once(self, t, func, weak=True):
         return self.every(t, func, weak, once=True)
 
-    def fade(self, length, range_, func, end_func=None, ease=None, weak=False):
+    def fade(self, duration, range_, func, end_func=None, ease=None, weak=False):
         """
         Every frame, call function with fade value [0,1] fade value
         """
+        if duration < EPSILON:
+            return None
         slot = self.every(0, func, weak=weak)
-        slot.start_t = slot.t = float(length)
+        slot.duration = slot.remaining_t = float(duration)
         slot.fade = True
         slot.fade_end = end_func
         slot.range_ = range_

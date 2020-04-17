@@ -14,7 +14,7 @@ def test_when():
 
     c = Counter()
     s = When()
-    slot = s.every(2, lambda: c.increment())
+    slot = s.every(2, c.increment)
     assert math.isclose(slot.t, 2)
     assert c.x == 0
     s.update(1)
@@ -32,14 +32,14 @@ def test_when():
 def test_once():
     c = Counter()
     s = When()
-    slot = s.once(2, lambda: c.increment())
+    slot = s.once(2, c.increment)
     s.update(1)
     assert c.x == 0
     s.update(1)
     assert c.x == 1
     s.update(10)
     assert c.x == 1
-    s.refresh()
+    # s.refresh() # refresh automatically called by update()
     assert len(s) == 0
     assert slot.count == 1
 
@@ -49,7 +49,7 @@ def test_when_fade():
     c = Counter()
     s = When()
 
-    s.fade(1, (0, 1), lambda t: c.increment(t), None, weak=False)
+    s.fade(1, (0, 1), lambda t: c.increment(t), weak=False)
 
     s.update(0.2)
 
@@ -61,7 +61,7 @@ def test_when_fade2():
     c = Counter()
     s = When()
 
-    a = s.fade(1, (0, 1), lambda t: c.increment(t), ease=None, weak=False)
+    a = s.fade(1, (0, 1), c.increment, ease=None, weak=False)
     assert len(s) == 1
 
     s.update(0.1)

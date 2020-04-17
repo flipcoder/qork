@@ -1,4 +1,4 @@
-#!/usr/bin/pytest
+#!/usr/bin/env pytest
 import pytest
 import sys
 
@@ -8,12 +8,6 @@ from glm import vec3
 from qork.util import *
 from qork.node import Node
 from qork.corebase import CoreBase
-
-
-class MockApp(CoreBase):
-    def __init__(self):
-        self.ctx = None
-        self.cache = None
 
 
 def test_node():
@@ -31,7 +25,7 @@ def test_node():
     assert fcmp(world.position, vec3(0))
 
     # attach
-    child = Node(MockApp())
+    child = Node()
     world.position = vec3(0)
     assert not world.children
     world.attach(child)
@@ -62,6 +56,6 @@ def test_node_velocity():
     assert fcmp(world.position, vec3(0))
     world.update(1)
     assert fcmp(world.position, vec3(1, 2, 3))
-    assert world.position == vec3(1, 2, 3)
+    assert fcmp(world.position, vec3(1, 2, 3))
     world.update(1)
-    assert world.position == vec3(2, 4, 6)
+    assert fcmp(world.position, vec3(2, 4, 6))

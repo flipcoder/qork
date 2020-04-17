@@ -20,7 +20,7 @@ class Resource:
 
     @property
     def count(self):
-        return self.cache.count(self)
+        return self.cache.count(self) - 1
 
     def cleanup(self):
         pass

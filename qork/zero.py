@@ -8,10 +8,17 @@ except ModuleNotFoundError:
     sys.path.append("..")
     import qork
 
+import traceback
+import asyncio    
+
 from qork import *
 from qork.easy import *
 from qork.util import *
 from os import path
+from asyncio import sleep, create_task
+import prompt_toolkit as pt
+from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
 
 key_event = None
 init = None
@@ -34,23 +41,26 @@ world = None
 class ZeroMode(Core):
     def preload(self):
         global camera
-        camera = self._camera = add(Camera())
+        camera = self.camera = add(Camera())
 
     @classmethod
     def run(cls):
-        mglw.run_window_config(cls)
+        try:
+            mglw.run_window_config(cls)
+        except KeyboardInterrupt:
+            pass
 
-    def __init__(self, **_kwargs):
+    def __init__(self, **kwargs):
         global _script_path
         global init, render, update, camera, view, world, gui
 
-        super().__init__(**_kwargs)
+        super().__init__(**kwargs)
         qork_app(self)
         self.script_path = _script_path
         d = path.join(path.dirname(path.dirname(self.script_path)), "data")
         self.data_path([".", d])
 
-        bg_color = self.bg_color = (0, 0, 0)
+        self.bg_color = (0, 0, 0)
         self.shader = self.ctx.program(**SHADER_BASIC)
         # self.gui = Canvas(size=Lazy(lambda: self.size, [self.on_resize]))
         # self._gui = Canvas()
@@ -59,10 +69,13 @@ class ZeroMode(Core):
         # "key_event", "mouse_event"
         # hooks = ["init", "render", "update", "script"]
 
-        # self._camera.position = (0, 0, 5)
+        self.camera.position = (0, 0, 0)
 
-        with open(_script) as scriptfile:
-            buf = scriptfile.read()
+        if _script:
+            with open(_script) as scriptfile:
+                buf = scriptfile.read()
+        else:
+            buf = ''
         # for func in ['init','render','update','key_event']:
         #     buf = 'global '+func+'\n' + buf
         oldbuf = copy(buf)
@@ -144,7 +157,7 @@ class ZeroMode(Core):
             "render": render,
             "world": world,
             "gui": gui,
-            "camera": camera,
+            "camera": self.camera,
             # "overlap": qork.easy.overlap,
             # "add": qork.easy.add,
             "core": self,
@@ -183,20 +196,41 @@ class ZeroMode(Core):
         #         globals()[hook] = empty
 
         self.update_hook = self.globe.get("update", None)
-        self.init_hook = self.globe.get("init", None)
         self.render_hook = self.globe.get("render", None)
+        self.init_hook = self.globe.get("init", None)
 
+        self.prompt = asyncio.get_event_loop()
+        self.prompt.create_task(self.run_prompt())
+        
         if self.init_hook:
             self.init_hook()
 
-    # def key_event(self, key, action, modifiers):
-    # if key_event:
-    # key_event(key, action, modifiers)
+    async def run_prompt(self):
+        session = pt.PromptSession()
+        while True:
+            # with patch_stdout:
+            result = None
+            try:
+                result = await session.prompt_async('> ')
+            except:
+                self.quit()
+                break
+            if result:
+                try:
+                    exec(result, self.globe, self.loc)
+                    # exec('_prompt = ' + result + '; print(_prompt)', self.globe, self.loc)
+                    # print(self.globe['prompt_']
+                except Exception as e:
+                    traceback.print_exc()
 
     def update(self, t):
         super().update(t)
         if self.update_hook:
-            exec("update(" + str(t) + ")", self.globe, self.loc)
+            # TODO: make this faster
+            exec('update('+str(t)+')', self.globe, self.loc)
+        
+        self.prompt.call_soon(self.prompt.stop)
+        self.prompt.run_forever()
 
     def render(self, time, t):
         super().render(time, t)
@@ -207,14 +241,16 @@ class ZeroMode(Core):
 def main():
     global _script
     global _script_path
+    console = True
     _script = sys.argv[-1]
     if len(sys.argv) == 1 or _script == __file__:
-        print("qork <script.py>")
-        sys.exit(1)
-    _script_path = sys.argv[-1]
-    sys.argv = sys.argv[:-1]
+        _script = None
+        _script_path = '.'
+    else:
+        _script_path = _script
+        sys.argv = sys.argv[:-1]
     ZeroMode.run()
-
 
 if __name__ == "__main__":
     main()
+

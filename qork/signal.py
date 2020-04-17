@@ -116,9 +116,9 @@ def passthrough(*args):
 
 
 def queued(func):
-    def a(self, *args, **kwargs):
+    def queued_decorator(self, *args, **kwargs):
         if self._blocked:
-            self._queued[self._queue_blocked].append(lambda: func(self, *args))
+            self.queue(lambda: func(self, *args))
             return Queued
         self._blocked += 1
         r = func(self, *args, **kwargs)
@@ -126,7 +126,7 @@ def queued(func):
         self.refresh()
         return r
 
-    return a
+    return queued_decorator
 
 
 class Container:
@@ -144,21 +144,22 @@ class Container:
         self._slots = ContainerType()
         self._blocked = 0
         self._queue_blocked = 0
-        self._queued = [[], []]
+        self._queued = [[], []]  # two ping-pong queues
 
-        if adapter:
-            self.adapter = adapter
-        else:
-            self.adapter = passthrough
+        self.adapter = adapter
 
-    def run_or_queue(self):
+    def queue_size(self):
+        return len(self._queued[0]) + len(self._queued[1])
+
+    # decorator
+    def do(self):
         """
-        @mycontainer.run_or_queue
+        @mycontainer.do
         def do_this_now_or_queue_if_blocked():
             pass
         """
 
-        def with_decorator(func):
+        def do_decorator(func):
             if self._blocked:
                 self._queued[self._queue_blocked].append(lambda: func(self, *args))
                 return
@@ -167,7 +168,7 @@ class Container:
             self._blocked -= 1
             self.refresh()
 
-        return with_decorator
+        return do_decorator
 
     def iterslots(self):
         if self.ContainerType == dict:
@@ -198,10 +199,10 @@ class Container:
 
     def refresh(self):
         if self._blocked == 0:
-            self._blocked += 1
+            # self._blocked += 1
             self._queue_blocked += 1
 
-            i = 0
+            i = False
             while True:
                 if self._queued[i]:
                     for func in self._queued[i]:
@@ -209,11 +210,11 @@ class Container:
                     self._queued[i] = []
                 else:
                     break
-                i += 1
+                i = not i  # ping pong
 
-            self._queued = [[], []]
+            assert self._queued == [[], []]
             self._queue_blocked -= 1
-            self._blocked -= 1
+            # self._blocked -= 1
             return True
         return False
 
@@ -332,12 +333,10 @@ class Container:
         self.clear()
 
     def __enter__(self):
-        # assert not self._blocked
         self._blocked += 1
 
     def __exit__(self, typ, val, tb):
         self._blocked -= 1
-        # assert not self._blocked
         if self._blocked == 0:
             self.refresh()
 
@@ -368,7 +367,7 @@ class Signal(Container):
         self.refresh()
 
     def queue(self, func):
-        self._queued.append(func)
+        self._queued[self._queue_blocked].append(func)
 
     def refresh(self):
         if self._blocked == 0:
@@ -430,6 +429,12 @@ class Signal(Container):
         self.disconnect(func)
         return self
 
+    def _adapt(self, func):
+        """
+        Returns the function with applied adapter
+        """
+        return self.adapter(func) if self.adapter else func
+
     def connect(self, func, weak=True, once=False, on_remove=None):
 
         if isinstance(func, (list, tuple)):
@@ -443,10 +448,12 @@ class Signal(Container):
             if isinstance(func, Slot):
                 slot = func
             else:
-                slot = Slot(self.adapter(func), self)
+                slot = Slot(self._adapt(func))
             slot.once = once
             wslot = weakref.ref(slot) if weak else slot
-            self._queued.append(lambda wslot=wslot: self._slots.append(wslot))
+            self._queued[self._queue_blocked].append(
+                lambda wslot=wslot: self._slots.append(wslot)
+            )
             if on_remove:
                 slot.on_remove.connect(on_remove, weak=False)
             self.on_connect(slot)
@@ -463,7 +470,7 @@ class Signal(Container):
             return slot
 
         # make slot from func
-        slot = Slot(self.adapter(func), self)
+        slot = Slot(self._adapt(func), self)
         slot.once = once
         wslot = weakref.ref(slot) if weak else slot
         self._slots.append(wslot)
@@ -477,7 +484,7 @@ class Signal(Container):
 
     def disconnect(self, slot):
         if self._blocked:
-            self._queued.append(lambda slot=slot: self.disconnect(slot))
+            self.queue(lambda slot=slot: self.disconnect(slot))
             return None
 
         if isinstance(slot, weakref.ref):
@@ -532,19 +539,18 @@ class Signal(Container):
 
     def clear_type(self, Type):
         if self._blocked:
-            self._queued.append(lambda: self.clear_type())
+            self.queue(self.clear_type)
             return None
 
         with self:
-            self._blocked += 1
             for slot in self._slots:
                 if isinstance(slot.get(), Type):
                     slot.disconnect()
 
     def filter(self, func):
         if self._blocked:
-            self._queued.append(lambda f: self.filter(func))
-            return None
+            self.queue(lambda f=func: self.filter(func))
+            return None  # return promise?
 
         with self:
             for slot in self._slots:

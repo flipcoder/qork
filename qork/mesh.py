@@ -231,7 +231,7 @@ class Mesh(Node):
                         break
                     if not img:
                         raise FileNotFoundError
-                    print(img)
+                    # print(img)
                     img = img.convert("RGBA")
                     self.layers[0][0].append(img)
         for layer in self.layers:

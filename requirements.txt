@@ -8,3 +8,4 @@ pycairo
 pytweening
 python-openal
 assign
+ptpython

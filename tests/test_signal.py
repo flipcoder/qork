@@ -1,15 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env pytest
 import sys
 
 sys.path.append("..")
 
 from qork.signal import Signal
+from test_helpers import *
 
 
 def test_signal():
 
     s = Signal()
-    hello = s.connect(lambda: print("hello ", end=""), weak=False)
+    hello = s.connect(lambda: print("hello ", end=""))
     s.connect(lambda: print("world"), weak=False)
     assert len(s) == 2
     s()  # 'hello world'
@@ -25,14 +26,17 @@ def test_signal():
 def test_signal_queue():
 
     # queued connection
+    c = Counter()
     s = Signal()
     s._blocked += 1
-    a = s.connect(lambda: print("queued"), weak=False)
-    assert len(s._queued) == 1
+    a = s.connect(c.increment)
+    assert s.queue_size() == 1
+    assert c() == 1
     s()  # nothing
     s._blocked -= 1
-    for slot in s._queued:
-        slot()
+    for func in s._queued[0]:
+        print(func)
+        func()
     s._queued = []
     s()  # "queued"
 
@@ -40,7 +44,7 @@ def test_signal_queue():
     s._blocked += 1
     a.disconnect()
     assert len(s) == 1  # still attached
-    assert len(s._queued) == 1
+    assert s.queue_size() == 1
     s._blocked -= 1
     for q in s._queued:
         q()

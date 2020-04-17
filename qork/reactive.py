@@ -6,6 +6,30 @@ from .signal import *
 import glm
 import enum
 
+"""
+Reactive and Lazy objects and decorators using signals:
+
+x = Reactive(lambda val: print('x is', val))
+x(5) # 'x is 5'
+x += lambda: print('you changed x!')
+x(6) # 'x is 5', 'You changed x!'
+
+Using Properties:
+
+    class Foobar:
+        def __init__(self):
+            self._x = Reactive(0, lambda x: print('you changed x!'))
+
+    foobar = Foobar()
+    foobar.x += lambda: print('you changed x!')
+    foobar.x = 5 # you changed x!
+
+class Foobar:
+    @lazy(multiple)
+    def x(self):
+        return math.pi * multiple
+"""
+
 
 class WeakLambda:
     """
@@ -21,7 +45,8 @@ class WeakLambda:
         self.func = func
         self.dead = False
         # self.errors = errors
-        self.capture = tuple(weakref.ref(var) for var in capture)
+
+        self.observe = tuple(weakref.ref(var) for var in capture)
 
     def __call__(self, *args):
         if self.func is None:
@@ -46,21 +71,49 @@ class Reactive:
     Variable with an on_change() signal
     """
 
-    def __init__(self, value=None, callbacks=[], retrigger=False, transform=None):
+    def __init__(
+        self, value=None, callbacks=[], observe=[], retrigger=False, transform=None
+    ):
+        observe = list(observe or [])
+        callbacks = list(callbacks or [])
+
         self.value = value
         self.transform = transform
         self.on_change = Signal()
         self.on_pend = Signal()  # same as on_change but no change value
         self.retrigger = retrigger
+        self.connections = Container()
+
+        if not observe:
+            try:
+                if self.func._observe is not None:
+                    observe += self.func._observe
+            except AttributeError:
+                pass
+        cls = self.__class__
+        for sig in observe:
+            self.connections += sig.connect(
+                lambda *a, **kwa: self.pend(),
+                on_remove=lambda s, ws=weakref.ref(self): cls.weak_remove(ws, s),
+            )
 
         if callbacks:
-            self.on_change += callbacks
+            for cb in callbacks:
+                try:
+                    self.on_change += lambda *a, **kw: cb.pend()
+                except AttributeError:
+                    self.on_change += cb
+
+        if callable(self.value):
+            self.value = self.value()
+            self.pend()
+
+    @weakmethod
+    def weak_remove(self, slot):
+        self.connections -= slot
 
     def set(self, value):
-        if not self.transform:
-            self.value = value
-        else:
-            self.value = self.transform(value)
+        self.value = self.transform(value) if self.transform else value
 
     def pend(self):
         self.on_pend()
@@ -70,12 +123,18 @@ class Reactive:
         return self.on_pend.connect(func, weak=weak, on_remove=on_remove)
 
     def __iadd__(self, func):
-        self.on_change += func
+        if callable(func):
+            self.on_change += func
+        else:
+            self(self.value + func)  # func is just a value, do +=
         return self
 
     def __isub__(self, func):
-        self.on_pend -= func
-        self.on_change -= func
+        if callable(func):
+            self.on_pend -= func
+            self.on_change -= func
+        else:
+            self(self.value - func)
         return self
 
     def __bool__(self):
@@ -89,14 +148,14 @@ class Reactive:
         self.value = value
         # self.on_change(value, oldvalue)  # new, old
         if not self.retrigger or oldvalue != self.value:
-            self.on_change(value)
+            self.pend()
 
     def do(self, func):
         if not self.retrigger:
             oldvalue = self.value
         self.value = func(self.value)
         if not self.retrigger or oldvalue != self.value:
-            self.on_change(self.value)
+            self.pend()
         return self.value
 
     # for reactive lists + dictionaries:
@@ -106,23 +165,23 @@ class Reactive:
 
     def __setitem__(self, idx, value):
         self.value[idx] = value
-        self.on_change(self.value)
+        self.pend()
 
     def append(self, idx, value):
         self.value.add(value)
-        self.on_change(self.value)
+        self.pend()
 
     def pop(self, *args):
         self.value.pop(*args)
-        self.on_change(self.value)
+        self.pend()
 
     def push(self, *args):
         self.value.push(*args)
-        self.on_change(self.value)
+        self.pend()
 
     def append(self, *args):
         self.value.append(*args)
-        self.on_change(self.value)
+        self.pend()
 
 
 class Rvec(Reactive):
@@ -174,6 +233,7 @@ class Rvec(Reactive):
 
     @z.setter
     def z(self, newz):
+        old = self.value
         self.value.z = s
         if old.z != newz:
             self.on_change(self.value, old)
@@ -183,21 +243,31 @@ class Rvec(Reactive):
         return self.value.w
 
     @w.setter
-    def w(self, newz):
+    def w(self, neww):
+        old = self.value
         self.value.w = s
         if old.w != neww:
-            self.on_change(self.value, old)
+            self.pend(self.value, old)
 
 
 class Lazy:
-    def __init__(self, func, capture=[], callbacks=[]):
+    def __init__(self, func, observe=[], callbacks=[]):
+        observe = list(observe or [])  # python mutable default param bug
+        callbacks = list(callbacks or [])  # "
+
         self.func = func
         self.fresh = False
         self.value = None
         self.on_pend = Signal()
         self.connections = Connections()
+        if not observe:
+            try:
+                if self.func.observe is not None:
+                    observe += self.func.observe
+            except AttributeError:
+                pass
         cls = self.__class__
-        for sig in capture:
+        for sig in observe:
             self.connections += sig.connect(
                 self.pend,
                 on_remove=lambda s, ws=weakref.ref(self): cls.weak_remove(ws, s),
@@ -206,30 +276,31 @@ class Lazy:
             try:
                 func.connections
             except AttributeError:
-                self.on_pend.connect(func, weak=False)
+                self.on_pend += func
                 continue
             func.connections += self.on_pend(func)
 
     @weakmethod
     def weak_remove(self, slot):
-        self.connections.remove(slot)
+        self.connections -= slot
 
-    def __call__(self):
-        self.ensure()
-        return self.value
+    def __call__(self, v=DUMMY):
+        # get
+        if v is DUMMY:
+            self.ensure()
+            return self.value
 
-    def connect(self, func, weak=True, on_remove=None):
-        return self.on_pend.connect(func, weak, on_remove=on_remove)
-
-    def set(self, v):
+        # set
         if callable(v):
             self.func = v
             self.fresh = False
-            self.on_pend()
         else:
             self.value = v
             self.fresh = True
-            self.on_pend()
+        self.on_pend()
+
+    def connect(self, func, weak=True, on_remove=None):
+        return self.on_pend.connect(func, weak, on_remove=on_remove)
 
     def pend(self, *args, **kwargs):  # args just in case signal calls this
         self.on_pend()
@@ -248,25 +319,77 @@ class Lazy:
     def available(self):
         return self.value is not None
 
-    def get(self):
-        return self.value
+    # def get(self):
+    #     return self.value
 
 
-def lazy(cls):
+def observe(*deps):
+    def observe_decorator(func):
+        func.observe = deps
+        return func
+
+    return observe_decorator
+
+
+def callbacks(*callbacks):
+    def callback_decorator(func):
+        func.callbacks = callbacks
+        return func
+
+    return observe_decorator
+
+
+def lazy(*deps, **kwargs):
+    def lazy_decorator(func):
+        return Lazy(
+            func,
+            observe=deps or kwargs.get("observe", []),
+            callbacks=deps or kwargs.get("callbacks", []),
+        )
+
+    return lazy_decorator
+
+
+def reactive(*args, **kwargs):
     """
-    Lazy function decorator
-    Captures reactive dependencies and generates Lazy(func)
+    INCOMPLETE
+    
+    Class or Function Decorator
+    For classes: Generate props/setters for all the reactive "_members" of the class
+    The class must "templatable", meaning a default arg version must contain
+    the reactive members you wish to expose to the overall class
     """
+    if args and type(args[0]) == type:
+        # class decorator
+        # INCOMPLETE
+        cls = args[0]
 
+        def reactive_class_decorator(cls):
+            template = cls()  # TODO: check for dataclass members?
+            for name, r in template.__dict__.items():
+                if not name.startswith("__") and name[0] == "_":
+                    if not isinstance(r, Reactive):
+                        continue
+                    prop = property(r)
+                    setattr(cls, name[1:], prop)
+                    prop.setter(r)
 
-def reactive(cls):
-    """
-    Class Decorator
-    Generate props/setters for all the reactive "_members" of the class
-    """
+        return reactive_class_decorator
 
-    def wrapper():
+    # function decorator
 
-        return cls
+    # observe arguments unless a function is given (this means no decorator params)
+    obs = args if args and not callable(args[0]) else []
 
-    return wrapper
+    def reactive_decorator(func):
+        return Reactive(
+            func,
+            observe=obs or kwargs.get("observe", []),
+            callbacks=kwargs.get("callbacks", []),
+        )
+
+    if args and callable(args[0]):  # function (no decorator params)
+        assert len(args) == 1
+        return lazy_decorator(func)
+
+    return lazy_decorator

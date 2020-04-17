@@ -1,4 +1,4 @@
-#!/usr/bin/pytest
+#!/usr/bin/env pytest
 import pytest
 import sys
 

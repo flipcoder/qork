@@ -19,20 +19,6 @@ class MockApp:
         self.ctx = None
 
 
-class Nodes(Container):
-    def __init__(self, *args):
-        super().__init__()
-        if not args:
-            return
-        self += args
-        cls = args[0].__class__
-        self.scale = lambda *_args: self.do(lambda: cls.scale(self, *_args))
-
-    def do(self, func, *args):
-        for n in self:
-            func(*args)
-
-
 class Node:
     def __init__(self, *args, **kwargs):
         if args:
@@ -57,16 +43,16 @@ class Node:
             self.app = app = qork_app()
             if not app:
                 app = self.app = MockApp()
-
-        try:
-            self.name
-        except AttributeError:
-            self.name = kwargs.get("name") or self.__class__.__name__
         try:
             # filename injected before super() call or resolved?
             self.fn
         except AttributeError:
             self.fn = filename_from_args(args, kwargs)
+
+        try:
+            self.name
+        except AttributeError:
+            self.name = kwargs.pop("name", None) or self.fn or self.__class__.__name__
 
         self.scripts = Container()
 
@@ -91,7 +77,7 @@ class Node:
         self.num = kwargs.pop("num", 0)
         self.self_visible = True
         self._parent = None
-        self._matrix = Reactive(mat4(1.0))
+        self._matrix = Reactive(mat4(1.0), [self])
         # self.detach_me = []
         self.deinited = False
 
@@ -101,7 +87,7 @@ class Node:
         self.on_event = Signal()
         self.on_state = Signal()
         self.on_update = Signal()
-        # self.on_pend = Signal()
+        self.on_pend = Signal()
 
         self.overlap = Signal()
         self.old_pos = vec3(0)
@@ -114,7 +100,7 @@ class Node:
         # self.scripts = Signal()
 
         self._world_matrix = Lazy(
-            self.calculate_world_matrix, [self._matrix, self._inherit_transform]
+            self.calculate_world_matrix, [self._matrix, self._inherit_transform, self]
         )
 
         # self.local_box = Lazy(self.local_box, [self.on_pend])
@@ -125,7 +111,6 @@ class Node:
         )
 
         # allow connections through .on_pend
-        self.on_pend = self._matrix.on_change
 
         pos = kwargs.pop("position", None) or kwargs.pop("pos", None)
         rot = kwargs.pop("rot", None) or kwargs.pop("rotation", None)
@@ -214,13 +199,21 @@ class Node:
     #     self.box[1] = s
 
     def connect(self, sig, weak=True, on_remove=None):  # for Lazy and Reactive
-        return self._matrix.connect(sig, weak, on_remove)
+        return self.on_pend.connect(sig, weak, on_remove)
 
     def disconnect(self, sig):  # for Lazy and Reactive
-        self._matrix -= sig
+        self.on_pend -= sig
+        # self._matrix -= sig
 
-    def __iadd__(self, con):
-        self.connections += con
+    def __iadd__(self, c):
+        if isinstance(c, Component):
+            # component
+            self.components += c
+        elif isinstance(c, Slot):
+            self.connections += c
+        else:
+            # on_pend signal
+            self.on_pend += c
 
     def __isub__(self, con):
         self.connections -= con
@@ -233,7 +226,7 @@ class Node:
 
     def __getitem__(self, name):
         # warning: idx may change across frames
-        if isinstance(name, int):  # name is idx
+        if type(name) is int:  # name is idx
             return self.children[name]
         with self.children:
             for ch in self.children:
@@ -279,8 +272,8 @@ class Node:
         return self._matrix()
 
     @matrix.setter
-    def matrix(self, t):
-        self._matrix(t)
+    def matrix(self, m):
+        self._matrix(m)
 
     @property
     def local_matrix(self):
@@ -308,6 +301,8 @@ class Node:
     def world_matrix(self):
         if self.inherit_transform:
             return self._world_matrix()
+        else:
+            return self._matrix()
 
     # def matrix(self, space=PARENT):
     #     return matrix(self, parent)
@@ -391,12 +386,11 @@ class Node:
         if space == LOCAL:
             self._matrix.value *= glm.scale(mat4(1.0), v)
             self._matrix.pend()
-        elif space == PARENT:
-            self._matrix.value = glm.scale(mat4(1.0), v) * self.matrix
-            self._tranfform.pend()
+        # elif space == PARENT:
+        #     self._matrix.value = glm.scale(mat4(1.0), v) * self.matrix
+        #     self.pend()
         else:
             assert False  # not impl
-        # self._matrix.pend()
 
     def _position(self, v=None, space=None):
         if type(v) == int and space is None:
@@ -522,8 +516,8 @@ class Node:
         return self._position(WORLD)
 
     def move(self, *v):
-        self.matrix[3] += vec4(to_vec3(*v), 0.0)
-        self.pend()
+        self._matrix.value[3] += vec4(to_vec3(*v), 0.0)
+        self._matrix.pend()
 
     def pend(self):
         self.on_pend()
@@ -557,7 +551,7 @@ class Node:
             assert not node.parent
             self.children += node
             node.parent = self
-            node._root = self._root # weakref
+            node._root = self._root  # weakref
             self.pend()
             return node
         else:
@@ -615,7 +609,6 @@ class Node:
             #     filter(lambda x: x != self, self.parent.children)
             # )
             self._parent = None
-            self.pend()
         else:  # detach child
             self.children -= node
             self.on_detach_child(node)

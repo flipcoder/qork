@@ -89,9 +89,9 @@ def test_cache_clean():
     # res.__del__ = lambda self, x=cleans: x.do(increment)
     assert cache.has("test.png")
     # assert cleans() == 0
-    assert cache.count(res) == 1
+    assert cache.count("test.png") == 1
     cache.clean()
-    assert cache.count(res) == 1
+    assert cache.count("test.png") == 1
     # assert cleans() == 0  # should not clean
     res = None
     # assert res._count == 0

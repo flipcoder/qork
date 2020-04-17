@@ -2,6 +2,7 @@
 
 from .factory import *
 from .resource import *
+import gc
 import sys
 
 
@@ -15,6 +16,9 @@ class Cache(Factory):
         super().__init__(resolver, transformer)
         self.resources = {}
         self.cleanup_list = []
+
+    def __len__(self):
+        return len(self.resources)
 
     def __call__(self, *args, **kwargs):
         fn = None
@@ -70,11 +74,14 @@ class Cache(Factory):
     def count(self, fn=None):
         if fn is None:
             return len(self.resources)
-        elif fn == "":
+        if fn == "":
             return 0  # temp resources (empty name) bypass cache
+        # fn is resource
+        if isinstance(fn, Resource):
+            return sys.getrefcount(fn) - 2
+        # fn is filename
         try:
-            c = sys.getrefcount(self.resources[fn]) - 1
-            print("c", c)
+            c = sys.getrefcount(self.resources[fn]) - 2
             return c
         except KeyError:
             return 0
@@ -94,31 +101,38 @@ class Cache(Factory):
     #     return count
     def clean(self):
         remove = []
-        count = 0
         remaining = 0
         for fn, res in self.resources.items():
-            c = self.count(res)
+            c = self.count(res) - 1  # loop
+            assert c >= 0
             if c == 0:
                 # if hasattr(res, "cleanup") and callable(res.cleanup):
                 #     res.cleanup()
                 remove.append(fn)
-                count += 1
             else:
                 remaining += 1
         for fn in remove:
             del self.resources[fn]
-            count += 1
-        return count, remaining
+        return len(remove), remaining
 
     def __contains__(self, obj):
         return obj in self.resources
 
+    def flush(self):
+        self.resources = {}
+        gc.collect()
+
     def finish(self):
+        """
+        Sanity-check function to make sure all resources were cleared
+        """
         total = 0
+
         while True:
             count, remaining = self.clean()
             total += count
             if remaining == 0:
                 break
-            assert count > 0  # resource leak
+            if count == 0:
+                break
         return total
