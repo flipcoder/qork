@@ -8,8 +8,6 @@ Qork is a (very new) 3D/2D python OpenGL framework built with ModernGL and other
 
 It is designed to be extremely easy to use for gamejams, prototypes and full projects alike.
 
-My hope is that it will be easy enough to teach real programming and design patterns to kids.
-
 This is VERY NEW and some things are only partially implemented.
 Features will change.  This is not yet stable enough for production.
 
@@ -299,7 +297,7 @@ Resources are automatically cached for later reuse and reference counted.
 
 ## Composites
 
-QOrk supports the composite design pattern.  That means, you can treat containers of
+Qork supports the composite design pattern.  That means, you can treat containers of
 objects as a single object, where every function
 you call on those trigger the objects with that function.
 

@@ -8,4 +8,4 @@ pycairo
 pytweening
 python-openal
 assign
-ptpython
+prompt-toolkit
