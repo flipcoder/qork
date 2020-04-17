@@ -24,11 +24,11 @@ Features will change.  This is not yet stable enough for production.
 
 - glm
 - pillow
-- bullet
 - CSON
-- cairo (pyCairo)
-- OpenAL (python-openal)
-- pytweening
+- cairo (pyCairo) (PARTIAL)
+- bullet (SOON)
+- OpenAL (python-openal) (SOON)
+- pytweening (SOON)
 
 ## Running Locally (no installation)
 
