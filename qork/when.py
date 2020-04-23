@@ -1,10 +1,79 @@
 #!/usr/bin/env python
 import weakref
 
-from .signal import Signal
+from .signal import Signal, Slot
 from .defs import *
 from .util import map_range
 
+class WhenSlot(Slot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.remaining = None
+        self.duration = None
+        self.fade = None
+        self.fade_end = None
+        self.ease = None
+        self.speed = 1.0
+        self.range = None
+    def set_speed(self, s):
+        self.speed = s
+
+class Timer(Signal):
+    def __init__(self, duration, speed=1.0, when=None, lifespan=None, autoreset=True):
+        super().__init__()
+        self.duration = duration
+        self.remaining = duration
+        self.autoreset = autoreset
+        self.speed = speed
+
+        # not yet implemented
+        assert lifespan is None
+        assert when is None
+
+    def __iadd__(self, t):
+        if callable(t):
+            self.signal.connect(f, weak=False)
+        else:
+            self.remaining += t
+        return self
+    
+    def __isub__(self, t):
+        if callable(t):
+            self.signal.disconnect(f)
+        else:
+            self.remaining -= t
+        return self
+
+    def update(self, dt=None, autoreset=None):
+        return self(dt, autoreset)
+        
+    def __call__(self, dt=None, autoreset=None):
+        """
+        Advance timer by dt and return True if elapsed (and reset).
+        If no dt is provided, trigger the timer
+        :param dt: delta time in seconds
+        :param autoreset: whether to reset timer on True (elapsed)
+        """
+        if dt is None:
+            self.remaining = 0
+        else:
+            self.remaining -= dt * self.speed
+        if self.remaining <= 0:
+            if autoreset is False or self.autoreset:
+                self.remaining = max(0, self.remaining + self.duration)
+            super(Signal, self).__call__(self)
+            return True
+        return False
+    
+    def __contains__(self, s):
+        """
+        Would timer elapse in s seconds?
+        Example: if dt in timer: # will elapse
+        """
+        return s >= self.remaining
+    
+    def __bool___(self):
+        return self.remaining <= 0
 
 class When(Signal):
     """
@@ -12,7 +81,7 @@ class When(Signal):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__(T=WhenSlot)
         self.time = 0
 
     def update_slot(self, slot, dt):
@@ -32,11 +101,11 @@ class When(Signal):
                 return
 
         if slot.duration != 0:  # not infinite timer
-            slot.remaining_t -= dt
+            slot.remaining -= dt * slot.speed
 
         if slot.fade:
-            slot.remaining_t = max(0.0, slot.remaining_t)
-            p = 1.0 - (slot.remaining_t / slot.duration)
+            slot.remaining = max(0.0, slot.remaining)
+            p = 1.0 - (slot.remaining / slot.duration)
             slot(
                 map_range(
                     # apply easing functin
@@ -45,41 +114,45 @@ class When(Signal):
                     slot.range_,  # to range
                 )
             )
-            if slot.remaining_t < EPSILON:
+            if slot.remaining < EPSILON:
                 if slot.fade_end:
                     slot.fade_end()
                 slot.disconnect()  # queued
                 return
         else:
             # not a fade
-            if slot.remaining_t < EPSILON:
+            if slot.remaining < EPSILON:
                 if not slot.once or slot.count == 0:
                     slot()
                 if slot.once:
                     slot.disconnect()  # queued
                     return
-                slot.remaining_t = min(0, slot.remaining_t + slot.duration)  # wrap
+                slot.remaining = max(0.0, slot.remaining + slot.duration)  # wrap
 
     def update(self, dt):
         """
         Advance time by dt
         """
         self.time += dt
-        super().each_slot(lambda slot: self.update_slot(slot, dt))
+        for slot in self.slots:
+            self.update_slot(slot, dt)
         self.refresh()
 
     def __call__(self, dt):
         return self.update(self, dt)
 
-    def every(self, t, func, weak=True, once=False):
+    def every(self, duration, func, weak=True, once=False):
         """
         Every t seconds, call func.
         The first call is in t seconds.
         """
         slot = self.connect(func, weak)
-        slot.remaining_t = slot.duration = float(t)
-        slot.fade = False
-        slot.ease = None
+        # if callable(t):
+        #     self.duration_func = t
+        #     t = t()
+        # else:
+        #     self.duration_func = None
+        slot.duration = slot.remaining = float(duration)
         slot.once = once
         # slot.fade_end = None
         # slot.range_ = None
@@ -95,9 +168,10 @@ class When(Signal):
         if duration < EPSILON:
             return None
         slot = self.every(0, func, weak=weak)
-        slot.duration = slot.remaining_t = float(duration)
+        slot.duration = slot.remaining = float(duration)
         slot.fade = True
         slot.fade_end = end_func
         slot.range_ = range_
         slot.ease = ease
         return slot
+

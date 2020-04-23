@@ -5,29 +5,33 @@ import sys
 # if __debug__:
 #     sys.argv += ['--vsync','off']
 import moderngl as gl
+# import moderngl_window
 import moderngl_window as mglw
+# from moderngl_window.intergrations import imgui as ImguiWindow
 from .corebase import *
+from .reactive import *
+from .signal import *
 from .sprite import *
 from .defs import *
 from .cache import *
 from .util import *
 from .node import *
 from .mesh import *
-from .reactive import *
-from .signal import *
 from .partitioner import *
 from .canvas import *
 from .corebase import *
+from .camera import *
+from .when import *
+from .audio import *
 from .easy import qork_app
 import cson
 import os
 from os import path
 from collections import defaultdict
-from dataclasses import dataclass
 
 # class RenderPass
 #     def __init__(self, camera):
-#         self.camera = camera
+#         self.cam = camera
 
 
 def cson_load(fn):
@@ -44,7 +48,6 @@ def _try_load(fn, paths, func, *args, **kwargs):
     r = None
     for p in paths:
         try:
-            print(path.join(p, fn))
             r = func(path.join(p, fn), *args, **kwargs)
         except FileNotFoundError:
             continue
@@ -54,7 +57,7 @@ def _try_load(fn, paths, func, *args, **kwargs):
     return r
 
 
-class Core(mglw.WindowConfig, Partitioner, CoreBase):
+class Core(mglw.WindowConfig, CoreBase):
     gl_version = (3, 3)
     window_size = (960, 540)
     aspect_ratio = 16 / 9
@@ -84,49 +87,59 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
         if p is None:
             return self._data_paths
         if isinstance(p, (list, tuple)):
+            self._data_paths = []  # reset
             for dp in p:
                 self._data_path(dp)
         else:
             self._data_path(p)
         return self._data_path
 
-    def data_paths(self, p):
-        self.data_paths = []  # reset
+    def data_paths(self, p=DUMMY):
+        if p is DUMMY:
+            return self._data_paths
+        self._data_paths = []  # reset
         return self.data_path(p)
 
-    def __init__(self, **kwargs):
+    def __init__(self, wnd=None, ctx=None, **kwargs):
+        super().__init__(wnd=wnd, ctx=ctx, **kwargs)
+        
         self.script_path = None  # script path is using script
         self.cache = Cache(self.resolve_resource, self.transform_resource)
 
         qork_app(self)
 
-        self.wnd = kwargs.get("wnd")
-        self.ctx = kwargs.get("ctx")
-        self.timer = kwargs.get("timer")
+        self.wnd = wnd
+        self.ctx = ctx
+        # self.timer = kwargs.get("timer")
 
         # super(mglw.WindowConfig, self).__init__(self)
-        Partitioner.__init__(self)
 
+        self.audio = Audio(self)
+
+        self.when = When()
         self._size = Reactive(ivec2(*self.window_size))
         self._data_paths = []
         self.data_paths([".", "data"])
         # self.on_resize = Signal()
+        self.connections = Connections()
         self.on_update = Signal()
         # self.on_quit = Signal()
         # self.on_render = Signal()
         # self.on_collision_enter = Signal()
         # self.on_collision_leave = Signal()
         # self.cleanup_list = []  # nodes awaiting dtor/destuctor/deinit calls
-        self.world = Node()
-        self.world.is_root = True
+        
+        self.partitioner = Partitioner(self)
+        
+        self.scene = Node('Scene', root=True)
         self.gui = None
-        self.renderfrom = self.camera = None  # default 3d camera
+        self.renderfrom = None
         self._view = None  # default gui camera
         self.bg_color = (0, 0, 0)
-        self.view_projection = Lazy(lambda: self.projection() * self.view())
+        
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
-        self.state = None
+        self.states = Container(reactive=True) # state stack
 
         # signal dicts
         class SwitchSignal:
@@ -145,7 +158,7 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
         self.keys_pressed = set()
         self.keys_released = set()
 
-        self.mouse = vec2(0)
+        self.mouse_pos = vec2(0)
         self.mouse_delta = vec2(0)
 
         self.mouse_buttons = set()
@@ -154,11 +167,23 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
 
         self.K = self.wnd.keys
 
-        super(Partitioner, self).__init__()
+        self.view_projection = Lazy(lambda: self.projection() * self.view())
+        
+        self.camera = self.scene.add(Camera()) # requires view/proj above
+
+        # self.renderpass = RenderPass()
+        # self.renderpass.app = self
 
     @property
+    def state(self):
+        try:
+            return self.states[-1]
+        except IndexError:
+            return None
+        
+    @property
     def size(self):
-        return self.window_size
+        return self.window_size # TODO: get size?
 
     # event
     def resize(self, w, h):
@@ -178,7 +203,7 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
         self.on_scroll(x, y)
 
     def get_mouse_position_event(self, x, y, dx, dy):
-        self.mouse = vec2(x, y)
+        self.mouse_pos = vec2(x, y)
         self.mouse_delta = vec2(dx, dy)
         self.on_mouse_move(x, y, dx, dy)
 
@@ -270,29 +295,30 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
             args = args[1:]
             for c in range(count):
                 node = self.create(*args, num=c, **kwargs)
-                r.append(self.world.add(node))
+                r.append(self.scene.add(node))
             return r
-        return self.world.add(self.create(*args, **kwargs))
+        return self.scene.add(self.create(*args, **kwargs))
 
-    def update(self, t):
-
-        if t < 0.0:
+    def update(self, dt):
+        if not self.partitioner:
             return
 
         for key in self.keys:
-            self.key_events[key].while_pressed(key, t)
+            self.key_events[key].while_pressed(key, dt)
 
         for btn in self.mouse_buttons:
-            self.mouse_events[btn].while_pressed(btn, t)
+            self.mouse_events[btn].while_pressed(btn, dt)
+
+        self.audio.update(dt)
+        self.partitioner.update(dt)
+
+        self.when.update(dt)
+        self.on_update(dt)
 
         if self.state:
-            self.state.update(t)
-
-        Partitioner.update(self, t)
-
-        self.on_update(t)
-
-        self.world.update(t)
+            self.state.update(dt)
+        else:
+            self.scene.update(dt)
 
     def post_update(self, t):
 
@@ -332,27 +358,52 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
         (update and render are separate everywhere else)
         But this does an entire game frame: both update(t) and render() here
         """
-        if dt < 0.0:
+        if dt <= 0:
+            # dt is a huge negative number at the beginning
+            # ignore it
             return
+        
         self.dt = dt
-        self.time = time
+        # self.time = time
         self.update(dt)
         self.post_update(dt)
-        self.ctx.clear(*self.bg_color)
+        
+        if self.state:
+            self.state.render(dt)
+            return
+
+        self.clear()
+        assert self.camera
+        if self.camera and self.scene:
+            self.draw(self.camera, self.scene)
+        else:
+            assert self.camera
+            assert self.scene
+        if self._view and self.gui:
+            self.draw(self._view, self.gui)
+        
+    def clear(self, color=None):
+        if color is None:
+            color = self.bg_color
+        self.ctx.clear(*color)
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
-        if self.world and self.camera:
-            self.renderfrom = self.camera
-            self.world.render()
-        if self.gui and self.view:
-            self.renderfrom = self._view
-            self.gui.render()
+    
+    def draw(self, camera, root=None):
+        if root is None:
+            root = camera.root
+            if not root:
+                return
+        
+        self.renderfrom = camera
+        root.render()
         self.renderfrom = None
 
     # def view_projection(self):
     #     return self.projection() * self.view()
 
+    # @property
     # def camera(self):
-    #     return self._camera
+    #     return self.cam()
 
     def projection(self):
         # self.renderfrom.projection.pend()
@@ -364,3 +415,5 @@ class Core(mglw.WindowConfig, Partitioner, CoreBase):
 
     def matrix(self, m):
         self.shader["ModelViewProjection"] = flatten(self.view_projection() * m)
+
+

@@ -8,6 +8,7 @@ from glm import vec3
 from qork.util import *
 from qork.node import Node
 from qork.corebase import CoreBase
+from qork.util import walk
 
 
 def test_node():
@@ -59,3 +60,24 @@ def test_node_velocity():
     assert fcmp(world.position, vec3(1, 2, 3))
     world.update(1)
     assert fcmp(world.position, vec3(2, 4, 6))
+
+
+def test_node_walk():
+    a = Node()
+    b = a.add(5)
+    assert len(a) == 5
+    assert len(list(walk(a))) == 5
+
+
+def test_node_find():
+    a = Node()
+    b = a.add("foo")
+    c = a.add("bar")
+
+    assert list(a.find("foo")) == [b]
+    assert list(a.find("bar")) == [c]
+
+    b.tag("#baz")
+    assert b.tags == set(["#baz"])
+    assert list(a.find("baz")) == []
+    assert list(a.find("#baz")) == [b]

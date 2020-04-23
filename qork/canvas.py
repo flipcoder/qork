@@ -2,6 +2,7 @@
 
 import cairo
 import math
+import copy
 
 from .node import *
 
@@ -12,11 +13,12 @@ from glm import vec2, ivec2
 from qork import easy
 
 # @mixin(cairo.Context, 'ctx')
-class Canvas(Node, cairo.Context):
-    def __new__(self, cls, *args, **kwargs):
-        r = super(cairo.Context, cls).__new__(cls)
-        r.__init__(*args, **kwargs)
-        return r
+class Canvas(Node):
+    # def __new__(cls, *args, **kwargs):
+    #     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *isz)
+    #     ctx = cairo.Context(self.surface)
+    #     cairo.Context.__new__(cls, ctx)
+    #     return cls.__init__(self, ctx, surface, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         Node.__init__(self, *args, **kwargs)
@@ -28,11 +30,10 @@ class Canvas(Node, cairo.Context):
         self.dirty = True
 
         isz = ivec2(1024, 1024)
-
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *isz)
+        self.cairo_ctx = cairo.Context(self.surface)
 
         # cairo.Context.__init__(self, self.surface)
-        self.ctx = cairo.Context(self.surface)
 
         self.shader = self.app.ctx.program(
             vertex_shader="""
@@ -61,9 +62,6 @@ class Canvas(Node, cairo.Context):
 
         self.texture = None
 
-    def set_dirty(self, b=True):
-        self.dirty = b
-
     def render(self):
         if not self.texture:
             return
@@ -76,3 +74,31 @@ class Canvas(Node, cairo.Context):
         self.app.ctx.enable(gl.BLEND)
         self.texture.use(location=0)
         self.quad_fs.render(self.shader)
+
+# Mix in cairo context members
+
+reserved_names = ['translate']
+
+for name, method in cairo.Context.__dict__.items():
+    if name.startswith('_'):
+        continue
+    
+    try:
+        getattr(Canvas, name) 
+        name = 'canvas_' + name # resolve name conflicts
+        getattr(Canvas, name)
+        assert False
+    except AttributeError:
+        pass
+    
+    if name in reserved_names:
+        name = 'canvas_' + name
+    
+    def f(self, *args, **kwargs):
+        r = method(self.ctx, *args, **kwargs)
+        self.dirty = True
+        return r
+    # f.__name__ = name
+    setattr(Canvas, name, f)
+    # print(name, f)
+

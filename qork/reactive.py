@@ -5,6 +5,7 @@ from .util import *
 from .signal import *
 import glm
 import enum
+import traceback
 
 """
 Reactive and Lazy objects and decorators using signals:
@@ -66,13 +67,30 @@ class WeakLambda:
     #     self.func = None
 
 
+class TrackMe:
+    def __init__(self, value):
+        self.value = value
+    # def __get__(self, obj, objtype):
+    #     return self.value if objtype else self
+    # def __set__(self, obj, val):
+    #     traceback.print_stack()
+    #     print('set:', val)
+    #     self.value = val
+    def __call__(self, val=DUMMY):
+        if val is DUMMY:
+            return self.value
+        else:
+            print('trackme call')
+            traceback.print_stack()
+            self.value = val
+
 class Reactive:
     """
     Variable with an on_change() signal
     """
 
     def __init__(
-        self, value=None, callbacks=[], observe=[], retrigger=False, transform=None
+        self, value=None, callbacks=[], observe=[], prop=True, retrigger=False, transform=None
     ):
         observe = list(observe or [])
         callbacks = list(callbacks or [])
@@ -120,7 +138,7 @@ class Reactive:
         self.value = self.transform(value) if self.transform else value
         # if self.is_func:
         # self.cached = self.value()
-
+    
     def pend(self):
         self.on_change(self.value)
         self.on_pend()
@@ -165,7 +183,7 @@ class Reactive:
         return self.value
 
     # for reactive lists + dictionaries:
-
+    
     def __getitem__(self, idx):
         return self.value[idx]
 
@@ -189,6 +207,13 @@ class Reactive:
         self.value.append(*args)
         self.pend()
 
+class ReactiveProperty(Reactive):
+    def __get__(self, inst, owner):
+        print('get')
+        return self() if inst else self
+    def __set__(self, inst, val):
+        print('set')
+        return self(val)
 
 class Rvec(Reactive):
     """
@@ -268,15 +293,16 @@ class Lazy:
         self.connections = Connections()
         if not observe:
             try:
-                if self.func.observe is not None:
-                    observe += self.func.observe
+                if func.observe is not None:
+                    observe += func.observe
             except AttributeError:
                 pass
         cls = self.__class__
         for sig in observe:
+            ws = weakref.ref(self)
             self.connections += sig.connect(
                 self.pend,
-                on_remove=lambda s, ws=weakref.ref(self): cls.weak_remove(ws, s),
+                on_remove=lambda s, ws=ws: cls.weak_remove(ws, s),
             )
         for func in callbacks:
             try:
@@ -295,20 +321,28 @@ class Lazy:
     def weak_remove(self, slot):
         self.connections -= slot
 
-    def __call__(self, v=DUMMY):
+    def __call__(self, v=DUMMY, lazy=None):
         # get
         if v is DUMMY:
             self.ensure()
             return self.value
 
         # set
-        if callable(v):
-            self.func = v
+        # if callable(v):
+        #     self.func = v
+        #     self.fresh = False
+        # else:
+        if lazy is not None:
+            self.func = lazy
             self.fresh = False
         else:
             self.value = v
             self.fresh = True
-        self.on_pend()
+            self.on_pend()
+
+    # def reset(self, func):
+    #     # set
+    #     pass
 
     def __iadd__(self, func):
         self.on_pend.connect(func, weak=False)
@@ -322,9 +356,9 @@ class Lazy:
         return self.on_pend.connect(func, weak, on_remove=on_remove)
 
     def pend(self, *args, **kwargs):  # args just in case signal calls this
-        self.on_pend()
-        self.fresh = False
+        self.fresh = False  # mark dirty
         self.value = None
+        self.on_pend()
 
     def ensure(self):
         if not self.fresh:

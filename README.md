@@ -13,12 +13,13 @@ Features will change.  This is not yet stable enough for production.
 
 ## Features
 
+- Live coding
 - Scenegraph
-- Resource Cache (ref-counted)
+- Resource Cache
+- Reactive Types (signals, reactive variables, observer-based lazy evaluation)
 - Object Events
 - State Machines
-- Reactive Types (signals, reactive variables, observer-based lazy evaluation)
-- Sprite Animation
+- Sprite Animation (PARTIAL)
 
 ## Integration
 
@@ -49,16 +50,11 @@ sudo pip install -r requirements.txt
 
 (Example images are not yet included! You can use your own images. I will fix this soon!)
 
-Run script example:
+Make examples executable and run any example:
 
 ```
-./qork.py examples/easy.py
-```
-
-Run full python example:
-
-```
-./examples/basic.py
+chmod +x ./examples/*.py
+./qork.py examples/script.py
 ```
 
 ## Installation
@@ -82,10 +78,14 @@ applications and scripts if you mark them as executable:
 ```
 chmod +x ./examples/*.py
 ```
+## Live Mode
+
+Live mode is enabled by default.  You can type python commands into your
+terminal and interact with qork if you prefer to do it directly.
 
 ## Getting Started
 
-Qork has a easy/zero-mode, inspired by pygame-zero,
+Qork has a zero-mode, inspired by pygame-zero,
 No boilerplate is required here, but you have to
 run your program through the qork script instead of python.
 You can use a shebang line if you want to execute it directly
@@ -122,7 +122,7 @@ Or we could do this by changing the position every frame.  This is
 what our automatically called update() function does.
 
 ```
-def update(t):
+def update(dt):
     player.pos += Y * 2 * t
 ```
 
@@ -233,23 +233,25 @@ The second parameter to rotate can take any vector.
 
 ### Names and Tags
 
+(not yet implemented)
+
 An object can have any named tag and you can filter objects with these tags.
 
 ```
-obj = add()
-
-obj.name = 'Name'
-obj.tag('Tag')
+obj = add('Name')
+obj.tag('tag')
 
 find('Name') # -> [obj]
-find(name='Name') # -> [obj]
 
-find('#Tag') # -> [obj]
-find(tag='Tag') # -> [obj]
-find_one('#Nothing') # -> []
+find('#tag') # -> [obj]
 
-find_one('#Tag') # -> obj
-find_one('#Nothing') # -> None
+find_one('#tag') # -> obj
+```
+
+You can also limit your search to a certain node:
+
+```
+node.find('#tag')
 ```
 
 ### States
@@ -258,18 +260,33 @@ find_one('#Nothing') # -> None
 
 ### Events
 
-...
+Create and trigger events with callbacks
+
+```
+player.heal = player.event('heal')
+player.heal += lambda hp: print('Healed ', hp)
+
+player.heal(10)
+```
+
+Event callbacks using connect() are scoped to the lifetime of the returned connection
+
+```
+my_heal_event = player.heal.connect(lambda: wrapper.func())
+
+del my_heal_event # goodbye
+```
 
 ## Camera
 
-In easy/zero mode, the camera is a global called `camera`.
+In zero mode, the camera is a global called `camera`.
 
 ```
 camera.position = (0,0,5) # back up the camera by 5 units
 
-camera.fov = 80 # change field of view
+camera.fov = util.degrees(80) # change field of view (usually in turns, but we use degrees here)
 
-camera.ortho = True # go into ortho mode (not yet implemented)
+camera.ortho = True
 ```
 
 ## Input
@@ -280,7 +297,7 @@ camera.ortho = True # go into ortho mode (not yet implemented)
 
 Resources are automatically cached for later reuse and reference counted.
 
-## Reactive Classes
+## Advanced (Reactive Classes)
 
 ### Signal
 
@@ -310,8 +327,6 @@ ten_objects.scale(2) # scale all of these objects by 2
 for obj in ten_objects: # loop through them like a list
     print(obj)
 ```
-
-# Scripts
 
 ## Custom Objects
 
@@ -365,6 +380,8 @@ Note: This is not yet fully implemented.
 player = add('player.cson')
 player.state['stance'] = 'walk'
 ```
+
+## Scripts
 
 More to come soon!  Work in progress!
 

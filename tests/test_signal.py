@@ -1,9 +1,11 @@
 #!/usr/bin/env pytest
 import sys
+import gc
+import weakref
 
 sys.path.append("..")
 
-from qork.signal import Signal
+from qork.signal import *
 from test_helpers import *
 
 
@@ -25,47 +27,76 @@ def test_signal():
 
 def test_signal_queue():
 
-    # queued connection
     c = Counter()
     s = Signal()
-    s._blocked += 1
-    a = s.connect(c.increment)
-    assert s.queue_size() == 1
-    assert c() == 1
-    s()  # nothing
-    s._blocked -= 1
-    for func in s._queued[0]:
-        print(func)
-        func()
-    s._queued = []
-    s()  # "queued"
+    a = None
+
+    # queued connection
+    with s:
+        a = s.connect(c.increment)
+        assert len(s) == 0
+        assert s.queue_size() == 1
+        s()
+        assert c() == 0
+    assert len(s) == 1
+    assert s.queue_size() == 0
+    assert c() == 0
 
     # queued disconnection
-    s._blocked += 1
-    a.disconnect()
-    assert len(s) == 1  # still attached
-    assert s.queue_size() == 1
-    s._blocked -= 1
-    for q in s._queued:
-        q()
-    s._queued = []
+    with s:
+        assert a.disconnect() is None
+        assert len(s) == 1  # still there
+        assert s.queue_size() == 1  # disc queued?
+
+    assert len(s) == 0
+    assert s.queue_size() == 0
+
+    # for q in s._queued[0]:
+    #     q()
+    # s._queued = []
     assert len(s) == 0
 
 
-def test_signal_weak():
+def test_signal_slot_del():
 
     s = Signal()
     w = s.connect(lambda: print("test"))
     del w
     assert len(s) == 0
-    s()
-    assert len(s) == 0
+
+
+def test_signal_dies_first():
 
     s = Signal()
     w = s.connect(lambda: print("test"))
-    del s  # slot outlives signal?
+    del s  # slot outlives signal
     assert w.sig() is None  # it works
-    del w
+
+
+def test_signal_weak_deletions():
+    s = Signal()
+    c = s.connect(lambda: print("test1"))
+    assert len(s) == 1
+    s.disconnect(c)  # w delete from sig?
+    assert len(s) == 0
+    del c
+
+    s = Signal()
+    c = s.connect(lambda: print("test2"))
+    assert len(s) == 1
+    c.disconnect()  # delete from w?
+    assert len(s) == 0
+    del c
+
+    s = Signal()
+    c = s.connect(lambda: print("test3"))
+    assert len(s) == 1
+    s2 = Signal()
+    other_slot = s2.connect(lambda: None)
+    assert s.disconnect(other_slot) is False  # wrong signal!
+    assert len(s) == 1
+    # s.disconnect(weakref.ref(c)) # delete from wref
+    # assert len(s) == 0
 
 
 def test_signal_once():

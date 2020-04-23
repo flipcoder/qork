@@ -20,7 +20,7 @@ class Cache(Factory):
         super().__init__(resolver, transformer)
         self.resources = {}
         # self.cleanup_list = []
-        self.on_reload = Container(Type=lambda: defaultdict(Signal))
+        self.on_reload = Container(Storage=lambda: defaultdict(Signal))
 
     def __len__(self):
         return len(self.resources)

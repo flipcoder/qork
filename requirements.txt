@@ -6,6 +6,9 @@ cson
 overrides
 pycairo
 pytweening
-python-openal
 assign
-prompt-toolkit
+ptpython
+imgui
+watchdog
+python-openal
+soundfile

@@ -12,6 +12,9 @@ import operator
 import random
 from .defs import *
 
+class Dummy:
+    pass
+DUMMY = Dummy()
 
 # WIP
 def mixin(mix, attr=None):
@@ -31,11 +34,6 @@ def mixin(mix, attr=None):
 
     return mixin_decorator
 
-
-class Dummy:
-    pass
-
-
 class ErrorCode(Exception):
     def __init__(self, code, enum, codes=None):
         super().__init__()
@@ -50,15 +48,12 @@ class ErrorCode(Exception):
             return self.enum.__name__ + ": " + self.code.name
 
 
-DUMMY = Dummy()
-
-
 class Wrapper:
     def __init__(self, value=None):
         self.value = value
 
-    def __call__(self, value=Dummy()):
-        if type(value) == Dummy:
+    def __call__(self, value=DUMMY):
+        if value is DUMMY:
             return self.value
         self.value = value
         return value
@@ -80,7 +75,7 @@ def map_range(val, r1, r2):
 
 # def mixin(cls):
 #     def update(self, mixin):
-#         print("hi")
+#         pass
 
 #     cls.__or__ = update
 #     cls.__ior__ = update
@@ -171,7 +166,6 @@ def to_vec3(*args):
             return glm.vec3(*args[:3])
 
     print(args)
-
     assert False
 
 
@@ -250,7 +244,9 @@ def randf(*args):
     Or: random float value, scaled 
     """
     lenargs = len(args)
-    if lenargs == 1:
+    if lenargs == 0:
+        return random.random()
+    elif lenargs == 1:
         return randf((0, args[0]))
     return args[0] + random.random() * (args[1] - args[0])
 
@@ -320,28 +316,28 @@ def frange(start, stop=None, step=1.0):
         count += 1
 
 
-def to_degrees(self, turns):
+def to_deg(self, turns):
     """
     Converts turns to degrees
     """
     return turns * 360.0
 
 
-def degrees(self, deg):
+def deg(self, deg):
     """
     Converts degrees to turns
     """
     return d / 360.0
 
 
-def to_radians(self, turns):
+def to_rad(self, turns):
     """
     Converts turns to radians
     """
     return turns * math.tau
 
 
-def radians(self, rad):
+def rad(self, rad):
     """
     Converts radians to turns
     """
@@ -367,7 +363,42 @@ def weakmethod(func):
     return f
 
 
-FlowControl = enum.Enum("FlowControl", "continue skip repeat restart break exit")
+def walk(obj):
+    """
+    Recursive iterator w/ fallback
+    TODO: Add more type support
+    """
+    try:
+        func = obj.walk
+    except AttributeError:
+        func = None
+    
+    if func:
+        return func()
+    # try:
+    #     return obj.__walk__()
+    # except AttributeError:
+    #     pass
+
+    return iter(obj)
+
+# turn-based trig funcs
+
+def sint(t):
+    return math.sin(t * math.tau)
+def cost(t):
+    return math.cos(t * math.tau)
+def tant(t):
+    return math.tan(t * math.tau)
+
+def asint(t):
+    return math.asin(t) / math.tau
+def acost(t):
+    return math.acos(t) / math.tau
+def atant(t):
+    return math.atan(t) / math.tau
+
+# FlowControl = enum.Enum("FlowControl", "continue skip repeat restart break exit")
 
 VEC3ZERO = glm.vec3(0)
 M = glm.mat4

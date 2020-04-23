@@ -23,9 +23,17 @@ def add(*args, **kwargs):
     return APP.add(*args, **kwargs)
 
 
+def find(*args, **kwargs):
+    return APP.world.find(*args, **kwargs)
+
+
+def find_one(*args, **kwargs):
+    return APP.world.find(*args, one=True, **kwargs)
+
+
 def remove(*args, **kwargs):
     return APP.remove(*args, **kwargs)
 
-
 def create(*args, **kwargs):
     return APP.create(*args, **kwargs)
+

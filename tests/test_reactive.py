@@ -9,10 +9,7 @@ from qork.util import *
 from qork.node import Node
 from qork.reactive import *
 
-
-def increment(x):
-    return x + 1
-
+from test_helpers import *
 
 # def test_signal():
 #     x = Wrapper(0)
@@ -40,20 +37,21 @@ def increment(x):
 def test_lazy_capture():
     x = Lazy(lambda: 5)
     y = Lazy(lambda: x() + 1, [x])
+    assert len(x.on_pend) == 1
     z = Lazy(lambda: y() + 1, [y])
+    assert len(y.on_pend) == 1
     assert z.value is None
     assert z() == 7
-    x.set(2)
-    print(z())
+    x(2)
     assert z() == 4
-    y.set(2)
+    y(2)
     assert z() == 3
 
 
 def test_reactive():
-    x = Wrapper(0)
+    x = Counter()
     sig = Signal()
-    sig.connect(lambda a, b, x=x: x.do(increment), weak=False)
+    sig += x.increment
 
     y = Reactive(100, [sig])
     y(500)

@@ -17,7 +17,7 @@ class Camera(Node):
         )
         # self.connections += self.app.size.connect(self.projection)
         self._fov = Reactive(80 / 360, [self.projection])
-        self.view = Lazy(self.calculate_view, [self])
+        self.view = Lazy(self.calculate_view, [self.on_pend])
         self.view_projection = Lazy(
             lambda self=self: self.projection() * self.view(),
             [self.projection, self.view],
@@ -41,7 +41,8 @@ class Camera(Node):
             if min(self.app.size) <= 1:
                 return glm.mat4(1)
             ratio = self.app.size[0] / self.app.size[1]
-            return glm.ortho(-ratio, ratio, -1, 1, 1, -1,)  # near, far
+            ratio /= 2
+            return glm.ortho(-ratio, ratio, -.5, .5, .5, -.5)
         else:
             return glm.perspectiveFov(
                 math.tau * self._fov(),
@@ -59,7 +60,7 @@ class Camera(Node):
     def fov(self, v):
         """
         FOV angle is in TURNS, not degrees or radians.
-        Use fov(util.degrees(d)) or fov(util.radians(r)) if you prefer.
+        Use fov(util.deg(d)) or fov(util.rad(r)) if you prefer.
         """
         assert 0 < v < 1 + EPSILON
         self._fov(v)
@@ -89,3 +90,7 @@ class Camera(Node):
     @mode.setter
     def mode(self, m):
         self.ortho = m == 2 or m[0] == "2"
+
+    def update(self, dt):
+        super().update(dt)
+

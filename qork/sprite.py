@@ -16,8 +16,17 @@ class Sprite(Resource):
         assert self.app
         fn = self.fn
         assert fn.lower().endswith(".cson")
-        with open(path.join(self.app.data_path(), fn), "rb") as f:
-            data = self.data = cson.load(f)
+        data = None
+        for dp in self.app._data_paths:
+            try:
+                full_fn = path.join(dp, fn)
+                with open(full_fn, "rb") as f:
+                    data = self.data = cson.load(f)
+                    self.full_fn = full_fn
+                    break
+            except FileNotFoundError:
+                pass
+        assert data
         self.skins = data["skins"]
         self.skin = 0
         self.tile_size = ivec2(data["tile_size"])
@@ -43,7 +52,14 @@ class Sprite(Resource):
         sheet_sz = None
         skin_id = 0
         for skin in data["skins"]:
-            sheet = Image.open(path.join(self.app.data_path(), skin)).convert("RGBA")
+            sheet = None
+            for dp in self.app._data_paths:
+                try:
+                    sheet = Image.open(path.join(dp, skin))
+                except FileNotFoundError:
+                    continue
+                sheet = sheet.convert("RGBA")
+            assert sheet
             if sheet_sz is None:
                 sheet_sz = ivec2(sheet.size) / self.tile_size
                 tile_count = sheet_sz.x * sheet_sz.y

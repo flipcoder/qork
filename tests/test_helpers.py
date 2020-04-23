@@ -15,6 +15,3 @@ class Counter:
     def __call__(self):
         return self.x
 
-
-class Wrapper:
-    pass

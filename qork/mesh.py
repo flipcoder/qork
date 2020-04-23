@@ -151,7 +151,7 @@ class MeshBuffer(Resource):
 class Mesh(Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        
         self.vertices = None
         self.layers = []  # layers -> skins -> images
         self.skin = 0
