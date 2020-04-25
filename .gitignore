@@ -1,6 +1,7 @@
 __pycache__/
 dist/
 build/
+*.pyc
 *.egg-info/
 examples/data/*.png
 prof.pyprof

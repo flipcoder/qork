@@ -34,6 +34,10 @@ def find_one(*args, **kwargs):
 def remove(*args, **kwargs):
     return APP.remove(*args, **kwargs)
 
+
 def create(*args, **kwargs):
     return APP.create(*args, **kwargs)
 
+
+def clear():
+    return APP.scene.clear()

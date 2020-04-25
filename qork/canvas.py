@@ -75,30 +75,31 @@ class Canvas(Node):
         self.texture.use(location=0)
         self.quad_fs.render(self.shader)
 
+
 # Mix in cairo context members
 
-reserved_names = ['translate']
+reserved_names = ["translate"]
 
 for name, method in cairo.Context.__dict__.items():
-    if name.startswith('_'):
+    if name.startswith("_"):
         continue
-    
+
     try:
-        getattr(Canvas, name) 
-        name = 'canvas_' + name # resolve name conflicts
+        getattr(Canvas, name)
+        name = "canvas_" + name  # resolve name conflicts
         getattr(Canvas, name)
         assert False
     except AttributeError:
         pass
-    
+
     if name in reserved_names:
-        name = 'canvas_' + name
-    
+        name = "canvas_" + name
+
     def f(self, *args, **kwargs):
         r = method(self.ctx, *args, **kwargs)
         self.dirty = True
         return r
+
     # f.__name__ = name
     setattr(Canvas, name, f)
     # print(name, f)
-

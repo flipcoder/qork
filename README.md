@@ -1,35 +1,47 @@
 # qork
 
-MIT License. See LICENSE file for details.
+Qork is a zero-boilerplate 3D+2D python OpenGL framework
 
-Copyright (c) 2020 Grady O'Connell
+This means an empty file is a valid blank window program.
 
-Qork is a (very new) 3D/2D python OpenGL framework built with ModernGL and other libs.
+Getting an image on the screen and moving around requires only one line of code:
 
-It is designed to be extremely easy to use for gamejams, prototypes and full projects alike.
+```
+add('hello_world.png', velocity=X)
+```
 
-This is VERY NEW and some things are only partially implemented.
-Features will change.  This is not yet stable enough for production.
+This will spawn an image, 1 unit/sec to the right (X dir)
 
-## Features
+This will also start the live-coding console w/ autocomplete, where you can
+add code and play around with qork.
 
-- Live coding
-- Scenegraph
-- Resource Cache
-- Reactive Types (signals, reactive variables, observer-based lazy evaluation)
+It is VERY NEW, so some things are only partially implemented, and not
+all examples and resources are done and included.  But feel free to look around!
+
+If you're familiar with gamedev, dive into the example folder or source!
+
+## Details
+
+- Matrix Transforms: Position, Rotation, Scale
+- Position, Velocity, Acceleration
+- Hierarchical Scenegraph similar to Unity
+- Live-coding async console using ptpython (prompt-toolkit)
+- Resource Management
 - Object Events
 - State Machines
-- Sprite Animation (PARTIAL)
+- Sprite Animation (not yet done)
+- Time-based callback scheduling
+- Reactive Types (signals, reactive variables, observer-based lazy evaluation)
+- Reactive Metadata (Easily add reactive properties to your states and nodes)
+- Optional Minimal Function Names for Code-Golfing
 
 ## Integration
 
-- glm
-- pillow
-- CSON
-- cairo (pyCairo) (PARTIAL)
-- bullet (SOON)
-- OpenAL (python-openal) (SOON)
-- pytweening (SOON)
+- pyGLM: matrix and vector math
+- Cairo (pyCairo): canvas drawing
+- OpenAL (pyOpenAL): 3d sound (SOON)
+- bullet (SOON): physics
+- pytweening (SOON): easing functions
 
 ## Running Locally (no installation)
 
@@ -85,14 +97,13 @@ terminal and interact with qork if you prefer to do it directly.
 
 ## Getting Started
 
-Qork has a zero-mode, inspired by pygame-zero,
-No boilerplate is required here, but you have to
-run your program through the qork script instead of python.
+Firstly, you'll want to run your program through qork instead of python.
+
 You can use a shebang line if you want to execute it directly
 on Linux and Mac or rename it to a .qork file and associate
 that with qork on windows. This is optional.
 
-Here's the shebang line:
+Here's the shebang line if you want it:
 
 ```
 #!/usr/bin/env qork
@@ -107,7 +118,7 @@ player = add('player.png')
 Let's set the camera position:
 camera.pos = (1,2,3)
 
-Provide an x,y,z coordinate as a 2d or 3d tuple, or pyglm vec2/vec3 object.
+Provide an x,y,z coordinate as a 2d or 3d tuple, or a vec2/vec3 object.
 
 A camera is automatically placed in the scene so that any spawned elements
 will be visible by default.
@@ -123,11 +134,17 @@ what our automatically called update() function does.
 
 ```
 def update(dt):
-    player.pos += Y * 2 * t
+    player.pos += Y * 2 * dt
 ```
+
+X, Y, and Z are vectors (1,0,0), (0,1,0) and (0,0,1).  These give us directions.
 
 When you change position every frame instead of setting velocity,
 remember to multiply it by t. This will allow for variable fps.
+
+If you do not want variable fps, you can remove the dt and it will default
+to 60fps.
+
 t is the time since the last frame in seconds (so it's a decimal number).
 This will scale the movements to the amount they need to be to stay constant.
 
@@ -157,23 +174,23 @@ Positioning can be set using either 3D or 2D tuples/lists or any unpackable type
 Internally, vec3 (from glm) is used.
 
 ```
-node.position = (0,0) # 2D
+node.pos = (0,0) # 2D
 
-node.position = vec2(0,0)
+node.pos = vec2(0,0)
     
-node.position = (0,0,0) # 3D
+node.pos = (0,0,0) # 3D
     
-node.position = vec3(0,0,0)
+node.pos = vec3(0,0,0)
 
 node.move(1,2,3) # relative movement (changes position)
-    
+
 node.move(vec2(1,2))
 
 node.move(vec3(1,2,3))
 
 ```
 
-You can use `pos` instead of position if you prefer.
+You can use pos or position if you prefer.
 
 ### Velocity/Acceleration
 
@@ -195,13 +212,33 @@ node.stop() # stops velocity and acceleration
 
 You can use `vel` and `accel` if you prefer.
 
+You can also change components individually, like this:
+
+```
+node.x = 1
+node.y = 2
+node.z = 2
+
+# velocity:
+
+node.vx = 1
+node.vy = 2
+node.vz = 3
+
+# acceleration:
+
+node.ax = 1
+node.ay = 2
+node.az = 2
+```
+
 ### Attaching
 
 Nodes can be attached to another, so they are moved along with the parent.
 
 ```
-parent = add()
-child = parent.add()
+parent = add() # add parent to scene
+child = parent.add() # add a new child to parent
 ```
 
 Node positions are relative to their parents, so if you want to get
@@ -209,11 +246,38 @@ the real world position of a node, use `world_position`
 
 ```
 print(child.world_position)
+
+# or...
+
+print(child.wpos)
+```
+
+### Angular Velocity
+
+```
+node.angular_velocity(1) # 1turn/s around Z axis
+
+node.angular_velocity(1, Z) # or with axis
 ```
 
 ### Detaching
 
-...
+```
+child.remove()
+
+# or...
+
+parent = remove(child)
+
+# and to remove the parent
+
+parent.remove()
+
+# or...
+
+remove(parent)
+    
+```
 
 ### Rotation/Scaling
 
@@ -238,21 +302,22 @@ The second parameter to rotate can take any vector.
 An object can have any named tag and you can filter objects with these tags.
 
 ```
-obj = add('Name')
-obj.tag('tag')
+p = add('Player')
+p.tag('red')
 
-find('Name') # -> [obj]
+find('Player') # -> [p]
 
-find('#tag') # -> [obj]
+find('#red') # -> [p]
 
-find_one('#tag') # -> obj
+find_one('#red') # -> p
+
+# or use a function....
+
+p.find(lambda x: x.name=='Player')
+
 ```
 
 You can also limit your search to a certain node:
-
-```
-node.find('#tag')
-```
 
 ### States
 
@@ -277,42 +342,154 @@ my_heal_event = player.heal.connect(lambda: wrapper.func())
 del my_heal_event # goodbye
 ```
 
-## Camera
+### Camera
 
-In zero mode, the camera is a global called `camera`.
+In zero mode, the camera is a global node called `camera`.
 
 ```
 camera.position = (0,0,5) # back up the camera by 5 units
 
-camera.fov = util.degrees(80) # change field of view (usually in turns, but we use degrees here)
+camera.fov = deg(80) # change field of view (usually in turns, but we use degrees here)
 
-camera.ortho = True
+camera.ortho = True # turn on 2D mode
+
+camera.mode = '3D' # same as setting ortho to False
+
 ```
 
 ## Input
 
-...
+- KEY: array containing all the keys (use autocomplete in the qork console to see them all)
+- key(k): check if a key is pressed down
+- key_pressed(k): check if a key was just pressed
+- key_released(k): check if a key was just released
+- keys(): a set containing all the pressed keys
+- keys_pressed(): a set containing all the keys that were just pressed
+- keys_released(): a set containing all the keys that were just pressed
+- click(n): True if mouse button number `n` was just pressed
+- unclick(n): True iif mouse button number `n` was just released
+- hold_click(n): True iif mouse button `n` is being held
+- mouse_buttons(): a set containing all the pressed mouse buttons
+- mouse_buttons_pressed(): a set containing the mouse buttons that were just pressed
+- mouse_buttons_released(): a set containing the mouse buttons that were just released
+- mouse_pos(): get the current mouse position
 
-## Resource Cache
+```
+def update(dt):
+    if key(KEY.SPACE):
+        shoot()
+```
+
+The following function implements "pong" controls:
+
+```
+def update(dt):
+    paddle[0].vy = (key(KEY.W) - key(KEY.S)) * paddle_speed
+    paddle[1].vy = (key(KEY.UP) - key(KEY.DOWN)) * paddle_speed
+     
+```
+
+## Resources
 
 Resources are automatically cached for later reuse and reference counted.
+
+You can set the data_path two ways:
+
+```
+data_path('data')
+
+data_paths(['.'], ['data'])
+```
 
 ## Advanced (Reactive Classes)
 
 ### Signal
 
-...
+```
+sig = Signal()
+sig += lambda: print('hello ', end='')
+sig += lambda: print('world')
+sig() # hello world
+```
+
+### Slots
+
+```
+# Make a signal
+
+sig = Signal()
+
+# Connect some slots (Note this is different from the above Signal example)
+
+hello += sig.connect(lambda: print('hello ', end=''))
+world += sig.connect(lambda: print('world'))
+
+sig() # hello world
+
+# let's remove hello slot
+
+hello.disconnect()
+
+sig() # world
+
+# here's another way to remove a slot
+
+sig -= world
+
+# or...
+
+del world
+
+# Node: The above `del` relies on the garbage collector, which is not fully reliable.
+
+```
 
 ### Reactive
 
-...
+Reactive variables are paired with an on_change signal.
+
+```
+x = Reactive(1)
+
+x += lambda x: print('x is now', x)
+
+x(2)  # This is sets to 2 and will print: "x is now 2"
+
+# Inc/Dec operators of non-callable values are forwarded to enclosed value:
+
+x += 1 # "x is now 3"
+```
 
 ### Lazy
 
-...
+Lazy values are functions that are called only when the value is needed
 
+```
+
+equation = Lazy(lambda: 2 * math.pi)
+equation() # computed!
+equation() # value is returned again, since it has already been computed
+
+```
+
+Lazy values can depend on other lazy or reactive values:
+
+```
+x = Reactive(2)
+y = Reactive(3)
+equation = Lazy(lambda: x() + y(), [x, y])
+
+equation() # 5 (computed and cached)
+equation() # 5 (return cached value)
+
+x(1) # invalidates the equation
+
+equation() # 4 (recomputes since it was invalidated)
+```
 
 ## Composites
+
+This feature is not fully implemented.
 
 Qork supports the composite design pattern.  That means, you can treat containers of
 objects as a single object, where every function
@@ -328,22 +505,9 @@ for obj in ten_objects: # loop through them like a list
     print(obj)
 ```
 
-## Custom Objects
-
-To make your own object classes, inherit from Mesh:
-
-```
-class Map(Mesh):
-    def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
-        self.data = TEXTURED_QUAD
-        self.load('data/map.png')
-        self.rotate(0.25, vec3(-1,0,0))
-        self.scale(100)
-
-```
-
 ## Spritesheets
+
+This is not yet fully implemented.
 
 Spritesheet example (cson format):
 
@@ -381,8 +545,77 @@ player = add('player.cson')
 player.state['stance'] = 'walk'
 ```
 
-## Scripts
+## "Code-Golfing"
 
-More to come soon!  Work in progress!
+Qorks includes some code-golfing functions and variables.
 
+Some of these are not yet implemented, but this is what is planned so far:
+
+-globals:
+    - A: add
+    - R: remove
+    
+    - P: play wav sound or stream music
+    - Q: stop all sound or music
+    
+    - S: sin(tau * X)
+    - C: cos(tau * X) if called, otherwise Camera
+    - T: tan(tau * X)
+    
+    - R: rotate
+    - X: scale
+    - P: translate/reposition
+    
+    - W: world/scene
+
+-node properties and methods
+
+    - p: pos (or x, y, z)
+    - v: vel (or vx, vy, vz)
+    - a: accel (or ax, ay, az)
+    
+    - o: orientation
+    - h: heading
+
+    - s: scale (relative)
+    - S: set scale (use S=2 to scale 2)
+    - ss: scale space
+    
+    - ps: pos space
+    - vs: vel space
+    - as: accel space
+    
+    - rp: relative pos (or rx, ry, rz)
+    
+    - wp: world pos (or wx, wy, wz)
+    
+    - ra: rotation axis (or rax, ray, raz)
+    - rs: rotation space
+    - r: rotate
+    
+    - ro: reset orientation
+    - rp: reset pos
+    - rs: reset scale
+    
+    - O: omega (angular velocity)
+    - W: omega axis
+
+## Scripting
+
+Qork includes an async scripting system using generators:
+
+```
+def script(ctx):
+    while True:
+        # do this every second
+        yield ctx.sleep(1) # wait 1 second
+```
+
+Calling a function 'script' in a qorkscript starts it with the program.
+
+## LICENSE
+
+MIT License. See LICENSE file for details.
+
+Copyright (c) 2020 Grady O'Connell
 

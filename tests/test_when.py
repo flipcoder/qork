@@ -82,14 +82,14 @@ def test_when_fade2():
 # def test_when_decorator():
 #     pass
 
+
 def test_timer():
     t = Timer(1)
     assert math.isclose(t.remaining, 1)
     assert t() == True
     assert t() == True
-    assert t(.5) == False
-    assert math.isclose(t.remaining, .5)
-    assert t(.5) == True
-    assert t(.5) == False
-    assert t(.5) == True
-
+    assert t(0.5) == False
+    assert math.isclose(t.remaining, 0.5)
+    assert t(0.5) == True
+    assert t(0.5) == False
+    assert t(0.5) == True

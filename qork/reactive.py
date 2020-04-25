@@ -70,6 +70,7 @@ class WeakLambda:
 class TrackMe:
     def __init__(self, value):
         self.value = value
+
     # def __get__(self, obj, objtype):
     #     return self.value if objtype else self
     # def __set__(self, obj, val):
@@ -80,9 +81,10 @@ class TrackMe:
         if val is DUMMY:
             return self.value
         else:
-            print('trackme call')
+            print("trackme call")
             traceback.print_stack()
             self.value = val
+
 
 class Reactive:
     """
@@ -90,7 +92,13 @@ class Reactive:
     """
 
     def __init__(
-        self, value=None, callbacks=[], observe=[], prop=True, retrigger=False, transform=None
+        self,
+        value=None,
+        callbacks=[],
+        observe=[],
+        prop=True,
+        retrigger=False,
+        transform=None,
     ):
         observe = list(observe or [])
         callbacks = list(callbacks or [])
@@ -138,7 +146,7 @@ class Reactive:
         self.value = self.transform(value) if self.transform else value
         # if self.is_func:
         # self.cached = self.value()
-    
+
     def pend(self):
         self.on_change(self.value)
         self.on_pend()
@@ -183,7 +191,7 @@ class Reactive:
         return self.value
 
     # for reactive lists + dictionaries:
-    
+
     def __getitem__(self, idx):
         return self.value[idx]
 
@@ -207,13 +215,16 @@ class Reactive:
         self.value.append(*args)
         self.pend()
 
+
 class ReactiveProperty(Reactive):
     def __get__(self, inst, owner):
-        print('get')
+        print("get")
         return self() if inst else self
+
     def __set__(self, inst, val):
-        print('set')
+        print("set")
         return self(val)
+
 
 class Rvec(Reactive):
     """
@@ -301,8 +312,7 @@ class Lazy:
         for sig in observe:
             ws = weakref.ref(self)
             self.connections += sig.connect(
-                self.pend,
-                on_remove=lambda s, ws=ws: cls.weak_remove(ws, s),
+                self.pend, on_remove=lambda s, ws=ws: cls.weak_remove(ws, s),
             )
         for func in callbacks:
             try:

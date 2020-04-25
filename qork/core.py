@@ -2,11 +2,16 @@
 import glm
 import sys
 
-# if __debug__:
-#     sys.argv += ['--vsync','off']
+if __debug__:
+    if {"--vsync", "-vs"} & set(sys.argv):
+        sys.argv += ["--vsync", "off"]
+
 import moderngl as gl
+
 # import moderngl_window
 import moderngl_window as mglw
+import pathlib
+
 # from moderngl_window.intergrations import imgui as ImguiWindow
 from .corebase import *
 from .reactive import *
@@ -23,11 +28,14 @@ from .corebase import *
 from .camera import *
 from .when import *
 from .audio import *
+from .box import *
 from .easy import qork_app
 import cson
 import os
 from os import path
 from collections import defaultdict
+from watchdog.observers import Observer as Watchdog
+import openal
 
 # class RenderPass
 #     def __init__(self, camera):
@@ -66,6 +74,20 @@ class Core(mglw.WindowConfig, CoreBase):
     title = "qork"
     # resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
 
+    Resource = {"mesh": Mesh.Resource, "sound": Sound.Resource, "sprite": Sprite}  # !
+
+    Type = {
+        "mesh": Mesh,
+        "sound": Sound,
+        "sprite": Mesh,  # !
+    }
+
+    extensions = {
+        "sound": (".wav", ".mp3", ".ogg", ".flac"),
+        "mesh": (".obj"),
+        "sprite": (".png"),
+    }
+
     @classmethod
     def run(cls):
         mglw.run_window_config(cls)
@@ -102,7 +124,7 @@ class Core(mglw.WindowConfig, CoreBase):
 
     def __init__(self, wnd=None, ctx=None, **kwargs):
         super().__init__(wnd=wnd, ctx=ctx, **kwargs)
-        
+
         self.script_path = None  # script path is using script
         self.cache = Cache(self.resolve_resource, self.transform_resource)
 
@@ -128,18 +150,18 @@ class Core(mglw.WindowConfig, CoreBase):
         # self.on_collision_enter = Signal()
         # self.on_collision_leave = Signal()
         # self.cleanup_list = []  # nodes awaiting dtor/destuctor/deinit calls
-        
+
         self.partitioner = Partitioner(self)
-        
-        self.scene = Node('Scene', root=True)
+
+        self.scene = Node("Scene", root=True)
         self.gui = None
         self.renderfrom = None
         self._view = None  # default gui camera
         self.bg_color = (0, 0, 0)
-        
+
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
-        self.states = Container(reactive=True) # state stack
+        self.states = Container(reactive=True)  # state stack
 
         # signal dicts
         class SwitchSignal:
@@ -165,11 +187,17 @@ class Core(mglw.WindowConfig, CoreBase):
         self.mouse_pressed = set()
         self.mouse_released = set()
 
+        self.golfing = True
+
+        self.viewport = Box()
+
         self.K = self.wnd.keys
 
         self.view_projection = Lazy(lambda: self.projection() * self.view())
-        
-        self.camera = self.scene.add(Camera()) # requires view/proj above
+
+        self.camera = self.scene.add(Camera())  # requires view/proj above
+
+        self.watch = Watchdog()
 
         # self.renderpass = RenderPass()
         # self.renderpass.app = self
@@ -180,10 +208,10 @@ class Core(mglw.WindowConfig, CoreBase):
             return self.states[-1]
         except IndexError:
             return None
-        
+
     @property
     def size(self):
-        return self.window_size # TODO: get size?
+        return self._size()
 
     # event
     def resize(self, w, h):
@@ -267,25 +295,87 @@ class Core(mglw.WindowConfig, CoreBase):
         self.mouse_events[btn].on_release(btn)
 
     def create(self, *args, **kwargs):
-        if args and isinstance(args[0], int):
-            r = []
-            args = list(args)
-            count = args[0]
-            args = args[1:]  # pop count from arg list
-            for c in range(count):
-                r.append(self.create(*args, **kwargs))
-            return r
+        if args:
+            a = args[0]
+            atype = type(args[0])
+            if atype is int:
+                count = a
+                each = kwargs.pop("each", None)
+                # load a count of objects
+                r = []
+                args = list(args)
+                args = args[1:]  # pop count from arg list
+                for c in range(count):
+                    if each:
+                        kwargs["each"] = lambda node=node, each=each: each(node, count)
+                    r.append(self.create(str(count), *args, **kwargs))
+                return r
+            elif atype in (tuple, list):
+                filenames = a
+                each = kwargs.pop("each", None)
+                # load a list of filenames
+                r = []
+                args = list(args)
+                args = args[1:]
+                if each:
+                    for fn in filenames:
+                        # func, aa, kw = each(count, *copy(args), **copy(kwargs))
+                        if each:
+                            kwargs["each"] = lambda node=node, each=each: each(node)
+                        r.append(self.create(fn, *args, **kwargs))
+                else:
+                    for fn in filenames:
+                        r.append(self.create(fn, *args, **kwargs))
+                return r
         if not args:
             return Node(*args, **kwargs)
         if isinstance(args[0], Node):
             return args[0]
         fn = filename_from_args(args, kwargs)
+        ext = pathlib.Path(fn).suffix
+        if ext:
+            for typename, typelist in self.extensions.items():
+                if ext in typelist:
+                    return self.Type[typename](*args, **kwargs)
+        else:
+            if self.golfing:  # codegolf?: try to find filename
+                found = False
+                for dp in self._data_paths:
+                    # TODO: prioritize .cson?
+                    if path.exists(fn + ".cson"):
+                        fn += ".cson"
+                        found = True
+                        break
+                    for pth in os.listdir(dp):
+                        pext = path.splitext(pth)
+                        if pext[0] == fn:
+                            fn += pext[1]
+                            found = True
+                            break
+                    if found:
+                        break
+                if found:
+                    args, kwargs = change_filename(fn, args, kwargs)
+
         if fn:
-            return Mesh(*args, **kwargs)
-        elif isinstance(args[0], tuple):  # prefab data
             return Mesh(*args, **kwargs)
         else:
             return Node(*args, **kwargs)
+
+        # if ext in ('.wav', '.mp3', '.ogg'):
+        #     return Sound(*args, **kwargs)
+        # elif fn:
+        #     return Mesh(*args, **kwargs)
+        # elif isinstance(args[0], tuple):  # prefab data
+        #     return Mesh(*args, **kwargs)
+        # else:
+        #     return Node(*args, **kwargs)
+
+    def play(self, fn, **kwarg):
+        """
+        Quick-play a sound
+        """
+        assert False
 
     def add(self, *args, **kwargs):
         if args and isinstance(args[0], int):  # count
@@ -298,6 +388,17 @@ class Core(mglw.WindowConfig, CoreBase):
                 r.append(self.scene.add(node))
             return r
         return self.scene.add(self.create(*args, **kwargs))
+
+    def __iadd__(self, node):
+        self.add(node)
+        return self
+
+    def __isub__(self, node):
+        self.remove(node)
+        return self
+
+    def remove(self, *args, **kwargs):
+        self.scene.remove(*args, **kwargs)
 
     def update(self, dt):
         if not self.partitioner:
@@ -335,7 +436,12 @@ class Core(mglw.WindowConfig, CoreBase):
         fn = filename_from_args(args, kwargs)
         assert fn
         fnl = fn.lower()
-        for ext in [".cson"]:
+        ext = pathlib.Path(fn).suffix
+        if kwargs.pop("T", None):  # type
+            assert False
+        if ext in [".mp3", ".wav", ".ogg"]:
+            return Sound.Resource, args, kwargs
+        elif ext == ".cson":
             data = None
             try:
                 data = _try_load(fn, self._data_paths, cson_load)
@@ -343,13 +449,16 @@ class Core(mglw.WindowConfig, CoreBase):
                 return None, None, None
             if data:
                 if data["type"] == "sprite":
-                    return Sprite, args, kwargs
+                    return Sprite, args, kwargs # !
+                elif data["type"] == "sound":
+                    return Sound.Resource, args, kwargs
+                elif data["type"] == "mesh":
+                    return Mesh.Resource, args, kwargs
                 data.close()
             else:
                 raise FileNotFoundError
-        for ext in [".png", ".jpg"]:
-            if fnl.endswith(ext):
-                return Image, args, kwargs
+        elif ext in [".png", ".jpg"]:
+            return Image, args, kwargs
         return None, None, None
 
     def render(self, time, dt):
@@ -362,12 +471,12 @@ class Core(mglw.WindowConfig, CoreBase):
             # dt is a huge negative number at the beginning
             # ignore it
             return
-        
+
         self.dt = dt
         # self.time = time
         self.update(dt)
         self.post_update(dt)
-        
+
         if self.state:
             self.state.render(dt)
             return
@@ -381,19 +490,21 @@ class Core(mglw.WindowConfig, CoreBase):
             assert self.scene
         if self._view and self.gui:
             self.draw(self._view, self.gui)
-        
+
     def clear(self, color=None):
         if color is None:
             color = self.bg_color
         self.ctx.clear(*color)
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
-    
-    def draw(self, camera, root=None):
+
+    def draw(self, camera, root=None, viewport=None):
         if root is None:
             root = camera.root
             if not root:
                 return
-        
+        if viewport is None:
+            viewport = self.viewport
+
         self.renderfrom = camera
         root.render()
         self.renderfrom = None
@@ -416,4 +527,30 @@ class Core(mglw.WindowConfig, CoreBase):
     def matrix(self, m):
         self.shader["ModelViewProjection"] = flatten(self.view_projection() * m)
 
+    def golf(self):
+        if self.golfing:
+            return
 
+        # TODO: codegolf method names
+        methods = {
+            "A": self.add,
+            "R": self.remove,
+            "P": self.play,
+            "C": self.scene.clear,
+            # 'Q': self.quit
+        }
+        for k, v in methods.items():
+            setattr(cls, k, v)
+
+        self.golfing = b
+
+    def destroy(self):
+        if self.ctx:
+            openal.oalQuit()
+            del self.ctx
+
+    def quit(self):
+        return self.destroy()
+
+    def __del__(self):
+        self.destroy()

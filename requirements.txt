@@ -10,5 +10,4 @@ assign
 ptpython
 imgui
 watchdog
-python-openal
-soundfile
+pyopenal

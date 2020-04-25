@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import moderngl_window as mglw
+import pathlib
 from .easy import qork_app
 from .util import *
 
@@ -8,6 +9,10 @@ from .util import *
 class Resource:
     def __init__(self, *args, **kwargs):
         self.fn = filename_from_args(args, kwargs)
+        if self.fn:
+            self.ext = pathlib.Path(self.fn).suffix
+        else:
+            self.ext = ""
         if not args or not isinstance(args[0], mglw.WindowConfig):
             self.app = qork_app()
             self.cache = None

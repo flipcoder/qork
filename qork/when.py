@@ -5,6 +5,7 @@ from .signal import Signal, Slot
 from .defs import *
 from .util import map_range
 
+
 class WhenSlot(Slot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -15,8 +16,10 @@ class WhenSlot(Slot):
         self.ease = None
         self.speed = 1.0
         self.range = None
+
     def set_speed(self, s):
         self.speed = s
+
 
 class Timer(Signal):
     def __init__(self, duration, speed=1.0, when=None, lifespan=None, autoreset=True):
@@ -36,7 +39,7 @@ class Timer(Signal):
         else:
             self.remaining += t
         return self
-    
+
     def __isub__(self, t):
         if callable(t):
             self.signal.disconnect(f)
@@ -46,7 +49,7 @@ class Timer(Signal):
 
     def update(self, dt=None, autoreset=None):
         return self(dt, autoreset)
-        
+
     def __call__(self, dt=None, autoreset=None):
         """
         Advance timer by dt and return True if elapsed (and reset).
@@ -64,16 +67,17 @@ class Timer(Signal):
             super(Signal, self).__call__(self)
             return True
         return False
-    
+
     def __contains__(self, s):
         """
         Would timer elapse in s seconds?
         Example: if dt in timer: # will elapse
         """
         return s >= self.remaining
-    
+
     def __bool___(self):
         return self.remaining <= 0
+
 
 class When(Signal):
     """
@@ -174,4 +178,3 @@ class When(Signal):
         slot.range_ = range_
         slot.ease = ease
         return slot
-

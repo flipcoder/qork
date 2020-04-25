@@ -4,19 +4,20 @@ import enum
 from collections import defaultdict
 from .signal import Signal, Container
 
+
 class Partitioner:
-    CollisionRef = enum.Enum('Ref', 'ref type name')
-    CollisionEvent = enum.Enum('Event', 'overlap exclusive enter leave')
-    
+    CollisionRef = enum.Enum("Ref", "ref type name")
+    CollisionEvent = enum.Enum("Event", "overlap exclusive enter leave")
+
     def __init__(self, app):
 
         self.app = app
 
         # reftype -> (a, b) -> action
         # self.signals = [defaultdict(lambda: defaultdict(Signal)) for x in range(RefType)]
-        
+
         # self.nodes = [[] for x in range(RefType)]
-        
+
         self.overlap = defaultdict(lambda: defaultdict(Signal))
 
     def __iadd__(self, node):
@@ -30,6 +31,7 @@ class Partitioner:
 
     def refresh(self):
         pass
+
     #     scene = self.app.scene
     #     with scene:
     #         for a in self.scene.walk():
@@ -45,16 +47,16 @@ class Partitioner:
     #             # if type(a) in pairs:
     #             #     cbs = self.overlap[RefType.type]
     #             #     for cbpair in cbs:
-                        
+
     #                 # if a.name in pairs:
-    #                 #     pairs = 
+    #                 #     pairs =
     #             # if ta in self.solid_types:
     #             #     self.types[ta] += a
     #             # if ta in self.solid_names:
     #             #     self.names[ta] += a
 
     #     self.initial_refresh = True
-        
+
     def collisions(self, dt):
         """
         Do collision checks.  This is horribly unoptimized but it works for now
@@ -86,7 +88,7 @@ class Partitioner:
 
                         aa = a.world_box
                         bb = b.world_box
-                        
+
                         col = not (
                             bb[0].x > aa[1].x
                             or bb[1].x < aa[0].x
@@ -104,24 +106,38 @@ class Partitioner:
                             # TODO: obviously make this more efficient
 
                             # instance
-                            if self.overlap[a][b](a, b, dt): break
-                            if self.overlap[b][a](b, a, dt): break
-                            
+                            if self.overlap[a][b](a, b, dt):
+                                break
+                            if self.overlap[b][a](b, a, dt):
+                                break
+
                             # names
                             if an or bn:
-                                if self.overlap[a][bn](a, b, dt): break
-                                if self.overlap[b][an](b, a, dt): break
-                                if self.overlap[an][b](a, b, dt): break
-                                if self.overlap[bn][a](b, a, dt): break
-                                if self.overlap[an][bn](a, b, dt): break
+                                if self.overlap[a][bn](a, b, dt):
+                                    break
+                                if self.overlap[b][an](b, a, dt):
+                                    break
+                                if self.overlap[an][b](a, b, dt):
+                                    break
+                                if self.overlap[bn][a](b, a, dt):
+                                    break
+                                if self.overlap[an][bn](a, b, dt):
+                                    break
                                 if an != bn:
-                                    if self.overlap[bn][an](b, a, dt): break
-                            
+                                    if self.overlap[bn][an](b, a, dt):
+                                        break
+
                             # types
-                            if self.overlap[a][tb](a, b, dt): break
-                            if self.overlap[b][ta](b, a, dt): break
-                            if self.overlap[ta][b](a, b, dt): break
-                            if self.overlap[tb][a](b, a, dt): brea
-                            if self.overlap[ta][tb](a, b, dt): break
+                            if self.overlap[a][tb](a, b, dt):
+                                break
+                            if self.overlap[b][ta](b, a, dt):
+                                break
+                            if self.overlap[ta][b](a, b, dt):
+                                break
+                            if self.overlap[tb][a](b, a, dt):
+                                brea
+                            if self.overlap[ta][tb](a, b, dt):
+                                break
                             if ta is not tb:
-                                if self.overlap[tb][ta](b, a, dt): break
+                                if self.overlap[tb][ta](b, a, dt):
+                                    break

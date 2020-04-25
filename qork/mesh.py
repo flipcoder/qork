@@ -13,7 +13,7 @@ from os import path
 import struct
 
 
-class MeshBuffer(Resource):
+class MeshResource(Resource):
     def __init__(self, app, name, data, shader, meshtype, *args, **kwargs):
         if len(args) == 1:
             assert False
@@ -133,7 +133,7 @@ class MeshBuffer(Resource):
                 newdata[i * 5 + 4] = 1.0 - newdata[i * 5 + 4]
         if self.fn:  # if not temp name, append flags to cached name
             meshname = self.fn + ":+" + flags
-        meshdata = MeshBuffer(
+        meshdata = MeshResource(
             self.app,
             meshname,
             newdata,
@@ -149,9 +149,11 @@ class MeshBuffer(Resource):
 
 
 class Mesh(Node):
+    Resource = MeshResource
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         self.vertices = None
         self.layers = []  # layers -> skins -> images
         self.skin = 0
@@ -255,7 +257,7 @@ class Mesh(Node):
         # does cache already have this mesh?
         if self.data:
             if not meshname in self.cache:
-                meshdata = MeshBuffer(
+                meshdata = MeshResource(
                     self.app,
                     self.data.name,
                     self.data.data,

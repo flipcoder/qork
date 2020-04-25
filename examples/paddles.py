@@ -2,19 +2,16 @@
 
 from glm import normalize
 
-camera.mode = '2D'
-
-# load the ball and paddles
+# load the ball and 2 paddles
 paddle = add(2, "player.png", scale=(0.1, 0.25, 0.1))
 ball = add("player.png", scale=0.075)
 
-# position the paddles
-paddle[0].x = -.5
-paddle[1].x = .5
-
-score = [0] * 2
-
+# prosition paddles and set speed
+paddle[0].x, paddle[1].x = -0.5, 0.5
 paddle_speed = 1
+
+# set score for both players
+score = [0] * 2
 
 
 def init():
@@ -25,10 +22,10 @@ def init():
 
 
 def update(t):
-    if abs(ball.y) > .5:
+    if abs(ball.y) > 0.5:
         ball.y = ball.old_pos.y
         ball.vy = -ball.vy
-    if abs(ball.x) > .5:
+    if abs(ball.x) > 0.5:
         score[ball.x > 0] += 1
         init()
 
@@ -42,4 +39,3 @@ def hit(ball, paddle, dt):
     ball.x = ball.old_pos.x
     speed += 0.2
     ball.vel = glm.normalize(ball.pos - paddle.pos) * speed
-

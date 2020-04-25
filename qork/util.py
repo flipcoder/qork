@@ -12,8 +12,11 @@ import operator
 import random
 from .defs import *
 
+
 class Dummy:
     pass
+
+
 DUMMY = Dummy()
 
 # WIP
@@ -33,6 +36,7 @@ def mixin(mix, attr=None):
         return cls
 
     return mixin_decorator
+
 
 class ErrorCode(Exception):
     def __init__(self, code, enum, codes=None):
@@ -104,13 +108,36 @@ def filename_from_args(args, kwargs=None):
     return fn
 
 
-def fcmp(a, b):
+def change_filename(fn, args, kwargs=None, keepname=False):
+    """
+    Given node ctor args, remove fn params and replace with single fn
+    If keepname, the old name (either arg or name) is used for name= kwarg
+    """
+    kwargs.pop("fn", None)
+    kwargs.pop("filename", None)
+    if keepname:
+        name = kwargs.pop("name", None)
+    if args and type(args[0]) is str:
+        if keepname and (name or args[0]):
+            kwargs["name"] = name or args[0]
+        args = args[1:]
+    args = [fn] + args
+    return args, kwargs
+
+
+def fcmp(a, b=None):
     """
     Float compare and component-wise float vector compare
     """
-    if type(a) in (float, int):
+    assert a is not None
+    ta = type(a)
+    if ta in (float, int):
+        if b is None:
+            b = 0
         return abs(a - b) < EPSILON
     else:
+        if b is None:
+            b = ta(0)
         for c in range(min(len(a), len(b))):
             if abs(a[c] - b[c]) >= EPSILON:
                 return False
@@ -372,7 +399,7 @@ def walk(obj):
         func = obj.walk
     except AttributeError:
         func = None
-    
+
     if func:
         return func()
     # try:
@@ -382,21 +409,33 @@ def walk(obj):
 
     return iter(obj)
 
+
 # turn-based trig funcs
+
 
 def sint(t):
     return math.sin(t * math.tau)
+
+
 def cost(t):
     return math.cos(t * math.tau)
+
+
 def tant(t):
     return math.tan(t * math.tau)
 
+
 def asint(t):
     return math.asin(t) / math.tau
+
+
 def acost(t):
     return math.acos(t) / math.tau
+
+
 def atant(t):
     return math.atan(t) / math.tau
+
 
 # FlowControl = enum.Enum("FlowControl", "continue skip repeat restart break exit")
 

@@ -5,14 +5,14 @@ import weakref
 
 class Connections:
     def __init__(self, Storage=list):
-        # self.Storage = Storage
+        self.Storage = Storage
         self._connections = Storage()
 
     def remove(self, con):
         self -= con
 
     def clear(self):
-        self._connections = type(self._connections)()
+        self._connections = self.Storage()
 
     def __bool__(self):
         return bool(self._connections)
@@ -137,7 +137,9 @@ def queued(func):
 
 
 class Container:
-    def __init__(self, adapter=None, Storage=list, Element=None, reactive=False, *args, **kwargs):
+    def __init__(
+        self, adapter=None, Storage=list, Element=None, reactive=False, *args, **kwargs
+    ):
         """
         A safely-iterable container where all operations during iterations
         are queued and processed after.
@@ -190,7 +192,7 @@ class Container:
             itr = iter(self._slots)
         else:
             return iter(self._slots.values())
-            
+
         itr = iter(self._slots)
         with self:
             for slot in itr:
@@ -202,7 +204,7 @@ class Container:
             itr = enumerate(self._slots)
         else:
             return iter(self._slots.values())
-            
+
         itr = iter(self._slots)
         with self:
             for i, slot in itr:
@@ -242,7 +244,7 @@ class Container:
 
             assert self._queued == [[], []]
             self._current_queue -= 1
-            
+
             # self._blocked -= 1
             return True
         return False
@@ -269,7 +271,7 @@ class Container:
         return bool(self._slots)
 
     def connect(self, func, once=False, cb=None):
-        
+
         if isinstance(func, (list, tuple)):
             r = []
             for f in func:
@@ -402,6 +404,7 @@ class Container:
     def top(self):
         return self._slots[-1]
 
+
 class Signal(Container):
     def __init__(self, simple=False, T=Slot, *args, **kwargs):
         super().__init__(*args, Element=T, **kwargs)
@@ -470,7 +473,7 @@ class Signal(Container):
                     wref = slot
                     slot = wref()
                 yield slot
-    
+
     def __iter__(self):
         return (x.get() for x in self.iterslots())
 

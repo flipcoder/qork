@@ -16,10 +16,13 @@ from qork.easy import *
 from qork.util import *
 from os import path
 from asyncio import sleep, create_task
+
 # import console_toolkit as pt
 # from console_toolkit import PromptSession
 # from console_toolkit.patch_stdout import patch_stdout
 from ptpython.repl import embed
+import openal
+
 
 class ZeroMode(Core):
     def preload(self):
@@ -45,7 +48,7 @@ class ZeroMode(Core):
         else:
             self.script_path = os.getcwd()
             pths.append(self.script_path)
-            pths.append(path.join(self.script_path, 'data'))
+            pths.append(path.join(self.script_path, "data"))
         self.data_paths(pths)
 
         self.bg_color = (0, 0, 0)
@@ -91,6 +94,8 @@ class ZeroMode(Core):
                     buf = "global " + tok[1].split("(")[0] + "\n" + buf
                 elif "=" in word:
                     var = tok[0].split("=")[0]
+                    if var[-1] in "+-%:|&^":
+                        continue
                     if "." in var:
                         continue
                     if var.endswith("]"):  # array
@@ -116,6 +121,7 @@ class ZeroMode(Core):
             **qork.__dict__,
             **easy.__dict__,
             **util.__dict__,
+            **math.__dict__,
             **decorators.__dict__,
             "QORK_SCRIPT": True,
             "glm": glm,
@@ -123,7 +129,9 @@ class ZeroMode(Core):
             "vec3": glm.vec3,
             "V2": glm.vec2,
             "V3": glm.vec3,
-            "V": V,
+            # "V": V,
+            "RV": Rvec,
+            "Q": app,
             "app": app,
             "when": app.when,
             "every": app.when.every,
@@ -150,18 +158,41 @@ class ZeroMode(Core):
             "camera": self.camera,
             "data_paths": self._data_paths,
             "data_path": self.data_path,
-            "quit": lambda: sys.exit(0),  # temp
+            "quit": app.quit,
         }
+
+        # additional vars for code golfing (optional in the future)
+        self.golf()
+
+        if self.golfing:
+            self.globe = {
+                **self.globe,
+                "A": app.add,
+                "B": Box,
+                "C": app.camera,
+                "F": easy.find,
+                "F1": easy.find_one,
+                # "V": already used
+                # "N": Node
+                "P": app.play,
+                "R": app.remove,
+                "RV": Rvec,
+                "S": util.sint,
+                "C": util.cost,
+                "T": util.tant,
+                # Q, V, already taken
+            }
+
         self.loc = {}
         exec(buf, self.globe, self.loc)
         self.globe = {**self.globe, **self.loc}
         self.loc = {}
 
-        self.update_hook = self.globe.get("update", None)
+        self.update_hook = self.globe.get("update", None) or self.globe.get("U", None)
         self.render_hook = self.globe.get("render", None)
         self.init_hook = self.globe.get("init", None)
 
-        if self.globe.get('console', True):
+        if self.globe.get("console", True):
             self.console = asyncio.get_event_loop()
             self.console.create_task(self.run_console())
         else:
@@ -176,13 +207,13 @@ class ZeroMode(Core):
 
     def state_change(self):
         state = self.states.top() or self
-        self.globe['scene'] = state.scene
-        self.globe['camera'] = state.camera
-    
+        self.globe["scene"] = state.scene
+        self.globe["camera"] = state.camera
+
     @asyncio.coroutine
     def run_console(self):
         yield from embed(self.globe, return_asyncio_coroutine=True, patch_stdout=True)
-        
+
         # session = pt.PromptSession()
         # while True:
         #     result = None
@@ -199,7 +230,7 @@ class ZeroMode(Core):
 
     def update(self, dt):
         super().update(dt)
-        
+
         if self.update_hook:
             # TODO: make this faster
             exec("update(" + str(dt) + ")", self.globe, self.loc)
@@ -222,15 +253,46 @@ def main():
     global _script
     global _script_path
     console = True
-    _script = sys.argv[-1]
-    if len(sys.argv) == 1 or _script == __file__:
+    args = sys.argv
+    cut_args = []
+    while True:
+
+        good = 0
+        try:  # remove flags, eg. '--blah'
+            if args[-1].startswith("-"):
+                cut_args = args[-1:]
+                args = args[:-1]
+            else:
+                good += 1
+        except IndexError:
+            good += 1
+            pass
+
+        try:  # remove kwargs, eg '--vsync off'
+            if args[-2].startswith("-"):
+                cut_args += args[-2:]
+                args = args[:-2]
+            else:
+                good += 1
+        except IndexError:
+            good += 1
+        if good >= 2:
+            break
+
+    _script = args[-1]
+    if len(args) == 1 or _script == __file__:
         _script = None
         _script_path = None
     else:
         _script_path = _script
-        sys.argv = sys.argv[:-1]
+        sys.argv = args[:-1] + cut_args
     ZeroMode.run()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except:
+        openal.oalQuit()
+        raise
+    openal.oalQuit()

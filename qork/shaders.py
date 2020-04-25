@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# import python_shader as gpu
+# from python_shader import python2shader as shader
+
 # vp, fp
 SHADER_BASIC = {
     "vertex_shader": """
@@ -35,3 +38,32 @@ SHADER_BASIC = {
     }
 """,
 }
+
+# @shader
+# def vertex_basic(
+#     ModelViewProjection: ('uniform', 'ModelViewProjection', gpu.mat4),
+#     in_vert: ('input', 'in_vert', gpu.vec3),
+#     in_text: ('input', 'in_text', gpu.vec2),
+#     v_text: ('output', 'v_text', gpu.vec2),
+#     gl_Position: ('output', 'gl_Position', gpu.vec2)
+# ):
+#     gl_Position = ModelViewProjection * vec4(in_vert, 1.0)
+#     v_text = in_text
+
+# @shader
+# def fragment_basic(
+#     texture: ('uniform', 'Texture', ''),
+#     in_text: ('input', 'in_text', gpu.vec2),
+#     f_color: ('output', 'f_color', gpu.vec4),
+#     gl_Position: ('output', 'gl_Position', gpu.vec2)
+# ):
+#     t = texture(texture, v_text)
+#     # if t.a < 0.75:
+#     #     return
+#     # else:
+#     f_color = t
+
+# SHADER_PYTHON_BASIC = {
+#     "vertex_shader": vertex_basic,
+#     "fragment_shader": fragment_basic
+# }

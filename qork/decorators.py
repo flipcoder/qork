@@ -12,10 +12,10 @@ def overlap(a, b=None):
     """
 
     if b is None:
-        b = a # same name or type
-    
+        b = a  # same name or type
+
     def overlap_decorator(func):
-        
+
         if type(a) in (tuple, list):
             for aa in a:
                 overlap(aa, b)(func)
@@ -41,8 +41,9 @@ def callnow(func):
 #     context = context or easy.qork_app()
 #     return func
 
+
 def call_every(duration, context=None, lifespan=None, **kwargs):
-    
+
     context = context or easy.qork_app()
 
     def every_decorator(func):
@@ -54,8 +55,10 @@ def call_every(duration, context=None, lifespan=None, **kwargs):
 
     return every_decorator
 
+
 def call_once(duration, context=None, lifespan=None, **kwargs):
-    return every(duration, context, lifespan, once=True, *kwargs)
+    return call_every(duration, context, lifespan, once=True, *kwargs)
+
 
 def call_when(cond, context=None, lifespan=None, **kwargs):
     """
@@ -74,4 +77,3 @@ def call_when(cond, context=None, lifespan=None, **kwargs):
         return func
 
     return when_decorator
-

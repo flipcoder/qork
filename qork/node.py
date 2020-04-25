@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import glm
 import math
+import pathlib
+import pprint
+from .box import *
 from .reactive import *
 from .signal import *
 from .when import *
@@ -9,6 +12,7 @@ from .defs import *
 from .corebase import *
 from .util import *
 from .easy import qork_app
+from itertools import chain
 import weakref
 from .script import Script
 from typing import Optional
@@ -70,11 +74,22 @@ class Node:
             # if '.' not in self.fn:
             #     self.connections += self.watch_resource(self.fn, self.modify)
 
+        if self.fn:
+            self.ext = pathlib.Path(self.fn).suffix
+        else:
+            self.ext = ""
+
         try:
             self.name
         except AttributeError:
-            self.name = kwargs.pop("name", None) or self.fn or self.__class__.__name__
-
+            self.num = kwargs.pop("num", None)
+            if self.num is not None:
+                self.name = kwargs.pop("name", None) or self.fn or str(self.num)
+            else:
+                self.name = (
+                    kwargs.pop("name", None) or self.fn or self.__class__.__name__
+                )
+                
         self.scripts = Container()
 
         self._inherit_transform = Reactive(True)
@@ -85,14 +100,14 @@ class Node:
         # for reloading or copying?
         self.args = args
         self.kwargs = kwargs
-        
+
         self.tags = set()
 
-        self._omega = None # angular velocity
+        self._omega = None  # angular velocity
         self.default_omega_axis = Z
 
         self._size = kwargs.pop("size", None)
-        self.is_root = kwargs.pop('root', False)
+        self.is_root = kwargs.pop("root", False)
 
         self.children = Container()
         # self.components = Container()
@@ -105,7 +120,6 @@ class Node:
         self.visible = True
         # self.self_visible = True
         self.children_visible = True
-        self.num = kwargs.pop("num", 0)
         self._parent = None
 
         # transform matrix, triggers inherited children on change and any listeners
@@ -147,32 +161,75 @@ class Node:
 
         # allow connections through .on_pend
 
-        pos = kwargs.pop("position", None) or kwargs.pop("pos", None)
-        rot = kwargs.pop("rot", None) or kwargs.pop("rotation", None)
-        scale = kwargs.pop("scale", None)
+        pos = (
+            kwargs.pop("position", None)
+            or kwargs.pop("pos", None)
+            or kwargs.pop("p", None)
+        )
+        vel = (
+            kwargs.pop("velocity", None)
+            or kwargs.pop("vel", None)
+            or kwargs.pop("v", None)
+        )
+        rot = (
+            # kwargs.pop("rotation", None)
+            kwargs.pop("rot", None)
+            or kwargs.pop("r", None)
+        )
+        scale = kwargs.pop("scale", None) or kwargs.pop("s", None)
+
+        if self.num is not None:
+            # allow `add(5, pos=lambda n: (n*10, 0, 0))
+            n = self.num
+            if callable(pos):
+                pos = pos(n)
+            if callable(vel):
+                vel = vel(n)
+            if callable(rot):
+                rot = rot(n)
+            if callable(scale):
+                scale = scale(n)
 
         if pos is not None:
             self.position = pos
+        if vel is not None:
+            self.velocity = vel
         if scale is not None:
             self.scale(scale)
         if rot is not None:
-            self.rotate(*rot)
-
-        if kwargs:
-            print(kwargs)
-            assert False
+            self.rotate(rot)
 
         if app.partitioner:
             app.partitioner += self
 
-    # def clear(collapse=False, cb=cb):
-    #     if collapse:
-    #         count = len(self.children)
-    #         for child in self.children:
-    #             child.collapse()
-    #         assert len(self.children) == 0
-    #         return count
-    #     return self.children.clear(cb=cb)
+        each = kwargs.pop("each", None)
+        if each:
+            each()
+
+    def tree(self, props="fvam"):
+        r = {}
+        r[str(self)] = {}
+        rr = r[str(self)]
+        if "p" in props:
+            if not fcmp(self.pos):
+                rr["pos"] = tuple(self.pos)
+        if self.fn and "f" in props:
+            rr["fn"] = self.fn
+        if "v" in props:
+            if self.vel and not fcmp(self.vel):
+                rr["vel"] = tuple(self.vel)
+        if "a" in props:
+            if self.accel and not fcmp(self.accel):
+                rr["accel"] = tuple(self.accel)
+        if "m" in props:
+            m = copy(self.matrix)
+            m = tuple(tuple(x) for x in m)
+            rr["matrix"] = m
+        rrr = rr["children"] = []
+        if self.children:
+            for ch in self.children:
+                rrr.append(ch.tree(props))
+        return r
 
     def tag(self, t):
         self.tags.add(t)
@@ -183,17 +240,19 @@ class Node:
         For ease of use, we want None to be the only false bool value
         """
         return True
-    
+
     def __len__(self):
         return len(self.children)
 
     @property
     def size(self):
-        if isinstance(self._size, (Lazy, Reactive)):
+        if callable(self._size):
             return self._size()
         return self._size
 
-    def __iter__(self, recursive=False, depth=None, include_self=False, only_self=False):
+    def __iter__(
+        self, recursive=False, depth=None, include_self=False, only_self=False
+    ):
         if include_self:
             yield self
         if not only_self:
@@ -215,10 +274,9 @@ class Node:
 
     def calculate_world_box(self):
         lbox = self._local_box
-        r = []
         if not lbox:
             return None
-        r = [vec3(), vec3()]  # min, max
+        r = Box()
         for i, v in enumerate(lbox):  # min, max
             r[i] = (self.world_matrix * vec4(v, 1)).xyz
         return r
@@ -262,11 +320,11 @@ class Node:
 
     @property
     def min(self):
-        return self._local_box()[0]
+        return self._local_box().min
 
     @property
     def max(self):
-        return self._local_box()[1]
+        return self._local_box().max
 
     # @min.setter
     # def min(self):
@@ -287,15 +345,15 @@ class Node:
         # if isinstance(c, Component):
         #     # component
         #     self.components += c
-        if type(c) in (tuple,list):
+        if type(c) in (tuple, list):
             for cc in c:
                 self += cc
             return
-        
+
         if isinstance(c, Slot):
             self.connections += c
         elif isinstance(c, str):
-            if c.startswith('#'):
+            if c.startswith("#"):
                 c = c[1:]
             self.tags.add(c)
         else:
@@ -309,7 +367,7 @@ class Node:
         if isinstance(c, Slot):
             self.connections -= c
         elif isinstance(c, str):
-            if c.startswith('#'):
+            if c.startswith("#"):
                 c = c[1:]
             try:
                 self.tags.remove(c)
@@ -410,9 +468,6 @@ class Node:
     def rotate(self, turns, axis=Z):
         self._matrix(glm.rotate(self.matrix, turns * math.tau, axis))
 
-    def __str__(self):
-        return self.name
-
     def stop(self):
         was_moving = bool(self.vel or self.accel)
         self.vel = None
@@ -423,13 +478,29 @@ class Node:
     def velocity(self):
         return self._vel or vec3(0)
 
+    @property
+    def v(self):
+        return self.velocity
+
+    @v.setter
+    def v(self, *v):
+        self.velocity = v
+
+    @property
+    def a(self):
+        return self.acceleration
+
+    @a.setter
+    def a(self, *v):
+        self.acceleration = a
+
     @velocity.setter
     def velocity(self, *v):
         if v is None:
             self._vel = None
             return None
         v = to_vec3(*v)
-        if fcmp(v, VEC3ZERO):
+        if fcmp(v):
             self._vel = None
             return None
         self._vel = v
@@ -437,7 +508,7 @@ class Node:
 
     @property
     def vel(self):
-        return self._vel or vec(0)
+        return self._vel or vec3(0)
 
     @vel.setter
     def vel(self, *v):
@@ -455,7 +526,7 @@ class Node:
 
     @property
     def accel(self):
-        return self._accel
+        return self.acceleration
 
     @accel.setter
     def accel(self, *a):
@@ -482,7 +553,7 @@ class Node:
         if v is None:
             assert False  #
         tv = type(v)
-        if tv in (list,tuple):
+        if tv in (list, tuple):
             v = to_vec3(*v)
         elif tv in (int, float):
             v = vec3(float(v))
@@ -494,14 +565,14 @@ class Node:
         #     self.pend()
         else:
             assert False  # not impl
-    
+
     def get_position(self, space=PARENT):
         if space == PARENT:
             return self._matrix()[3].xyz
         elif space == WORLD:
             return vec3(self._world_matrix()[3].xyz)
         assert False
-        
+
     def set_position(self, p, space=None):
         assert space is None
         # if type(v) == int and space is None:
@@ -539,11 +610,7 @@ class Node:
 
     @xy.setter
     def xy(self, p):
-        self.position = vec3(
-            p.x,
-            p.y,
-            self.position.z
-        )
+        self.position = vec3(p.x, p.y, self.position.z)
 
     @property
     def z(self):
@@ -630,13 +697,25 @@ class Node:
         self.set_position(to_vec3(*args))
 
     @property
+    def p(self, *p):
+        return self.get_position()
+
+    @pos.setter
+    def p(self, *args):
+        self.set_position(to_vec3(*args))
+
+    @property
     def world_pos(self):
+        return self.get_position(WORLD)
+
+    @property
+    def wpos(self):
         return self.get_position(WORLD)
 
     @property
     def angular_velocity(self):
         return self._omega
-    
+
     @angular_velocity.setter
     def angular_velocity(self, omega):
         """
@@ -665,9 +744,9 @@ class Node:
 
     @property
     def omega_space(self):
-        assert False # not yet impl
+        assert False  # not yet impl
         # return self._omega[2] if self._omega else None
-    
+
     def move(self, *v):
         self._matrix.value[3] += vec4(to_vec3(*v), 0.0)
         self._matrix.pend()
@@ -699,25 +778,27 @@ class Node:
             r = []
             for i in range(args[0]):
                 r.append(self.app.create(*args[1:], **kwargs, num=i))
-            cb = kwargs.get('cb', None)
+            cb = kwargs.get("cb", None)
             for i, node in enumerate(r):
                 self.attach(node, cb=lambda slot: cb(slot, i))
             return r
         if args and isinstance(args[0], Node):
-            cb = kwargs.get('cb', None)
+            cb = kwargs.get("cb", None)
             node = args[0]
             if node.parent:
                 self.detach()
+
             def callback():
                 if cb:
                     cb()
                 node.pend()
+
             self.children.connect(node, cb=lambda *a: callback())
             node._parent = weakref.ref(self)
             node._root = self._root  # weakref
             return node
         else:
-            cb = kwargs.pop('cb', None)
+            cb = kwargs.pop("cb", None)
             return self.attach(self.app.create(*args, **kwargs), cb=cb)
         assert False
 
@@ -729,9 +810,9 @@ class Node:
     #     pass
 
     def update(self, dt):
-        if self._accel:
+        if self._accel is not None:
             self.velocity += self._accel * dt
-        if self._vel:
+        if self._vel is not None:
             self.position += self._vel * dt
 
         self.on_update(self, dt)
@@ -761,7 +842,15 @@ class Node:
     #         if func:
     #             self.on_detach.connect(func, weak=False)
 
-    def collapse(self, space=WORLD, new_parent=None, recursive=False, include_self=False, children=False, cb=None):
+    def collapse(
+        self,
+        space=WORLD,
+        new_parent=None,
+        recursive=False,
+        include_self=False,
+        children=False,
+        cb=None,
+    ):
         """
         Collapse the node transform to world space and reconnect it to the root.
         If recursive is True, all children will be collapsed as well and
@@ -770,14 +859,14 @@ class Node:
         :param children: only collapse childen
         :param cb: since container operations can pend when blocked, provide callback when done
         """
-        
+
         assert space != LOCAL
         if new_parent is None:
             new_parent = self.root if space == WORLD else self.parent
             if new_parent is None:
                 # Already collapsed
                 return None
-        
+
         if include_self:
             self.detach(space=space, collapse=True)
         if recursive or children:
@@ -791,9 +880,9 @@ class Node:
             if include_self:
                 new_parent.add(self, cb=cb)
             return r
-        
+
         return new_parent.add(self, cb=cb)
-    
+
     def detach(self, node=None, collapse=True, inherit=True, reset=False, cb=None):
         """
         Detach a node from its parent and collapse its matrix into new_parent space (None means WORLD)
@@ -809,16 +898,16 @@ class Node:
             parent = self.parent
             if parent is None:
                 return
-            
+
             lm = self.matrix
             if self.inherit_transform:
                 wm = self.world_matrix
 
             if reset:
                 self.reset()
-                
+
             parent.detach(self, cb=cb)
-            
+
             if (not reset) and inherit and self.inherit_transform:
                 self.matrix = wm
 
@@ -851,11 +940,14 @@ class Node:
             for ch in self.children:
                 ch.render()
 
-    # def __repr__(self):
-    #     return (self.fn or self.name) + ':' + str(type(self).__name__) + ' {' + str(id(self)) + '}'
-    
     def __str__(self):
-        return (self.fn or self.name) + ':' + str(type(self).__name__)
+        name = self.name or self.fn or ''
+        typ = str(type(self).__name__)
+        if name == typ:
+            return name
+        if typ:
+            name = name + ':' + typ
+        return name
 
     def find_if(self, func, recursive=True, one=False):
         for child in self.children:
@@ -870,7 +962,7 @@ class Node:
         yield from self.find_if(lambda n: isinstance(n, typ), recursive)
 
     def find_by_tag(self, tag, recursive=True):
-        if tag.startswith('#'):
+        if tag.startswith("#"):
             tag = tag[1:]
         yield from self.find_if(lambda n: tag in n.tags, recursive)
 
@@ -902,7 +994,7 @@ class Node:
         elif arg == type:
             yield from self.find_by_type(arg, recursive)
         else:
-            assert False  # ???
+            raise TypeError
 
     def __contains__(self, node):
         if callable(node):
@@ -926,3 +1018,11 @@ class Node:
     def __del__(self):
         if self.app and self.app.partitioner:
             self.app.partitioner += self
+
+    @property
+    def filename(self):
+        return self.fn
+
+    @filename.setter
+    def filename(self, fn):
+        self.fn = fn
