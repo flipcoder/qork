@@ -10,7 +10,7 @@ Getting an image on the screen and moving around requires only one line of code:
 add('hello_world.png', vel=X)
 ```
 
-This will spawn an image with 1 unit/sec velocity to the right (X dir)
+This will spawn an image moving at 1 unit/sec velocity to the right (X dir)
 
 This will also start the live-coding console w/ autocomplete, where you can
 add code and play around with qork.
