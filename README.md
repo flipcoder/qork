@@ -7,10 +7,10 @@ This means an empty file is a valid blank window program.
 Getting an image on the screen and moving around requires only one line of code:
 
 ```
-add('hello_world.png', velocity=X)
+add('hello_world.png', vel=X)
 ```
 
-This will spawn an image, 1 unit/sec to the right (X dir)
+This will spawn an image at position, with 1 unit/sec velocity to the right (X dir)
 
 This will also start the live-coding console w/ autocomplete, where you can
 add code and play around with qork.
