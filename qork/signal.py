@@ -381,10 +381,10 @@ class Container:
     def __contains__(self, element):
         return element in iter(x.get() for x in self._slots)
 
-    def __iter__(self):
-        with self:
-            for slot in self._slots:
-                yield slot.get()
+    # def __iter__(self):
+    #     with self:
+    #         for slot in self._slots:
+    #             yield slot.get()
 
     # stack functions
 

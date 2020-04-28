@@ -40,14 +40,16 @@ class Camera(Node):
         if self.ortho:
             if min(self.app.size) <= 1:
                 return glm.mat4(1)
-            ratio = self.app.size[0] / self.app.size[1]
+            # ratio = self.app.size[0] / self.app.size[1]
+            ratio = self.app.aspect_ratio
             ratio /= 2
             return glm.ortho(-ratio, ratio, -0.5, 0.5, 0.5, -0.5)
         else:
+            # ratio = self.app.size[0] / self.app.size[1]
             return glm.perspectiveFov(
                 math.tau * self._fov(),
-                float(self.app.size[0]),
-                float(self.app.size[1]),
+                self.app.aspect_ratio,  # float(self.app.size[0]),
+                1,  # float(self.app.size[1]),
                 0.1,
                 1000.0,
             )

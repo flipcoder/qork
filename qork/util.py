@@ -5,7 +5,6 @@ import types
 import glm
 import math
 import enum
-import glm
 from glm import sign
 from functools import reduce
 import operator
@@ -214,7 +213,7 @@ def randp3yz(scale=1):
     return glm.vec3(0, random.random() * scale[1], random.random() * scale[2])
 
 
-def randp3yz(scale=1):
+def randp3xy(scale=1):
     if type(scale) in (float, int):
         scale = vec3(scale)
     return glm.vec3(random.random() * scale[0], random.random() * scale[1], 0)

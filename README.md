@@ -7,15 +7,16 @@ This means an empty file is a valid blank window program.
 Getting an image on the screen and moving around requires only one line of code:
 
 ```
-add('hello_world.png', velocity=X)
+add('hello_world.png', pos=-X, vel=X, spin=1)
 ```
 
-This will spawn an image, 1 unit/sec to the right (X dir)
+This will spawn an image on the left hand side of the screen,
+moving 1 unit/sec to the right (X dir), spinning 1turn/sec.
 
 This will also start the live-coding console w/ autocomplete, where you can
 add code and play around with qork.
 
-It is VERY NEW, so some things are only partially implemented, and not
+This framework is VERY NEW, so some things are only partially implemented, and not
 all examples and resources are done and included.  But feel free to look around!
 
 If you're familiar with gamedev, dive into the example folder or source!
@@ -255,9 +256,15 @@ print(child.wpos)
 ### Angular Velocity
 
 ```
-node.angular_velocity(1) # 1turn/s around Z axis
+node.spin(1) # 1 turn per sec around Z axis
 
-node.angular_velocity(1, Z) # or with axis
+node.spin(1, Y) # or with axis
+```
+
+You can change the default for all nodes:
+
+```
+Node.ROTATION_AXIS = Y
 ```
 
 ### Detaching
@@ -597,8 +604,8 @@ Some of these are not yet implemented, but this is what is planned so far:
     - rp: reset pos
     - rs: reset scale
     
-    - O: omega (angular velocity)
-    - W: omega axis
+    - w: spin/omega angle
+    - W: spin/omega axis
 
 ## Scripting
 

@@ -169,7 +169,7 @@ class ZeroMode(Core):
                 **self.globe,
                 "A": app.add,
                 "B": Box,
-                "C": app.camera,
+                # "C": app.camera,
                 "F": easy.find,
                 "F1": easy.find_one,
                 # "V": already used
@@ -292,7 +292,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except:
+    except Exception:
         openal.oalQuit()
         raise
     openal.oalQuit()

@@ -38,6 +38,8 @@ class Events(defaultdict):
 
 
 class Node:
+    ROTATION_AXIS = -Z
+
     def __init__(self, *args, **kwargs):
         if args:
             arg0 = args[0]
@@ -89,7 +91,7 @@ class Node:
                 self.name = (
                     kwargs.pop("name", None) or self.fn or self.__class__.__name__
                 )
-                
+
         self.scripts = Container()
 
         self._inherit_transform = Reactive(True)
@@ -103,8 +105,9 @@ class Node:
 
         self.tags = set()
 
-        self._omega = None  # angular velocity
-        self.default_omega_axis = Z
+        self._spin = kwargs.pop("spin", None)
+        self.spin_axis = self.ROTATION_AXIS
+        self.spin_space = PARENT
 
         self._size = kwargs.pop("size", None)
         self.is_root = kwargs.pop("root", False)
@@ -261,12 +264,10 @@ class Node:
                 if depth <= 0:
                     return
             for ch in self.children:
-                yield from ch.__iter__(
-                    recursive, include_self=True, only_self=not recursive
-                )
+                yield from ch.__iter__(recursive, depth, True, not recursive)
 
-    def walk(self, depth=None):
-        yield from self.__iter__(recursive=True, depth=depth)
+    def walk(self):
+        return self.__iter__(recursive=True)
 
     def each(self, func, recursive=False, depth=None, onlyself=False):
         for n in self.__iter__(recursive, depth, onlyself):
@@ -355,10 +356,13 @@ class Node:
         elif isinstance(c, str):
             if c.startswith("#"):
                 c = c[1:]
-            self.tags.add(c)
+                self.tags.add(c)
+            else:
+                self.add(c)
         else:
             # on_pend signal
             self.on_pend += c
+        return self
 
     def __isub__(self, c):
         # if isinstance(c, Component):
@@ -369,16 +373,19 @@ class Node:
         elif isinstance(c, str):
             if c.startswith("#"):
                 c = c[1:]
-            try:
-                self.tags.remove(c)
-            except KeyError:
-                pass
+                try:
+                    self.tags.remove(c)
+                except KeyError:
+                    pass
+            else:
+                self.remove(c)
         else:
             # on_pend signal
             self.on_pend += c
+        return self
 
-    def __isub__(self, con):
-        self.connections -= con
+    # def __isub__(self, con):
+    # self.connections -= con
 
     def __enter__(self):
         return self.children.__enter__()
@@ -465,7 +472,7 @@ class Node:
     # def matrix(self, space=PARENT):
     #     return matrix(self, parent)
 
-    def rotate(self, turns, axis=Z):
+    def rotate(self, turns, axis=ROTATION_AXIS):
         self._matrix(glm.rotate(self.matrix, turns * math.tau, axis))
 
     def stop(self):
@@ -652,7 +659,7 @@ class Node:
     def ax(self):
         return self.acceleration.x
 
-    @vx.setter
+    @ax.setter
     def ax(self, v):
         p = self.acceleration
         self.acceleration = vec3(v, p.y, p.z)
@@ -661,7 +668,7 @@ class Node:
     def ay(self):
         return self.acceleration.y
 
-    @vy.setter
+    @ay.setter
     def ay(self, v):
         p = self.acceleration
         self.acceleration = vec3(p.x, v, p.z)
@@ -670,7 +677,7 @@ class Node:
     def az(self):
         return self.acceleration.y
 
-    @vz.setter
+    @az.setter
     def az(self, v):
         p = self.acceleration
         self.acceleration = vec3(p.x, p.y, v)
@@ -689,7 +696,7 @@ class Node:
         return self.set_position(WORLD)
 
     @property
-    def pos(self, *p):
+    def pos(self):
         return self.get_position()
 
     @pos.setter
@@ -697,10 +704,10 @@ class Node:
         self.set_position(to_vec3(*args))
 
     @property
-    def p(self, *p):
+    def p(self):
         return self.get_position()
 
-    @pos.setter
+    @p.setter
     def p(self, *args):
         self.set_position(to_vec3(*args))
 
@@ -712,40 +719,27 @@ class Node:
     def wpos(self):
         return self.get_position(WORLD)
 
-    @property
-    def angular_velocity(self):
-        return self._omega
+    # @property
+    # def angular_velocity(self):
+    #     return self._spin
 
-    @angular_velocity.setter
-    def angular_velocity(self, omega):
-        """
-        Set angular velocity (omega)
-        If angle is a tuple it is:
-            (turns, axis, space)
-        """
-        if type(omega) in (tuple, list):
-            if fcmp(omega[0], VEC3ZERO):
-                self._omega = None
-                return
-            self._omega = tuple(*angle)
+    # @angular_velocity.setter
+    # def angular_velocity(self, angle):
+    #     if fcmp(spin):
+    #         self._spin = None
+    #         return
+    #     self._spin = angle
+
+    @property
+    def spin(self):
+        return self._spin
+
+    @spin.setter
+    def spin(self, angle):
+        if fcmp(angle):
+            self._spin = None
             return
-        if fcmp(omega, VEC3ZERO):
-            self._omega = None
-            return
-        self._omega = (angle, self.default_omega_axis, None)
-
-    @property
-    def omega(self):
-        return self._omega[0] if self._omega else 0
-
-    @property
-    def omega_axis(self):
-        return self._omega[1] if self._omega else self.default_omega_axis
-
-    @property
-    def omega_space(self):
-        assert False  # not yet impl
-        # return self._omega[2] if self._omega else None
+        self._spin = angle
 
     def move(self, *v):
         self._matrix.value[3] += vec4(to_vec3(*v), 0.0)
@@ -810,6 +804,10 @@ class Node:
     #     pass
 
     def update(self, dt):
+        if self._spin is not None:
+            # TODO: convert spin from spin space
+            self.rotate(self._spin * dt, self.spin_axis)
+
         if self._accel is not None:
             self.velocity += self._accel * dt
         if self._vel is not None:
@@ -941,12 +939,12 @@ class Node:
                 ch.render()
 
     def __str__(self):
-        name = self.name or self.fn or ''
+        name = self.name or self.fn or ""
         typ = str(type(self).__name__)
         if name == typ:
             return name
         if typ:
-            name = name + ':' + typ
+            name = name + ":" + typ
         return name
 
     def find_if(self, func, recursive=True, one=False):

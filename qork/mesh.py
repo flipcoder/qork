@@ -256,7 +256,7 @@ class Mesh(Node):
 
         # does cache already have this mesh?
         if self.data:
-            if not meshname in self.cache:
+            if meshname not in self.cache:
                 meshdata = MeshResource(
                     self.app,
                     self.data.name,

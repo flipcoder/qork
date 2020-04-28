@@ -3,8 +3,9 @@
 import weakref
 from .reactive import *
 
+
 class Meta:
-    def __init__(self, obj=None, parent=None)
+    def __init__(self, obj=None, parent=None):
         obj = self.obj = {}
         if type(parent) is weakref.ref:
             self.parent = parent
@@ -18,8 +19,10 @@ class Meta:
                 obj[k] = Meta(v)
             elif tv is dict:
                 obj[k] = Meta(v)
+
     def __setattr__(self, k, v):
         self.obj[k]
+
     def __getattr__(self, v):
         return self.obj[v]
 

@@ -87,7 +87,21 @@ TEXTURED_QUAD = Prefab('TEXTURED_QUAD', [
 # fmt: on
 
 X = glm.vec3(1, 0, 0)
+XY = glm.normalize(glm.vec3(1, 1, 0))
 Y = glm.vec3(0, 1, 0)
+YZ = glm.normalize(glm.vec3(0, 1, 1))
 Z = glm.vec3(0, 0, 1)
+XZ = glm.normalize(glm.vec3(1, 0, 1))
+
+nXY = glm.normalize(glm.vec3(-1, 1, 0))
+nYZ = glm.normalize(glm.vec3(0, -1, 1))
+XnY = glm.normalize(glm.vec3(1, -1, 0))
+nYZ = glm.normalize(glm.vec3(0, -1, 1))
+YnZ = glm.normalize(glm.vec3(0, 1, -1))
+nXZ = glm.normalize(glm.vec3(-1, 0, 1))
+XnZ = glm.normalize(glm.vec3(1, 0, -1))
+
+# For others use:
+#  -X, -Y, -Z, -XY, -YZ, -XZ, etc.
 
 AXIS = (X, Y, Z)

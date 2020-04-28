@@ -24,7 +24,6 @@ from .node import *
 from .mesh import *
 from .partitioner import *
 from .canvas import *
-from .corebase import *
 from .camera import *
 from .when import *
 from .audio import *
@@ -435,8 +434,7 @@ class Core(mglw.WindowConfig, CoreBase):
     def resolve_resource(self, *args, **kwargs):
         fn = filename_from_args(args, kwargs)
         assert fn
-        fnl = fn.lower()
-        ext = pathlib.Path(fn).suffix
+        ext = pathlib.Path(fn.lower()).suffix
         if kwargs.pop("T", None):  # type
             assert False
         if ext in [".mp3", ".wav", ".ogg"]:
@@ -449,7 +447,7 @@ class Core(mglw.WindowConfig, CoreBase):
                 return None, None, None
             if data:
                 if data["type"] == "sprite":
-                    return Sprite, args, kwargs # !
+                    return Sprite, args, kwargs  # !
                 elif data["type"] == "sound":
                     return Sound.Resource, args, kwargs
                 elif data["type"] == "mesh":
