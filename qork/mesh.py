@@ -27,7 +27,7 @@ class MeshResource(Resource):
         self.flipped = {}
         self.generated = False
         self.vbo = self.vao = None
-        self.solid = kwargs.pop("solid", False)
+        # self.solid = kwargs.pop("solid", False)
         self._box = Lazy(self.calculate_box, [self._data])
         self.on_pend = Signal()
 
@@ -133,7 +133,7 @@ class MeshResource(Resource):
                 newdata[i * 5 + 4] = 1.0 - newdata[i * 5 + 4]
         if self.fn:  # if not temp name, append flags to cached name
             meshname = self.fn + ":+" + flags
-        meshdata = MeshResource(
+        resource = MeshResource(
             self.app,
             meshname,
             newdata,
@@ -142,8 +142,8 @@ class MeshResource(Resource):
             *self.args,
             **self.kwargs
         )
-        # meshdata.flipped[flags] = self
-        flipped = self.flipped[flags] = self.cache.ensure(meshname, meshdata)
+        # resource.flipped[flags] = self
+        flipped = self.flipped[flags] = self.cache.ensure(meshname, resource)
         assert flipped
         return flipped
 
@@ -181,27 +181,27 @@ class Mesh(Node):
         if self.fn:
             self.load()
 
-    # meshdata
+    # resource
     @property
     def data(self):
         return self._data() if self._data else None
 
-    # meshdata
+    # resource
     @data.setter
     def data(self, d):
         self._data(d)
 
     def flip(self, flags):
-        self.meshdata = self.meshdata.hflip(flags)
+        self.resource = self.resource.hflip(flags)
 
     def hflip(self):
-        self.meshdata = self.meshdata.hflip()
+        self.resource = self.resource.hflip()
 
     def vflip(self):
-        self.meshdata = self.meshdata.vflip()
+        self.resource = self.resource.vflip()
 
     def hvflip(self):
-        self.meshdata = self.meshdata.hvflip()
+        self.resource = self.resource.hvflip()
 
     def load(self, fn=None):
         assert not self.loaded
@@ -257,25 +257,25 @@ class Mesh(Node):
         # does cache already have this mesh?
         if self.data:
             if meshname not in self.cache:
-                meshdata = MeshResource(
+                resource = MeshResource(
                     self.app,
                     self.data.name,
                     self.data.data,
                     self.app.shader,
                     self.mesh_type,
                 )
-                self.meshdata = self.cache.ensure(meshname, meshdata)
+                self.resource = self.cache.ensure(meshname, resource)
             else:
-                self.meshdata = self.cache(meshname)
+                self.resource = self.cache(meshname)
         else:
-            self.meshdata = None
+            self.resource = None
 
         if self.sprite:
             self.material = Animator(self)
         self.loaded = True
 
-        self.meshdata_con = self.meshdata.connect(self.set_local_box)
-        self.set_local_box(self.meshdata.box)
+        self.resource_con = self.resource.connect(self.set_local_box)
+        self.set_local_box(self.resource.box)
 
     def update(self, t):
         super().update(t)
@@ -284,16 +284,16 @@ class Mesh(Node):
 
     def render(self):
         assert self.loaded
-        if self.visible and self.meshdata:
+        if self.visible and self.resource:
             self.app.matrix(
                 self.world_matrix if self.inherit_transform else self.matrix
             )
 
-            # TODO: move this to Material/Animator
+            # TODO: move this to Material/Animator and call material.use(i) here
             for i in range(len(self.layers)):
                 self.layers[i][self.skin][self.frame].use(i)
 
-            self.meshdata.render()
+            self.resource.render()
         super().render()
 
     # def __del__(self):

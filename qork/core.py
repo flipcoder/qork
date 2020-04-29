@@ -66,7 +66,7 @@ def _try_load(fn, paths, func, *args, **kwargs):
 
 class Core(mglw.WindowConfig, CoreBase):
     gl_version = (3, 3)
-    window_size = (960, 540)
+    window_size = (1920, 1080)
     aspect_ratio = 16 / 9
     resizable = True
     samples = 4

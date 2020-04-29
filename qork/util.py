@@ -9,6 +9,7 @@ from glm import sign
 from functools import reduce
 import operator
 import random
+import webcolors
 from .defs import *
 
 
@@ -123,6 +124,17 @@ def change_filename(fn, args, kwargs=None, keepname=False):
     args = [fn] + args
     return args, kwargs
 
+def remove_filename(args, kwargs=None, keepname=False):
+    """
+    Given node ctor args, remove fn params and replace with single fn
+    If keepname, the old name (either arg or name) is used for name= kwarg
+    """
+    if kwargs:
+        kwargs.pop("fn", None)
+        kwargs.pop("filename", None)
+    if args and type(args[0]) is str:
+        args = args[1:]
+    return args, kwargs
 
 def fcmp(a, b=None):
     """
@@ -192,7 +204,42 @@ def to_vec3(*args):
             return glm.vec3(*args[:3])
 
     print(args)
-    assert False
+    raise ValueError('invalid vec3')
+
+def color(*args):
+    if args is None:
+        return None
+    v = args[0]
+    ta = type(v)
+    if ta in (tuple, list):
+        return color(*v)
+    if v is None:
+        return
+    lenargs = len(args)
+    a = 1.0
+    if ta is str:
+        r = webcolors.html5_parse_legacy_color(v)
+        r = glm.vec4(glm.vec3(*r)/255.0, a)
+        print(r)
+        return r
+    elif ta in (float, int):
+        return glm.vec4(glm.vec3(args), a)
+    elif ta == glm.vec3:
+        return glm.vec4(args, a)
+    elif ta == glm.vec4:
+        return args
+    else:
+        if lenargs == 4:
+            return glm.vec4(*args)
+        elif lenargs == 3:
+            return glm.vec4(glm.vec3(*args), a)
+        elif lenargs == 1:
+            return glm.vec4(glm.vec3(v), a)
+        elif lenargs == 2:
+            return glm.vec4(glm.vec3(v), args[1])
+
+    print(args)
+    raise ValueError('invalid color')
 
 
 # def component_scalar(s, i):
@@ -297,9 +344,8 @@ def nrand(*args):
 nrandf = nrand
 
 
-def ncolor(s=1):
+def rcolor(s=1):
     return vec4(randv3(), 1.0)
-
 
 def nbool(s=1):
     """

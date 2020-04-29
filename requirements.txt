@@ -11,3 +11,4 @@ ptpython
 imgui
 watchdog
 pyopenal
+webcolors

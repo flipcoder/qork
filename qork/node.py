@@ -730,16 +730,19 @@ class Node:
     #         return
     #     self._spin = angle
 
-    @property
-    def spin(self):
-        return self._spin
+    # @property
+    # def spin(self):
+    #     return self._spin
 
-    @spin.setter
-    def spin(self, angle):
+    # @spin.setter
+    def spin(self, angle=DUMMY, axis=Z):
+        if angle is DUMMY:
+            return self._spin
         if fcmp(angle):
             self._spin = None
             return
         self._spin = angle
+        self.spin_axis = axis
 
     def move(self, *v):
         self._matrix.value[3] += vec4(to_vec3(*v), 0.0)

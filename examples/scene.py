@@ -23,7 +23,6 @@ def update(dt):
     t += dt
     camera.pos = (0, 0, 2 + 0.5 * sint(t))
     p.rotate(dt * 0.1)
-    p.rotate(dt * 0.1)
     for i, n in enumerate(nodes):
         n.z = 1 + 0.5 * sint(t)
         n.rotate(dt * i * 0.1)
