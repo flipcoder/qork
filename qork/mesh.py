@@ -245,8 +245,9 @@ class Mesh(Node):
             else:
                 # image preloaded
                 if self.image:
-                    if not isinstance(self.image, Image):
-                        self.image = self.image.data  # unpack image resource
+                    # if not isinstance(self.image, Image.Image):
+                    #     data = self.image.data  # unpack image resource
+                    self.image = self.image.convert("RGBA")
                     self.material = Material(
                         self.ctx.texture(self.image.size, 4, self.image.tobytes())
                     )
@@ -266,7 +267,8 @@ class Mesh(Node):
         if not isinstance(self.data, Prefab) or (not self.fn or "." not in self.fn):
             self.data = TEXTURED_QUAD_CENTERED
             self.mesh_type = gl.TRIANGLE_STRIP
-            self.filter = (gl.NEAREST, gl.NEAREST)
+            if not self.filter:
+                self.filter = (gl.NEAREST, gl.NEAREST)
             meshname = self.data.name
 
         # does cache already have this mesh?
@@ -306,8 +308,7 @@ class Mesh(Node):
             )
 
             if type(self.material) is Material:  # TEMP
-                print("mat")
-                self.material.use(i)
+                self.material.use()
             else:
                 # TODO: move this to Material/Animator and call material.use(i) above
                 for i in range(len(self.layers)):

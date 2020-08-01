@@ -2,11 +2,11 @@
 
 # from pprint import pp
 
-console = False
-camera.mode = "3D"
-camera.z = 1
+console(False)
+camera.mode = "2D"
+# camera.z = 1
 
-add("test.tmx")
+m = add("modern.tmx", pos=-Z, scale=.05)
 
 # pp(scene.tree('p'))
 
@@ -19,7 +19,6 @@ def update(dt):
         key(KEY.UP) - key(KEY.DOWN),
         key(KEY.ENTER) - key(KEY.SPACE)
     )
-    # print(camera.pos)
     
     t += dt
 

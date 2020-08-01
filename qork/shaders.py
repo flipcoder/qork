@@ -31,7 +31,7 @@ SHADER_BASIC = {
 
     void main() {
         vec4 t = texture(Texture, v_text);
-        if(t.a < 0.75)
+        if(t.a < 0.5)
             discard;
         else
             f_color = t;

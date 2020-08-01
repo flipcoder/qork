@@ -31,8 +31,10 @@ class TileMap(Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # self.layers = Container()
-        tmx = self.tmx = pytmx.TiledMap(self.fn, image_loader=self._load_img)
+        # TODO: do correct filename
+        tmx = self.tmx = pytmx.TiledMap('data/' + self.fn, image_loader=self._load_img)
         # print(tmx.layers)
+        layer_ofs = 0
         for i, layer in enumerate(tmx.layers):
             if isinstance(layer, pytmx.TiledImageLayer):
                 pass
@@ -40,14 +42,13 @@ class TileMap(Node):
                 if hasattr(layer, "tiles"):
                     for x, y, image in layer.tiles():
                         if image:
-                            pos = vec3(vec2(x, y), 0)
-                            # TODO: cache shape too
-                            # print('try to add')
-                            m = self.add(Mesh(image, pos=pos, scale=0.1, name="Tile"))
-                            print(m.tree())
+                            pos = vec3(vec2(x, -y), layer_ofs)
+                            flt = (gl.NEAREST, gl.NEAREST)
+                            m = self.add(Mesh(image=image, pos=pos, filter=flt))
                 for obj in layer:
                     pass
                     # print(obj)
+            layer_ofs += 0.1
 
     def _load_img(self, fn, colorkey, tileset=None):
 
@@ -66,7 +67,19 @@ class TileMap(Node):
         #     raise FileNotFoundError()
         # img = img.convert("RGBA")
 
+        newimg = not self.cache.has(fn)
         img = self.cache(fn)
+        if newimg:
+            img.data = img.data.convert('RGBA')
+            data = img.data.getdata()
+            d = []
+            for e in data:
+                if e[0:3] == (255, 0, 255):
+                    d.append((0, 0, 0, 0))
+                else:
+                    d.append(e)
+
+            img.data.putdata(d)
         # print(img.data.size)
 
         def loader(dim=None, flags=None):
@@ -74,6 +87,7 @@ class TileMap(Node):
             if dim is None:
                 return img
             key = fn + "+" + ",".join(map(lambda s: str(s), dim))
+            # print(key)
             h, v = False, False
             if flags:
                 h = flags.flipped_horizontally
@@ -86,11 +100,11 @@ class TileMap(Node):
                     key += "+v"
             r = self.app.cache.get(key, None)
             if r is None:
+                # print(dim)
                 region = [dim[0], dim[1], dim[0] + dim[2], dim[1] + dim[3]]
                 r = img.data.crop(region)
                 # TODO: do flips
                 self.app.cache[key] = r
-            # print(key, "->", r)
             return r
             # print('loader', dim, flags)
             # return fn
