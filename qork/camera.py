@@ -44,7 +44,7 @@ class Camera(Listener):
             # ratio = self.app.size[0] / self.app.size[1]
             ratio = self.app.aspect_ratio
             ratio /= 2
-            return glm.ortho(-ratio, ratio, -0.5, 0.5, 0.0, 1000.0)
+            return glm.ortho(-ratio, ratio, -0.5, 0.5, -1.0, 1000.0)
         else:
             # ratio = self.app.size[0] / self.app.size[1]
             return glm.perspectiveFov(
