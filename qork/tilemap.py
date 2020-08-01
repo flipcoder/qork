@@ -32,7 +32,7 @@ class TileMap(Node):
         super().__init__(*args, **kwargs)
         # self.layers = Container()
         # TODO: do correct filename
-        tmx = self.tmx = pytmx.TiledMap('data/' + self.fn, image_loader=self._load_img)
+        tmx = self.tmx = pytmx.TiledMap("data/" + self.fn, image_loader=self._load_img)
         # print(tmx.layers)
         layer_ofs = 0
         for i, layer in enumerate(tmx.layers):
@@ -70,7 +70,7 @@ class TileMap(Node):
         newimg = not self.cache.has(fn)
         img = self.cache(fn)
         if newimg:
-            img.data = img.data.convert('RGBA')
+            img.data = img.data.convert("RGBA")
             data = img.data.getdata()
             d = []
             for e in data:
