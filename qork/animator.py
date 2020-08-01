@@ -18,3 +18,6 @@ class Animator(Material):
     def update(self, t):
         pass
         # self.node.frame = int(self.app.time % 10)
+
+    def use(self, idx):
+        pass

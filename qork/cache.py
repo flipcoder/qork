@@ -44,6 +44,18 @@ class Cache(Factory):
         self.resources[fn] = r
         return r
 
+    def get(self, key, default=DUMMY):
+        if default is DUMMY:
+            return self.resources[key]
+        else:
+            return self.resources.get(key, default)
+    
+    def __getitem__(self, key, default=None):
+        return self.resources[default]
+
+    def __setitem__(self, key, value):
+        self.resources[key] = value
+
     def has(self, fn):
         return fn in self.resources
 

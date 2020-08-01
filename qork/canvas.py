@@ -32,22 +32,6 @@ class Canvas(Mesh):
 
         # self.quad_fs = geometry.quad_fs()
 
-        self.resource = MeshResource(self.app, '', TEXTURED_QUAD_CENTERED.data, self.app.shader, gl.TRIANGLE_STRIP)
-        # self.resource_con = self.resource.connect(self.set_local_box)
-        self.set_local_box(self.resource.box)
-        self._source = None
-        
-        self.loaded = True
-        self.stack: deque[Connections] = deque() # Connections stack
-        
-        res = kwargs.pop('res', self.app.size)
-        self.res = ivec2(*res)
-        
-        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *self.res)
-        self.cairo = cairo.Context(self.surface)
-
-        # cairo.Context.__init__(self, self.surface)
-
         # self.shader = self.app.ctx.shader(SHADER_BASIC)
 
         # self.shader = self.app.ctx.program(
@@ -72,22 +56,92 @@ class Canvas(Mesh):
         #     """,
         # )
 
+        self.resource = MeshResource(
+            self.app,
+            "",
+            TEXTURED_QUAD_CENTERED.data,
+            self.app.shader,
+            gl.TRIANGLE_STRIP,
+        )
+        # self.resource_con = self.resource.connect(self.set_local_box)
+        self.set_local_box(self.resource.box)
+        self._source = None
+
+        self.loaded = True
+        self.stack: deque[Connections] = deque()  # Connections stack
+
+        res = kwargs.pop("res", self.app.size)
+        self.res = ivec2(*res)
+
+        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *self.res)
+        self.cairo = cairo.Context(self.surface)
+
         self.on_render = Signal()
+        self.refresh()
         # self.connections += self.on_resize.connect(lambda: self.set_dirty(True))
 
         self.texture = None
-        self.dirty = True
         self._use_text = False
 
         self.clear()
-        text = kwargs.pop('text', None)
-        if text is not None:
+        text = kwargs.pop("text", None)
+        if text:
             self.text(text)
 
+        grad = kwargs.pop("gradient", None) or kwargs.pop('grad', None)
+        if grad:
+            self.gradient(grad)
         # self.shadow = False
 
-    def refresh(self):
-        self.dirty = True
+    def gradient(self, *colors, region=None):
+        if not colors:
+            return None
+
+        # TODO: check colors for Gradient object, use that instead
+        # TODO: allow reactive colors (Rcolor)
+        
+        if region is None:
+            grad = cairo.LinearGradient(0, 0, *self.res)
+        else:
+            grad = cairo.LinearGradient(*region)
+        
+        # is there stops? or just one color
+        # stops = type(colors[0]) in (tuple, list)
+        
+        # # allow color or (step, color)
+        # if type(colors[0]) in (tuple, list):
+        #     interps = list(map(lambda s: s[0], colors))
+        #     colors = list(map(lambda s: s[1], colors))
+        # else:
+        #     interps = None
+        
+        stops = len(colors)
+        # for i, col in enumerate(colors):
+        #     if type(col) in (tuple,list): # unpack (stop, color)
+        #         stops += 1
+        
+        for i, col in enumerate(colors):
+            if type(col) in (tuple,list): # unpack (stop, color)
+                stop = colors[i][0]
+                col = col[1]
+                print(stop, col)
+            else:
+                stop = i / max(1, stops-1) # auto
+            col = Color(col).rgb
+            print(col)
+            print(stop)
+            grad.add_color_stop_rgb(stop, *col)
+        
+        def f():
+            self.cairo.rectangle(0, 0, *self.res)
+            self.cairo.set_source(grad)
+            self.cairo.fill()
+        self.on_render += f
+        self.refresh()
+        return grad
+
+    # def refresh(self):
+    #     self.dirty = True
 
     @property
     def w(self):
@@ -100,17 +154,16 @@ class Canvas(Mesh):
     @property
     def source(self):
         return self._source
-        
+
     @source.setter
     def source(self, col):
-        print('source', col)
-        col = color(col)
+        # print('source', col)
+        self._source = col = Color(col)
         self.on_render += lambda col=col: self.set_source_rgba(*col)
-        self._source = col
-        self.dirty = True
+        self.refresh()
 
     def font(self, *args):
-        name = ''
+        name = ""
         sz = None
         if args:
             for a in args:
@@ -121,46 +174,94 @@ class Canvas(Mesh):
                     name = a
         if sz is None:
             sz = self.app.size[0] // 15
-        print(sz)
+        # print(sz)
         def f():
             self.cairo.set_font_face(cairo.ToyFontFace(name))
             self.cairo.set_font_size(sz)
-        self.on_render += f
-        self._use_text = True
-        self.dirty = True
 
-    def text(self, s, pos=(0,0), col=None, align=''):
+        self.on_render += f
+        self.refresh()
+        self._use_text = True
+
+    def text(self, s, col='white', pos=None, flags="c"):
+        """
+        :param align: string: char flags
+            l: relative to left
+            r: relative to right
+            t: relative to top
+            b: relative to bottom
+        """
+        full_args = locals()
+        
         if not self._use_text:
             self.font()
             self._use_text = True
-        def f(s=s, pos=pos, align=align):
-            if col is not None:
-                self.cairo.set_source_rgba(*color(col))
+
+        col = Color(col)
+        
+        
+        if pos is None:
+            pos = vec2(0)
+        else:
+            pos = copy(pos)
+        
+        if flags:
+            for ch in flags:
+                if ch == 'l':
+                    pos += ivec2(-self.res[0] // 2, 0)
+                elif ch == 'r':
+                    pos += ivec2(self.res[0] // 2, 0)
+                elif ch == 't':
+                    pos += ivec2(0, -self.res[1] // 2)
+                elif ch == 'b':
+                    pos += ivec2(0, self.res[1] // 2)
+        
+        
+        def f(s=s, pos=pos):
+            self.cairo.set_source_rgba(*col)
             
+            # this has to be called in f, since the order of this func matters
             extents = self.cairo.text_extents(s)
             
-            print(extents)
-            # x = extents[2]//2 if 'h' in align else 0
-            # y = -extents[3]//2 if 'v' in align else 0
-            x = -extents[2]//2
-            y = extents[3]//4
+            # print(extents)
+            origin = self.res / 2
+            # pos -= ivec2(extents.width, extents.height)/2
+            pos.x -= extents.width / 2
+            pos.y += extents.height / 4
+            # pos.y -= extents.height // 2
+            if 'c' in flags or 'h' in flags:
+                pos.x += origin.x
+            if 'c' in flags or 'v' in flags:
+                pos.y += origin.y
+            # pos offsets
+            # print(pos)
+            # print(x, y)
 
-            self.cairo.move_to(int(pos[0]) + x, int(pos[1]) + y)
+            self.cairo.move_to(*pos)
             self.cairo.show_text(s)
-        self.on_render += f
-        self.dirty = True
 
-    def clear(self):
-        self.on_render.clear()
-        def f():
-            # self.cairo.set_operator(cairo.OPERATOR_CLEAR)
-            # self.cairo.paint()
-            self.cairo.rectangle(0, 0, *self.res)
-            self.cairo.set_source_rgba(0,0,0,0)
-            self.cairo.fill()
         self.on_render += f
-        self.dirty = True
-    
+        # self.on_render.store(f, name='text(' + str(full_args) + ')')
+        self.refresh()
+
+    def clear(self, col=(0,0,0,0)):
+        col = Color(col)
+        
+        self.on_render.clear()
+        self.stack.clear()
+
+        def f():
+            # self.cairo.rectangle(0, 0, *self.res)
+            # self.cairo.set_source_rgba(*col)
+            self.source = col
+            self.cairo.set_operator(cairo.OPERATOR_CLEAR)
+            self.cairo.paint()
+            self.cairo.set_operator(cairo.OPERATOR_OVER)
+            
+        # self.on_render += f
+        self.on_render.store(f, name='clear')
+        self.refresh()
+
     def push(self):
         c = Connections()
         self.stack.append(c)
@@ -172,30 +273,59 @@ class Canvas(Mesh):
         else:
             self.stack.remove(c)
         return c
-    
-    def render(self):
+
+    def refresh(self, b=True, /, now=False, preview=False):
+        """
+        (default): sets dirty flag to b value
+        b: dirty flag state
+        now: redraws if refresh needed
+        preview: show image preview
+        """
         
-        if not self.visible:
+        if not now:
+            self.dirty = b
             return
         
+        assert b == True # b==False and now==True ?
+        
         if self.dirty:
+            
+            # render queued cairo operations
+            print('rendered', len(self.on_render))
+            for op in self.on_render.slots:
+                if op.name:
+                    print(op.name, op.func)
+                else:
+                    print(op.func)
             self.on_render()
+            
             data = self.surface.get_data()
             # for i in range(len(data)//4): # ABGR -> RGBA
             #     data[i+3] = data[i]
             #     data[i+1] = data[i+2]
+            
             # print(list(data[0:4]))
-            # img = Image.frombuffer("ABGR",tuple(self.res),data,"raw","RGBA",0,1)
-            # img.show()
+            
             self.texture = self.app.ctx.texture(self.res, 4, data=data)
             self.dirty = False
-        
+
             # img.show()
+
+    def preview(self):
+        self.refresh(now=True)
+        data = self.surface.get_data()
+        img = Image.frombuffer("RGBA",tuple(self.res),data,"raw","RGBA",0,1)
+        img.show()
+
+    def render(self):
+
+        if not self.visible:
+            return
+
+        self.refresh(now=True)
         
-        self.app.matrix(
-            self.world_matrix if self.inherit_transform else self.matrix
-        )
-        
+        self.app.matrix(self.world_matrix if self.inherit_transform else self.matrix)
+
         self.texture.use()
         self.resource.render()
 
@@ -204,7 +334,7 @@ class Canvas(Mesh):
         # if self.texture:
         #     self.app.ctx.enable(gl.BLEND)
         #     self.texture.use(location=0)
-            # self.quad_fs.render(self.shader)
+        # self.quad_fs.render(self.shader)
 
 
 # Mix in cairo context members
@@ -227,8 +357,10 @@ for name, method in cairo.Context.__dict__.items():
         name = "canvas_" + name
 
     def f(self, *args, name=name, method=method, **kwargs):
-        print(name, args, kwargs)
-        slot = self.on_render.connect(lambda method=method: method(self.cairo, *args, **kwargs), weak=False)
+        # print(name, args, kwargs)
+        slot = self.on_render.connect(
+            lambda method=method: method(self.cairo, *args, **kwargs), weak=False
+        )
         if self.stack:
             self.stack[-1] += slot
         self.dirty = True

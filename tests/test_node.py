@@ -66,7 +66,7 @@ def test_node_walk():
     a = Node()
     b = a.add(5)
     assert len(a) == 5
-    assert len(list(walk(a))) == 5
+    assert len(list(a.walk())) == 5
 
 
 def test_node_find():
@@ -77,7 +77,7 @@ def test_node_find():
     assert list(a.find("foo")) == [b]
     assert list(a.find("bar")) == [c]
 
-    b.tag("#baz")
-    assert b.tags == set(["#baz"])
+    b.tag("baz")
+    assert b.tags == set(["baz"])
     assert list(a.find("baz")) == []
     assert list(a.find("#baz")) == [b]

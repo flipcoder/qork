@@ -3,7 +3,7 @@
 img = "player.png"
 
 camera.mode = "3D"
-camera.pos = (0, 0, 1)
+camera.z = 1
 
 p = add(img)
 

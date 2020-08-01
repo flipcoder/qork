@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import weakref
 
-from .signal import Signal, Slot
+from .signal import Signal, Slot, Container
 from .defs import *
 from .util import map_range
 
@@ -87,6 +87,7 @@ class When(Signal):
     def __init__(self):
         super().__init__(T=WhenSlot)
         self.time = 0
+        self.conditions = Container()
 
     def update_slot(self, slot, dt):
         """
@@ -138,12 +139,15 @@ class When(Signal):
         Advance time by dt
         """
         self.time += dt
+        for slot in self.conditions:
+            if slot.value[0]():
+                self.value[1]()
         for slot in self.slots:
             self.update_slot(slot, dt)
         self.refresh()
 
-    def __call__(self, dt):
-        return self.update(self, dt)
+    # def __call__(self, dt):
+    #     return self.update(self, dt)
 
     def every(self, duration, func, weak=True, once=False):
         """
@@ -178,3 +182,14 @@ class When(Signal):
         slot.range_ = range_
         slot.ease = ease
         return slot
+
+    def __call__(self, t_or_cond, func, weak=True, once=False):
+        if type(t) in (float, int):
+            return self.every(t_or_cond, func, weak, once)
+        else:
+
+            def f(cond=t_or_cond, func=func):
+                if cond():
+                    func()
+
+            return self.conditions.connect(f, once=once, weak=weak)

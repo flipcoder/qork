@@ -41,3 +41,7 @@ def create(*args, **kwargs):
 
 def clear():
     return APP.scene.clear()
+
+
+# def music(fn):
+#     return APP.add(fn, loop=True)

@@ -154,12 +154,17 @@ class Mesh(Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.image = kwargs.pop("image", None)
+        # for arg in args:
+        #     if not isinstance(arg, (str, CoreBase)):
+        #         print('image')
+        #         self.image = arg
+
         self.vertices = None
         self.layers = []  # layers -> skins -> images
         self.skin = 0
         self.sprite = None  # frame data here if mesh is a sprite
         self.material = None
-        self.image = None
         self.frame = 0
         self.loaded = False
         self.resources = []
@@ -178,7 +183,8 @@ class Mesh(Node):
 
         if initfunc:
             initfunc(self)
-        if self.fn:
+
+        if self.image or self.fn:
             self.load()
 
     # resource
@@ -232,10 +238,19 @@ class Mesh(Node):
                             continue
                         break
                     if not img:
-                        raise FileNotFoundError
+                        raise FileNotFoundError()
                     # print(img)
                     img = img.convert("RGBA")
                     self.layers[0][0].append(img)
+            else:
+                # image preloaded
+                if self.image:
+                    if not isinstance(self.image, Image):
+                        self.image = self.image.data  # unpack image resource
+                    self.material = Material(
+                        self.ctx.texture(self.image.size, 4, self.image.tobytes())
+                    )
+
         for layer in self.layers:
             for skin in layer:
                 for i in range(len(skin)):  # for img in skin:
@@ -283,15 +298,20 @@ class Mesh(Node):
             self.material.update(t)
 
     def render(self):
-        assert self.loaded
+        if not self.loaded:
+            return
         if self.visible and self.resource:
             self.app.matrix(
                 self.world_matrix if self.inherit_transform else self.matrix
             )
 
-            # TODO: move this to Material/Animator and call material.use(i) here
-            for i in range(len(self.layers)):
-                self.layers[i][self.skin][self.frame].use(i)
+            if type(self.material) is Material:  # TEMP
+                print('mat')
+                self.material.use(i)
+            else:
+                # TODO: move this to Material/Animator and call material.use(i) above
+                for i in range(len(self.layers)):
+                    self.layers[i][self.skin][self.frame].use(i)
 
             self.resource.render()
         super().render()

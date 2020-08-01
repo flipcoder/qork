@@ -1,12 +1,13 @@
 #!/usr/bin/python
 from .node import *
+from .audio import *
 from .reactive import *
 import glm
 import math
 from enum import Enum
 
 
-class Camera(Node):
+class Camera(Listener):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._ortho = Reactive(True)

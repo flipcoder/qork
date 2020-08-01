@@ -75,7 +75,6 @@ TEXTURED_QUAD_CENTERED = Prefab('TEXTURED_QUAD_CENTERED', [
      0.5,  0.5, 0.0, 1.0, 0.0
 ])
 
-
 TEXTURED_QUAD = Prefab('TEXTURED_QUAD', [
 #     x    y    z    u    v
     0.0, 0.0, 0.0, 0.0, 1.0,
@@ -83,6 +82,42 @@ TEXTURED_QUAD = Prefab('TEXTURED_QUAD', [
     0.0, 1.0, 0.0, 0.0, 0.0,
     1.0, 1.0, 0.0, 1.0, 0.0,
 ])
+
+def quad(flags='', z=0, box=None, CT=set('ct')):
+    flags = set(flags)
+    if CT & flags == CT:
+        r = TEXTURED_QUAD_CENTERED.data[:]
+        w = 5
+    elif 't' in flags:
+        r = TEXTURED_QUAD.data[:]
+        w = 5
+    elif 'c' in flags:
+        r = QUAD_CENTERED.data[:]
+        w = 3
+    else:
+        w = 3
+        return QUAD.data[:]
+
+    # TODO: (hv) flip?
+
+    lr = len(r)
+    
+    # resize
+    if box:
+        for c in range(lr//w):
+            if r < -EPSILON:
+                for i in range(3):
+                    r[c*w+i] = box.min[i]
+            elif r > -EPSILON:
+                for i in range(3):
+                    r[c*w+i] = box.max[i]
+    
+    if z:
+        for c in range(lr//w):
+            for i in range(3):
+                r[c*w+2] = float(z)
+    
+    return r
 
 # fmt: on
 

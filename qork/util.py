@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os
+import sys
 import itertools
 import types
 import glm
@@ -12,6 +14,16 @@ import random
 import webcolors
 from .defs import *
 
+
+class BlockOutput:
+    def __init__(self):
+        self.stdout = sys.stdout
+        self.devnull = open(os.devnull, 'w')
+    def __enter__(self):
+        sys.stdout = self.devnull
+    def __exit__(self, typ, val, tb):
+        sys.stdout = self.stdout
+        self.devnull.close()
 
 class Dummy:
     pass
@@ -124,6 +136,7 @@ def change_filename(fn, args, kwargs=None, keepname=False):
     args = [fn] + args
     return args, kwargs
 
+
 def remove_filename(args, kwargs=None, keepname=False):
     """
     Given node ctor args, remove fn params and replace with single fn
@@ -135,6 +148,7 @@ def remove_filename(args, kwargs=None, keepname=False):
     if args and type(args[0]) is str:
         args = args[1:]
     return args, kwargs
+
 
 def fcmp(a, b=None):
     """
@@ -204,43 +218,52 @@ def to_vec3(*args):
             return glm.vec3(*args[:3])
 
     print(args)
-    raise ValueError('invalid vec3')
+    raise ValueError("invalid vec3")
 
-def color(*args):
-    if args is None:
-        return None
-    v = args[0]
-    ta = type(v)
-    if ta in (tuple, list):
-        return color(*v)
-    if v is None:
-        return
-    lenargs = len(args)
-    a = 1.0
-    if ta is str:
-        r = webcolors.html5_parse_legacy_color(v)
-        r = glm.vec4(glm.vec3(*r)/255.0, a)
-        print(r)
-        return r
-    elif ta in (float, int):
-        return glm.vec4(glm.vec3(args), a)
-    elif ta == glm.vec3:
-        return glm.vec4(args, a)
-    elif ta == glm.vec4:
-        return args
-    else:
-        if lenargs == 4:
-            return glm.vec4(*args)
-        elif lenargs == 3:
-            return glm.vec4(glm.vec3(*args), a)
-        elif lenargs == 1:
-            return glm.vec4(glm.vec3(v), a)
-        elif lenargs == 2:
-            return glm.vec4(glm.vec3(v), args[1])
 
-    print(args)
-    raise ValueError('invalid color')
+class Color(glm.vec4):
+    def __init__(self, *args, **kwargs):
+        if args:
+            v = args[0]
+            try:
+                a = args[1]
+            except IndexError:
+                a = 1.0
+            ta = type(v)
+            if ta in (tuple, list):
+                super().__init__(*Color(*v))
+            if v:
+                lenargs = len(args)
+                if ta is str:
+                    r = webcolors.html5_parse_legacy_color(v)
+                    super().__init__(glm.vec3(*r) / 255.0, a)
+                elif ta in (float, int):
+                    super().__init__(glm.vec3(v), a)
+                elif ta == glm.vec3:
+                    super().__init__(v, a)
+                elif ta == glm.vec4:
+                    super().__init__(v)
+                else:
+                    if lenargs == 4:
+                        super().__init__(*args)
+                    elif lenargs == 3:
+                        super().__init__(glm.vec3(v), a)
+                        return glm.vec4(glm.vec3(*args), a)
+                    elif lenargs == 1:
+                        super().__init__(glm.vec3(v), a)
+                    elif lenargs == 2:
+                        super().__init__(glm.vec3(v), args[1])
+                    else:
+                        raise ValueError("invalid color")
+            else:
+                super().__init__(0, 0, 0, 1)
+        else:
+            super().__init__(0, 0, 0, 1)
 
+    def __eq__(self, b):
+        return fcmp(self, Color(b))
+    def __ne__(self, b):
+        return not fcmp(self, Color(b))
 
 # def component_scalar(s, i):
 #     if type(s) in (float,int):
@@ -346,6 +369,7 @@ nrandf = nrand
 
 def rcolor(s=1):
     return vec4(randv3(), 1.0)
+
 
 def nbool(s=1):
     """

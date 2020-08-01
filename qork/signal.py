@@ -55,7 +55,8 @@ class Connections:
 
 
 class Slot:
-    def __init__(self, func, sig):
+    def __init__(self, func, sig, name=''):
+        self.name = name
         self.func = func
         self.sig = weakref.ref(sig)
         self.once = False
@@ -270,7 +271,7 @@ class Container:
     def __bool__(self):
         return bool(self._slots)
 
-    def connect(self, func, once=False, cb=None):
+    def connect(self, func, once=False, cb=None, name=''):
 
         if isinstance(func, (list, tuple)):
             r = []
@@ -283,7 +284,7 @@ class Container:
             if isinstance(func, Slot):
                 slot = func
             else:
-                slot = Slot(func, self)
+                slot = Slot(func, self, name=name)
             slot.once = once
             # wslot = weakref.ref(slot) if weak else slot
             # self._queued.append(lambda wslot=wslot: self._slots.append(wslot))
@@ -301,7 +302,7 @@ class Container:
             return slot
 
         # make slot from func
-        slot = Slot(func, self)
+        slot = Slot(func, self, name=name)
         slot.once = once
         # wslot = weakref.ref(slot) if weak else slot
         self._slots.append(slot)
@@ -452,8 +453,8 @@ class Signal(Container):
                     continue
             s.with_slot(func, *args)
 
-    def __iadd__(self, func):
-        self.connect(func, weak=False)
+    def __iadd__(self, func, name=''):
+        self.connect(func, weak=False, name=name)
         return self
 
     def __isub__(self, func):
@@ -477,12 +478,12 @@ class Signal(Container):
     def __iter__(self):
         return (x.get() for x in self.iterslots())
 
-    def connect(self, func, weak=True, once=False, cb=None, on_remove=None):
+    def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name=''):
 
         if isinstance(func, (list, tuple)):
             r = []
             for f in func:
-                r.append(self.connect(f, weak, once, cb, on_remove))
+                r.append(self.connect(f, weak, once, cb, on_remove, name))
             return r
 
         if self._blocked:
@@ -524,6 +525,12 @@ class Signal(Container):
         if cb:
             cb()
         return slot
+
+    def store(self, func, once=False, cb=None, on_remove=None, name=''):
+        """
+        Equivalent to +=, connects but stores slot instead of a weakref
+        """
+        return self.connect(func, False, once, cb, on_remove, name)
 
     def once(self, func, weak=True):
         return self.connect(func, weak, once=True)

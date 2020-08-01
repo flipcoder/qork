@@ -9,6 +9,10 @@ from .util import *
 class Resource:
     def __init__(self, *args, **kwargs):
         self.fn = filename_from_args(args, kwargs)
+        try:
+            self.flags = self.fn.split(":")[0].split("+")[1:]
+        except:
+            self.flags = []
         if self.fn:
             self.ext = pathlib.Path(self.fn).suffix
         else:

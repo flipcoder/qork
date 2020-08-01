@@ -228,13 +228,15 @@ class Node:
             m = copy(self.matrix)
             m = tuple(tuple(x) for x in m)
             rr["matrix"] = m
-        rrr = rr["children"] = []
         if self.children:
+            rrr = rr["children"] = []
             for ch in self.children:
                 rrr.append(ch.tree(props))
         return r
 
     def tag(self, t):
+        if t.startswith('#'):
+            t = t[1:]
         self.tags.add(t)
 
     def __bool__(self):
@@ -335,8 +337,8 @@ class Node:
     # def max(self, s):
     #     self.box[1] = s
 
-    def connect(self, sig, weak=True, on_remove=None):  # for Lazy and Reactive
-        return self.on_pend.connect(sig, weak, on_remove)
+    def connect(self, sig, weak=True, on_remove=None, cb=None):  # for Lazy and Reactive
+        return self.on_pend.connect(sig, weak, False, cb, on_remove)
 
     def disconnect(self, sig):  # for Lazy and Reactive
         self.on_pend -= sig
@@ -973,8 +975,8 @@ class Node:
     def find_by_filename(self, fn, recursive=True):
         yield from self.find_if(lambda n: n.fn == fn, recursive)
 
-    def find_one(self, arg, recursive):
-        return next(find(self, arg, recursive))
+    def find_one(self, arg, recursive=True):
+        return next(self.find(arg, recursive))
 
     def find(self, arg, recursive=True):
         if isinstance(arg, Node):  # name or tag
@@ -1009,6 +1011,11 @@ class Node:
     def draw(self):
         self.app.draw(self)
 
+    def clear(self):
+        for ch in self.children:
+            ch.clear()
+        self.children = Container()
+
     # def cleanup(self):  # called by Core as an explicit destructor
     #     if not self.deinited:
     #         self.on_deinit()
@@ -1018,7 +1025,7 @@ class Node:
 
     def __del__(self):
         if self.app and self.app.partitioner:
-            self.app.partitioner += self
+            self.app.partitioner -= self
 
     @property
     def filename(self):

@@ -8,7 +8,7 @@ pycairo
 pytweening
 assign
 ptpython
-imgui
 watchdog
+pyogg
 pyopenal
 webcolors

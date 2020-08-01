@@ -8,6 +8,14 @@ sys.path.append("..")
 from qork.signal import *
 from test_helpers import *
 
+def test_container():
+    c = Container()
+    assert len(c) == 0
+    s = lambda: 0
+    c += s
+    assert len(c) == 1
+    c -= s
+    assert len(c) == 0
 
 def test_signal():
 

@@ -19,6 +19,7 @@ from .signal import *
 from .sprite import *
 from .defs import *
 from .cache import *
+import qork.util
 from .util import *
 from .node import *
 from .mesh import *
@@ -28,6 +29,7 @@ from .camera import *
 from .when import *
 from .audio import *
 from .box import *
+from .tilemap import *
 from .easy import qork_app
 import cson
 import os
@@ -39,6 +41,12 @@ import openal
 # class RenderPass
 #     def __init__(self, camera):
 #         self.cam = camera
+
+
+class ImageResource(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.data = Image.open(self.fn)
 
 
 def cson_load(fn):
@@ -75,17 +83,24 @@ class Core(mglw.WindowConfig, CoreBase):
 
     Resource = {"mesh": Mesh.Resource, "sound": Sound.Resource, "sprite": Sprite}  # !
 
-    Type = {
-        "mesh": Mesh,
-        "sound": Sound,
-        "sprite": Mesh,  # !
+    # Which cson type is handled by which class?
+    Type = {"mesh": Mesh, "sound": Sound, "sprite": Mesh, "tilemap": TileMap}  # !
+
+    # Node types and their associated extensions
+    extensions = {
+        "sound": [".wav", ".mp3", ".ogg", ".flac"],
+        "mesh": [".obj"],
+        "sprite": [".png", ".jpg"],
+        "tilemap": [".tmx"],
     }
 
-    extensions = {
-        "sound": (".wav", ".mp3", ".ogg", ".flac"),
-        "mesh": (".obj"),
-        "sprite": (".png"),
-    }
+    @staticmethod
+    def sys_start():
+        openal.pyoggSetStreamBufferSize(4096 * 4)
+        openal.oalSetStreamBufferCount(4)
+
+    def sys_stop():
+        openal.oalQuit()
 
     @classmethod
     def run(cls):
@@ -156,7 +171,7 @@ class Core(mglw.WindowConfig, CoreBase):
         self.gui = None
         self.renderfrom = None
         self._view = None  # default gui camera
-        self.bg_color = (0, 0, 0)
+        self._bg_color = vec4(0, 0, 0, 0)
 
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
@@ -374,7 +389,7 @@ class Core(mglw.WindowConfig, CoreBase):
         """
         Quick-play a sound
         """
-        assert False
+        return camera.add(fn, temp=True)
 
     def add(self, *args, **kwargs):
         if args and isinstance(args[0], int):  # count
@@ -435,8 +450,9 @@ class Core(mglw.WindowConfig, CoreBase):
         fn = filename_from_args(args, kwargs)
         assert fn
         ext = pathlib.Path(fn.lower()).suffix
-        if kwargs.pop("T", None):  # type
-            assert False
+        T = kwargs.pop("T", None)  # type
+        if T:
+            return self.Type[T], args, kwargs
         if ext in [".mp3", ".wav", ".ogg"]:
             return Sound.Resource, args, kwargs
         elif ext == ".cson":
@@ -454,9 +470,9 @@ class Core(mglw.WindowConfig, CoreBase):
                     return Mesh.Resource, args, kwargs
                 data.close()
             else:
-                raise FileNotFoundError
+                raise FileNotFoundError()
         elif ext in [".png", ".jpg"]:
-            return Image, args, kwargs
+            return ImageResource, args, kwargs
         return None, None, None
 
     def render(self, time, dt):
@@ -479,7 +495,7 @@ class Core(mglw.WindowConfig, CoreBase):
             self.state.render(dt)
             return
 
-        self.clear()
+        self.render_clear()
         assert self.camera
         if self.camera and self.scene:
             self.draw(self.camera, self.scene)
@@ -489,10 +505,24 @@ class Core(mglw.WindowConfig, CoreBase):
         if self._view and self.gui:
             self.draw(self._view, self.gui)
 
-    def clear(self, color=None):
-        if color is None:
-            color = self.bg_color
-        self.ctx.clear(*color)
+    def clear(self):
+        if self.state():
+            return self.state.clear()
+        self.scene.clear()
+        return
+    
+    def background(self, col=DUMMY):
+        if col is DUMMY:
+            return self._bg_color
+        self._bg_color = Color(col)
+        return col
+    
+    def render_clear(self, col=None):
+        if col is None:
+            col = self._bg_color
+        else:
+            col = Color(col)
+        self.ctx.clear(col[0], col[1], col[2])
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
 
     def draw(self, camera, root=None, viewport=None):

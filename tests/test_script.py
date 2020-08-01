@@ -40,7 +40,7 @@ def test_condition():
         c.increment()
 
     def pauser(ctx):
-        yield lambda: c.x == 2
+        yield lambda: c.x == 1
         c2.increment()
 
     script = Script(incrementer)
@@ -50,10 +50,12 @@ def test_condition():
     script2.update(1)
 
     assert c.x == 1
+    assert c2.x == 0
 
     script.update(1)
     script2.update(1)
 
-    assert c.x == 2
+    assert c.x == 1
+    assert c2.x == 1
 
     assert script.done()

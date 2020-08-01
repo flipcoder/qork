@@ -141,6 +141,14 @@ class Reactive:
     def weak_remove(self, slot):
         self.connections -= slot
 
+    # def __lshift__(self, b):
+    #     self.set(b)
+    #     return self
+
+    # def __ilshift__(self, b):
+    #     self.set(b)
+    #     return self
+        
     def set(self, value):
         # self.is_func = callable(v)
         self.value = self.transform(value) if self.transform else value
@@ -226,15 +234,16 @@ class ReactiveProperty(Reactive):
         return self(val)
 
 
-class Rvec(Reactive):
+class ReactiveVector(Reactive):
     """
     Reactive Vector 3
     """
 
-    def __init__(self, value=None, callbacks=[], Type=glm.vec3):
-        super().__init__(value, callbacks)
+    def __init__(self, value=None, callbacks=[], observe=[], Type=glm.vec3):
+        super().__init__(value, callbacks, observe)
         self.Type = Type
         self.value = Type()
+        # TODO: generate swizzle props?
 
     def set(self, v):
         self.value.set(v)
@@ -291,6 +300,64 @@ class Rvec(Reactive):
         if old.w != neww:
             self.pend(self.value, old)
 
+Rvec = ReactiveVector
+
+class ReactiveColor(Rvec):
+    """
+    Reactive Color
+    """
+    
+    def __init__(self, value=None, callbacks=[], Type=glm.vec4):
+        super().__init__(value, callbacks)
+        self.Type = Type
+        self.value = Type()
+        # generate swizzle props?
+
+    @property
+    def r(self):
+        return self.value.r
+
+    @r.setter
+    def r(self, newr):
+        old = self.value
+        self.value.r = newr
+        if old.r != newr:
+            self.on_change(self.value, old)
+
+    @property
+    def g(self):
+        return self.value.g
+
+    @g.setter
+    def g(self, newg):
+        old = self.value
+        self.value.g = newg
+        if old.g != newg:
+            self.on_change(self.value, old)
+
+    @property
+    def b(self):
+        return self.value.b
+
+    @b.setter
+    def b(self, newb):
+        old = self.value
+        self.value.b = s
+        if old.b != newb:
+            self.on_change(self.value, old)
+
+    @property
+    def a(self):
+        return self.value.a
+
+    @a.setter
+    def a(self, newa):
+        old = self.value
+        self.value.a = s
+        if old.a != newa:
+            self.pend(self.value, old)
+
+Rcolor = ReactiveColor
 
 class Lazy:
     def __init__(self, func, observe=[], callbacks=[]):

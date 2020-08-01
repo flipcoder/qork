@@ -1,5 +1,6 @@
 #!/usr/bin/env qork
 
+camera.mode = '3D'
 camera.position = (0, 0, 20)
 player = add("player.png")
 player.scale(3)

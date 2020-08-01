@@ -56,8 +56,11 @@ def call_every(duration, context=None, lifespan=None, **kwargs):
     return every_decorator
 
 
-def call_once(duration, context=None, lifespan=None, **kwargs):
+def delay(duration, context=None, lifespan=None, **kwargs):
     return call_every(duration, context, lifespan, once=True, *kwargs)
+
+
+call_once = delay
 
 
 def call_when(cond, context=None, lifespan=None, **kwargs):

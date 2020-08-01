@@ -78,7 +78,7 @@ class ZeroMode(Core):
                 print("Not a qork script. Run with python.")
                 sys.exit(1)
 
-        # extract globals
+        # extract globals (hack!)
         for line in buflines:
             if not line.startswith(" ") and not line.startswith("\t"):
                 tok = line.split(" ")
@@ -117,6 +117,8 @@ class ZeroMode(Core):
                     buf = "global " + word + "\n" + buf
 
         app = qork_app()
+        self._console = None
+        self.console_called = False
         self.globe = {
             **qork.__dict__,
             **easy.__dict__,
@@ -136,6 +138,7 @@ class ZeroMode(Core):
             "when": app.when,
             "every": app.when.every,
             "once": app.when.once,
+            # "after": app.when.once,
             # "init": init,
             "mouse_pos": app.mouse_pos,
             "hold_click": app.hold_click,
@@ -155,6 +158,7 @@ class ZeroMode(Core):
             # "render": render,
             "scene": self.scene,
             # "gui": self.gui,
+            "console": self.console,
             "camera": self.camera,
             "data_paths": self._data_paths,
             "data_path": self.data_path,
@@ -192,12 +196,9 @@ class ZeroMode(Core):
         self.render_hook = self.globe.get("render", None)
         self.init_hook = self.globe.get("init", None)
 
-        if self.globe.get("console", True):
-            self.console = asyncio.get_event_loop()
-            self.console.create_task(self.run_console())
-        else:
-            self.console = None
-
+        if not self.console_called:
+            self.console(True) # console enabled by default
+        
         self.connections += self.states.on_change.connect(self.state_change)
 
         if self.init_hook:
@@ -205,6 +206,14 @@ class ZeroMode(Core):
 
         self.partitioner.refresh()
 
+    def console(self, b):
+        self.console_called = True
+        if b:
+            self._console = asyncio.get_event_loop()
+            self._console.create_task(self.run_console())
+        else:
+            self._console = None
+    
     def state_change(self):
         state = self.states.top() or self
         self.globe["scene"] = state.scene
@@ -235,9 +244,9 @@ class ZeroMode(Core):
             # TODO: make this faster
             exec("update(" + str(dt) + ")", self.globe, self.loc)
 
-        if self.console:
-            self.console.call_soon(self.console.stop)
-            self.console.run_forever()
+        if self._console:
+            self._console.call_soon(self._console.stop)
+            self._console.run_forever()
 
     def render(self, time, t):
         super().render(time, t)
@@ -245,8 +254,8 @@ class ZeroMode(Core):
         #     self.render()
 
     def __del__(self):
-        if self.console:
-            self.console.call_soon(self.console.stop)
+        if self._console:
+            self._console.call_soon(self.console.stop)
 
 
 def main():
@@ -291,8 +300,9 @@ def main():
 
 if __name__ == "__main__":
     try:
+        Core.sys_start()
         main()
     except Exception:
-        openal.oalQuit()
+        Core.sys_stop()
         raise
-    openal.oalQuit()
+    Core.sys_stop()
