@@ -18,12 +18,15 @@ from .defs import *
 class BlockOutput:
     def __init__(self):
         self.stdout = sys.stdout
-        self.devnull = open(os.devnull, 'w')
+        self.devnull = open(os.devnull, "w")
+
     def __enter__(self):
         sys.stdout = self.devnull
+
     def __exit__(self, typ, val, tb):
         sys.stdout = self.stdout
         self.devnull.close()
+
 
 class Dummy:
     pass
@@ -262,8 +265,10 @@ class Color(glm.vec4):
 
     def __eq__(self, b):
         return fcmp(self, Color(b))
+
     def __ne__(self, b):
         return not fcmp(self, Color(b))
+
 
 # def component_scalar(s, i):
 #     if type(s) in (float,int):

@@ -88,7 +88,7 @@ class Canvas(Mesh):
         if text:
             self.text(text)
 
-        grad = kwargs.pop("gradient", None) or kwargs.pop('grad', None)
+        grad = kwargs.pop("gradient", None) or kwargs.pop("grad", None)
         if grad:
             self.gradient(grad)
         # self.shadow = False
@@ -99,43 +99,44 @@ class Canvas(Mesh):
 
         # TODO: check colors for Gradient object, use that instead
         # TODO: allow reactive colors (Rcolor)
-        
+
         if region is None:
             grad = cairo.LinearGradient(0, 0, *self.res)
         else:
             grad = cairo.LinearGradient(*region)
-        
+
         # is there stops? or just one color
         # stops = type(colors[0]) in (tuple, list)
-        
+
         # # allow color or (step, color)
         # if type(colors[0]) in (tuple, list):
         #     interps = list(map(lambda s: s[0], colors))
         #     colors = list(map(lambda s: s[1], colors))
         # else:
         #     interps = None
-        
+
         stops = len(colors)
         # for i, col in enumerate(colors):
         #     if type(col) in (tuple,list): # unpack (stop, color)
         #         stops += 1
-        
+
         for i, col in enumerate(colors):
-            if type(col) in (tuple,list): # unpack (stop, color)
+            if type(col) in (tuple, list):  # unpack (stop, color)
                 stop = colors[i][0]
                 col = col[1]
                 print(stop, col)
             else:
-                stop = i / max(1, stops-1) # auto
+                stop = i / max(1, stops - 1)  # auto
             col = Color(col).rgb
             print(col)
             print(stop)
             grad.add_color_stop_rgb(stop, *col)
-        
+
         def f():
             self.cairo.rectangle(0, 0, *self.res)
             self.cairo.set_source(grad)
             self.cairo.fill()
+
         self.on_render += f
         self.refresh()
         return grad
@@ -183,7 +184,7 @@ class Canvas(Mesh):
         self.refresh()
         self._use_text = True
 
-    def text(self, s, col='white', pos=None, flags="c"):
+    def text(self, s, col="white", pos=None, flags="c"):
         """
         :param align: string: char flags
             l: relative to left
@@ -192,46 +193,44 @@ class Canvas(Mesh):
             b: relative to bottom
         """
         full_args = locals()
-        
+
         if not self._use_text:
             self.font()
             self._use_text = True
 
         col = Color(col)
-        
-        
+
         if pos is None:
             pos = vec2(0)
         else:
             pos = copy(pos)
-        
+
         if flags:
             for ch in flags:
-                if ch == 'l':
+                if ch == "l":
                     pos += ivec2(-self.res[0] // 2, 0)
-                elif ch == 'r':
+                elif ch == "r":
                     pos += ivec2(self.res[0] // 2, 0)
-                elif ch == 't':
+                elif ch == "t":
                     pos += ivec2(0, -self.res[1] // 2)
-                elif ch == 'b':
+                elif ch == "b":
                     pos += ivec2(0, self.res[1] // 2)
-        
-        
+
         def f(s=s, pos=pos):
             self.cairo.set_source_rgba(*col)
-            
+
             # this has to be called in f, since the order of this func matters
             extents = self.cairo.text_extents(s)
-            
+
             # print(extents)
             origin = self.res / 2
             # pos -= ivec2(extents.width, extents.height)/2
             pos.x -= extents.width / 2
             pos.y += extents.height / 4
             # pos.y -= extents.height // 2
-            if 'c' in flags or 'h' in flags:
+            if "c" in flags or "h" in flags:
                 pos.x += origin.x
-            if 'c' in flags or 'v' in flags:
+            if "c" in flags or "v" in flags:
                 pos.y += origin.y
             # pos offsets
             # print(pos)
@@ -244,9 +243,9 @@ class Canvas(Mesh):
         # self.on_render.store(f, name='text(' + str(full_args) + ')')
         self.refresh()
 
-    def clear(self, col=(0,0,0,0)):
+    def clear(self, col=(0, 0, 0, 0)):
         col = Color(col)
-        
+
         self.on_render.clear()
         self.stack.clear()
 
@@ -257,9 +256,9 @@ class Canvas(Mesh):
             self.cairo.set_operator(cairo.OPERATOR_CLEAR)
             self.cairo.paint()
             self.cairo.set_operator(cairo.OPERATOR_OVER)
-            
+
         # self.on_render += f
-        self.on_render.store(f, name='clear')
+        self.on_render.store(f, name="clear")
         self.refresh()
 
     def push(self):
@@ -281,31 +280,31 @@ class Canvas(Mesh):
         now: redraws if refresh needed
         preview: show image preview
         """
-        
+
         if not now:
             self.dirty = b
             return
-        
-        assert b == True # b==False and now==True ?
-        
+
+        assert b == True  # b==False and now==True ?
+
         if self.dirty:
-            
+
             # render queued cairo operations
-            print('rendered', len(self.on_render))
+            print("rendered", len(self.on_render))
             for op in self.on_render.slots:
                 if op.name:
                     print(op.name, op.func)
                 else:
                     print(op.func)
             self.on_render()
-            
+
             data = self.surface.get_data()
             # for i in range(len(data)//4): # ABGR -> RGBA
             #     data[i+3] = data[i]
             #     data[i+1] = data[i+2]
-            
+
             # print(list(data[0:4]))
-            
+
             self.texture = self.app.ctx.texture(self.res, 4, data=data)
             self.dirty = False
 
@@ -314,7 +313,7 @@ class Canvas(Mesh):
     def preview(self):
         self.refresh(now=True)
         data = self.surface.get_data()
-        img = Image.frombuffer("RGBA",tuple(self.res),data,"raw","RGBA",0,1)
+        img = Image.frombuffer("RGBA", tuple(self.res), data, "raw", "RGBA", 0, 1)
         img.show()
 
     def render(self):
@@ -323,7 +322,7 @@ class Canvas(Mesh):
             return
 
         self.refresh(now=True)
-        
+
         self.app.matrix(self.world_matrix if self.inherit_transform else self.matrix)
 
         self.texture.use()

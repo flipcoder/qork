@@ -55,7 +55,7 @@ class Connections:
 
 
 class Slot:
-    def __init__(self, func, sig, name=''):
+    def __init__(self, func, sig, name=""):
         self.name = name
         self.func = func
         self.sig = weakref.ref(sig)
@@ -271,7 +271,7 @@ class Container:
     def __bool__(self):
         return bool(self._slots)
 
-    def connect(self, func, once=False, cb=None, name=''):
+    def connect(self, func, once=False, cb=None, name=""):
 
         if isinstance(func, (list, tuple)):
             r = []
@@ -453,7 +453,7 @@ class Signal(Container):
                     continue
             s.with_slot(func, *args)
 
-    def __iadd__(self, func, name=''):
+    def __iadd__(self, func, name=""):
         self.connect(func, weak=False, name=name)
         return self
 
@@ -478,7 +478,7 @@ class Signal(Container):
     def __iter__(self):
         return (x.get() for x in self.iterslots())
 
-    def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name=''):
+    def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name=""):
 
         if isinstance(func, (list, tuple)):
             r = []
@@ -526,7 +526,7 @@ class Signal(Container):
             cb()
         return slot
 
-    def store(self, func, once=False, cb=None, on_remove=None, name=''):
+    def store(self, func, once=False, cb=None, on_remove=None, name=""):
         """
         Equivalent to +=, connects but stores slot instead of a weakref
         """

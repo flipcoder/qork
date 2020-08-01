@@ -510,13 +510,13 @@ class Core(mglw.WindowConfig, CoreBase):
             return self.state.clear()
         self.scene.clear()
         return
-    
+
     def background(self, col=DUMMY):
         if col is DUMMY:
             return self._bg_color
         self._bg_color = Color(col)
         return col
-    
+
     def render_clear(self, col=None):
         if col is None:
             col = self._bg_color

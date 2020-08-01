@@ -148,7 +148,7 @@ class Reactive:
     # def __ilshift__(self, b):
     #     self.set(b)
     #     return self
-        
+
     def set(self, value):
         # self.is_func = callable(v)
         self.value = self.transform(value) if self.transform else value
@@ -300,13 +300,15 @@ class ReactiveVector(Reactive):
         if old.w != neww:
             self.pend(self.value, old)
 
+
 Rvec = ReactiveVector
+
 
 class ReactiveColor(Rvec):
     """
     Reactive Color
     """
-    
+
     def __init__(self, value=None, callbacks=[], Type=glm.vec4):
         super().__init__(value, callbacks)
         self.Type = Type
@@ -357,7 +359,9 @@ class ReactiveColor(Rvec):
         if old.a != newa:
             self.pend(self.value, old)
 
+
 Rcolor = ReactiveColor
+
 
 class Lazy:
     def __init__(self, func, observe=[], callbacks=[]):

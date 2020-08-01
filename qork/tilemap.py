@@ -3,6 +3,7 @@
 import os, sys
 
 from .util import BlockOutput
+
 with BlockOutput():
     import pytmx
 
@@ -42,7 +43,7 @@ class TileMap(Node):
                             pos = vec3(vec2(x, y), 0)
                             # TODO: cache shape too
                             # print('try to add')
-                            m = self.add(Mesh(image, pos=pos, scale=.1, name='Tile'))
+                            m = self.add(Mesh(image, pos=pos, scale=0.1, name="Tile"))
                             print(m.tree())
                 for obj in layer:
                     pass

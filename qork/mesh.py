@@ -306,7 +306,7 @@ class Mesh(Node):
             )
 
             if type(self.material) is Material:  # TEMP
-                print('mat')
+                print("mat")
                 self.material.use(i)
             else:
                 # TODO: move this to Material/Animator and call material.use(i) above

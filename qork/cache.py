@@ -49,7 +49,7 @@ class Cache(Factory):
             return self.resources[key]
         else:
             return self.resources.get(key, default)
-    
+
     def __getitem__(self, key, default=None):
         return self.resources[default]
 

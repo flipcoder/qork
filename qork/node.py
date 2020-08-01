@@ -235,7 +235,7 @@ class Node:
         return r
 
     def tag(self, t):
-        if t.startswith('#'):
+        if t.startswith("#"):
             t = t[1:]
         self.tags.add(t)
 

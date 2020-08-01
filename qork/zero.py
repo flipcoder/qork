@@ -197,8 +197,8 @@ class ZeroMode(Core):
         self.init_hook = self.globe.get("init", None)
 
         if not self.console_called:
-            self.console(True) # console enabled by default
-        
+            self.console(True)  # console enabled by default
+
         self.connections += self.states.on_change.connect(self.state_change)
 
         if self.init_hook:
@@ -213,7 +213,7 @@ class ZeroMode(Core):
             self._console.create_task(self.run_console())
         else:
             self._console = None
-    
+
     def state_change(self):
         state = self.states.top() or self
         self.globe["scene"] = state.scene
