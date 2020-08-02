@@ -40,8 +40,9 @@ def test_node():
     assert child.parent == world
     child.detach()
     assert child.parent is None
-    assert fcmp(child.world_pos, vec3(1))
+    assert fcmp(child.world_pos, vec3(2))
     world.attach(child)
+    assert child in world
     world.children._blocked += 1
     child.detach()
     world.children._blocked -= 1
@@ -81,3 +82,56 @@ def test_node_find():
     assert b.tags == set(["baz"])
     assert list(a.find("baz")) == []
     assert list(a.find("#baz")) == [b]
+
+def test_node_detach_no_collapse():
+    # given a tree like this:
+    #   root
+    #     a
+    #       b
+    #       c
+    # a.detach() does this:
+    #   root
+    
+    root = Node('root')
+    a = root.add(Node('a'))
+    b = a.add(Node('b'))
+    c = a.add(Node('c'))
+    
+    assert tuple(map(lambda x: x.name, root.children)) == ('a',)
+    
+    # detach without collapsing
+    a.detach()
+
+    # a is gone
+    assert tuple(map(lambda x: x.name, root.children)) == ((),)
+
+    # b and c are still on detached a
+    assert tuple(map(lambda x: x.name, a.children)) == (('b','c'),)
+
+def test_node_detach_collapse():
+    # given a tree like this:
+    #   root
+    #     a
+    #       b
+    #       c
+    # and a.detach(collapse=True) does this:
+    #   root
+    #     b
+    #     c
+    
+    root = Node('root')
+    a = root.add(Node('a'))
+    b = a.add(Node('b'))
+    c = a.add(Node('c'))
+    
+    assert tuple(map(lambda x: x.name, root.children)) == ('a',)
+    
+    # detach and reattach collapse b and c to root
+    a.detach(collapse=True)
+
+    # b and c moved to root?
+    assert tuple(map(lambda x: x.name, root.children)) == ('b','c')
+
+    # children were removed from a?
+    assert tuple(map(lambda x: x.name, a.children)) == ((),)
+

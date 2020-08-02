@@ -243,7 +243,7 @@ class Container:
                     break
                 i = not i  # ping pong
 
-            assert self._queued == [[], []]
+            # assert self._queued == [[], []]
             self._current_queue -= 1
 
             # self._blocked -= 1

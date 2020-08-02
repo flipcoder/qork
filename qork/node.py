@@ -105,6 +105,8 @@ class Node:
 
         self.tags = set()
 
+        self.freeze = False
+        self.freeze_children = False
         self._spin = kwargs.pop("spin", None)
         self.spin_axis = self.ROTATION_AXIS
         self.spin_space = PARENT
@@ -546,10 +548,14 @@ class Node:
             self._matrix.value[i] = vec4(AXIS[i], 0)
             self._matrix.pend()
 
-    def reset_scale(self):
-        for i in range(3):
-            self._matrix.value[i] = vec4(glm.normalize(self._matrix.value[i].xyz), 0)
-            self._matrix.pend()
+    # def decompose(self):
+    #     pass
+
+    # def reset_scale(self):
+        
+        # for i in range(3):
+        #     self._matrix.value[i] = vec4(glm.normalize(self._matrix.value[i].xyz), 0)
+        #     self._matrix.pend()
 
     def reset(self):
         self._matrix(mat4(1))
@@ -809,6 +815,9 @@ class Node:
     #     pass
 
     def update(self, dt):
+        if self.freeze:
+            return
+        
         if self._spin is not None:
             # TODO: convert spin from spin space
             self.rotate(self._spin * dt, self.spin_axis)
@@ -826,8 +835,9 @@ class Node:
             script.update(dt)
 
         assert self.children._blocked == 0
-        for ch in self.children:
-            ch.update(dt)
+        if not self.freeze_children:
+            for ch in self.children:
+                ch.update(dt)
 
         # if self.detach_me:
         #     detach_me = self.detach_me
@@ -878,7 +888,7 @@ class Node:
             else:
                 r = []
             for ch in self.children:
-                ch.collapse(space, new_parent, recursive, True, recursive)
+                ch.collapse(space, new_parent, recursive, True, children=recursive)
                 r.add(ch)
             if include_self:
                 new_parent.add(self, cb=cb)
@@ -1006,7 +1016,7 @@ class Node:
         Check if node is in children.  Not recursive.
         For recursive, use: `node in parent.walk()`
         """
-        return node in self
+        return node in self.children
 
     def draw(self):
         self.app.draw(self)

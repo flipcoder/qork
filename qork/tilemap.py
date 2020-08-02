@@ -34,6 +34,7 @@ class TileMap(Node):
         # self.layers = Container()
         # TODO: do correct filename
         tmx = self.tmx = pytmx.TiledMap("data/" + self.fn, image_loader=self._load_img)
+        rules = kwargs.get('rules', {})
         # print(tmx.layers)
         layer_ofs = 0
         for i, layer in enumerate(tmx.layers):
@@ -41,35 +42,52 @@ class TileMap(Node):
                 pass
             else:
                 layer_props = layer.properties
-                if 'depth' not in layer_props and 'dynamic' not in layer_props:
-                    # STATIC: combine all tiles into giant image?
-                    sz = ivec2(tmx.width * tmx.tilewidth, tmx.height * tmx.tileheight)
-                    fullmap = Image.new(mode="RGBA", size=tuple(sz), color=(0,0,0,0))
-                    for x, y, image in layer.tiles():
-                        fullmap.paste(image, (int(x * tmx.tilewidth), int(y * tmx.tileheight)))
-                    pos = vec3(
-                        tmx.width/2 - 1/2,
-                        -tmx.height/2 + 1/2,
-                        layer_ofs
-                    )
-                    m = self.add(Mesh(image=fullmap, pos=pos, scale=vec3(tmx.width,tmx.height,1)))
-                    m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                    # m.material.texture.anisotropy = 1.0 # def
-                    m.material.texture.repeat_x = False
-                    m.material.texture.repeat_y = False
-                elif hasattr(layer, "tiles"):
-                    pass
-                    for x, y, image in layer.tiles():
-                        if image:
-                            pos = vec3(vec2(x, -y), layer_ofs)
-                            m = self.add(Mesh(image=image, pos=pos))
-                            m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                            # m.material.texture.anisotropy = 1.0 # def
-                            m.material.texture.repeat_x = False
-                            m.material.texture.repeat_y = False
-                for obj in layer:
-                    pass
-            layer_ofs += 0.1
+                layer_node = self.add(Node(layer.name))
+                batch_node = layer_node.add(Node('batch'))
+                if hasattr(layer, 'tiles'):
+                    if layer_props.get('dynamic',0) != 1:
+                        # STATIC
+                        # if layer_props.get('depth',0) != 1:
+                        # FLAT STATIC: combine all layer tiles into giant image
+                        sz = ivec2(tmx.width * tmx.tilewidth, tmx.height * tmx.tileheight)
+                        fullmap = Image.new(mode="RGBA", size=tuple(sz), color=(0,0,0,0))
+                        for x, y, image in layer.tiles():
+                            fullmap.paste(image, (int(x * tmx.tilewidth), int(y * tmx.tileheight)))
+                        pos = vec3(
+                            tmx.width/2 - 1/2,
+                            -tmx.height/2 + 1/2,
+                            layer_ofs
+                        )
+                        m = batch_node.add(Mesh(image=fullmap, pos=pos, scale=vec3(tmx.width,tmx.height,1)))
+                        m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
+                        # m.material.texture.anisotropy = 1.0 # def
+                        m.material.texture.repeat_x = False
+                        m.material.texture.repeat_y = False
+                        # else:
+                        #     # DEPTH: depth buffered against objects, generate one combined layer mesh
+                        #     pass
+                    else:
+                        # DYNAMIC: generate dynamic tiles (slow rendering!)
+                        for x, y, image in layer.tiles():
+                            if image:
+                                pos = vec3(vec2(x, -y), layer_ofs)
+                                m = batch_node.add(Mesh(image=image, pos=pos))
+                                m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
+                                # m.material.texture.anisotropy = 1.0 # def
+                                m.material.texture.repeat_x = False
+                                m.material.texture.repeat_y = False
+                else:
+                    # TILED OBJECTS
+                    for obj in layer:
+                        pos = vec3(vec2(obj.x/tmx.tilewidth + 1/2, -obj.y/tmx.tileheight), layer_ofs)
+                        m = batch_node.add(Mesh(obj.name or '', image=obj.image, pos=pos))
+                        m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
+                        # m.material.texture.anisotropy = 1.0 # def
+                        m.material.texture.repeat_x = False
+                        m.material.texture.repeat_y = False
+                batch_node.freeze = True
+                batch_node.freeze_children = True
+                layer_ofs += 0.1
 
     def _load_img(self, fn, colorkey, tileset=None):
 

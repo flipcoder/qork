@@ -554,7 +554,7 @@ player.state['stance'] = 'walk'
 
 ## "Code-Golfing"
 
-Qorks includes some code-golfing functions and variables.
+Qork includes some code-golfing functions and variables.
 
 Some of these are not yet implemented, but this is what is planned so far:
 
