@@ -77,7 +77,7 @@ class Core(mglw.WindowConfig, CoreBase):
     window_size = (1920, 1080)
     aspect_ratio = 16 / 9
     resizable = True
-    samples = 4
+    samples = 1
     title = "qork"
     # resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
 

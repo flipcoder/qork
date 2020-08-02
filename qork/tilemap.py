@@ -43,8 +43,11 @@ class TileMap(Node):
                     for x, y, image in layer.tiles():
                         if image:
                             pos = vec3(vec2(x, -y), layer_ofs)
-                            flt = (gl.NEAREST, gl.NEAREST)
-                            m = self.add(Mesh(image=image, pos=pos, filter=flt))
+                            m = self.add(Mesh(image=image, pos=pos))
+                            m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
+                            # m.material.texture.anisotropy = 1.0 # def
+                            m.material.texture.repeat_x = False
+                            m.material.texture.repeat_y = False
                 for obj in layer:
                     pass
                     # print(obj)

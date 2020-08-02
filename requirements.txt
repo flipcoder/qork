@@ -11,4 +11,5 @@ ptpython
 watchdog
 pyogg
 pyopenal
+pyassimp
 webcolors
