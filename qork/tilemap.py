@@ -8,6 +8,7 @@ with BlockOutput():
     import pytmx
 
 import PIL
+from PIL import ImageOps
 
 from .node import *
 from .mesh import *
@@ -39,7 +40,25 @@ class TileMap(Node):
             if isinstance(layer, pytmx.TiledImageLayer):
                 pass
             else:
-                if hasattr(layer, "tiles"):
+                layer_props = layer.properties
+                if 'depth' not in layer_props and 'dynamic' not in layer_props:
+                    # STATIC: combine all tiles into giant image?
+                    sz = ivec2(tmx.width * tmx.tilewidth, tmx.height * tmx.tileheight)
+                    fullmap = Image.new(mode="RGBA", size=tuple(sz), color=(0,0,0,0))
+                    for x, y, image in layer.tiles():
+                        fullmap.paste(image, (int(x * tmx.tilewidth), int(y * tmx.tileheight)))
+                    pos = vec3(
+                        tmx.width/2 - 1/2,
+                        -tmx.height/2 + 1/2,
+                        layer_ofs
+                    )
+                    m = self.add(Mesh(image=fullmap, pos=pos, scale=vec3(tmx.width,tmx.height,1)))
+                    m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
+                    # m.material.texture.anisotropy = 1.0 # def
+                    m.material.texture.repeat_x = False
+                    m.material.texture.repeat_y = False
+                elif hasattr(layer, "tiles"):
+                    pass
                     for x, y, image in layer.tiles():
                         if image:
                             pos = vec3(vec2(x, -y), layer_ofs)
@@ -50,7 +69,6 @@ class TileMap(Node):
                             m.material.texture.repeat_y = False
                 for obj in layer:
                     pass
-                    # print(obj)
             layer_ofs += 0.1
 
     def _load_img(self, fn, colorkey, tileset=None):
@@ -91,21 +109,30 @@ class TileMap(Node):
                 return img
             key = fn + "+" + ",".join(map(lambda s: str(s), dim))
             # print(key)
-            h, v = False, False
+            h, v, d = False, False, False
             if flags:
                 h = flags.flipped_horizontally
                 v = flags.flipped_vertically
-                if h and v:
-                    key += "+hv"
-                elif h:
-                    key += "+h"
-                elif v:
-                    key += "+v"
+                d = flags.flipped_diagonally
+                if d or h or v:
+                    if d:
+                        key += 'd'
+                    if h:
+                        key += 'h'
+                    if v:
+                        key += 'v'
+                    key = '+' + ''.join(sorted(key))
             r = self.app.cache.get(key, None)
             if r is None:
                 # print(dim)
                 region = [dim[0], dim[1], dim[0] + dim[2], dim[1] + dim[3]]
                 r = img.data.crop(region)
+                if h:
+                    r = r.transpose(Image.FLIP_LEFT_RIGHT)
+                if v:
+                    r = r.transpose(Image.FLIP_TOP_BOTTOM)
+                # if d:
+                #     r.transpose(Image.ROTATE_180)
                 # TODO: do flips
                 self.app.cache[key] = r
             return r
