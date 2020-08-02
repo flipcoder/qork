@@ -243,7 +243,6 @@ class ZeroMode(Core):
     def update(self, dt):
         super().update(dt)
 
-
         if self.update_hook:
             # self.update_hook(dt) # doesn't load globals correctly
             exec("update(" + str(dt) + ")", self.globe, self.loc)

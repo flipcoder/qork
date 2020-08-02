@@ -34,7 +34,7 @@ class TileMap(Node):
         # self.layers = Container()
         # TODO: do correct filename
         tmx = self.tmx = pytmx.TiledMap("data/" + self.fn, image_loader=self._load_img)
-        rules = kwargs.get('rules', {})
+        rules = kwargs.get("rules", {})
         # print(tmx.layers)
         layer_ofs = 0
         for i, layer in enumerate(tmx.layers):
@@ -43,22 +43,32 @@ class TileMap(Node):
             else:
                 layer_props = layer.properties
                 layer_node = self.add(Node(layer.name))
-                batch_node = layer_node.add(Node('batch'))
-                if hasattr(layer, 'tiles'):
-                    if layer_props.get('dynamic',0) != 1:
+                batch_node = layer_node.add(Node("batch"))
+                if hasattr(layer, "tiles"):
+                    if layer_props.get("dynamic", 0) != 1:
                         # STATIC
                         # if layer_props.get('depth',0) != 1:
                         # FLAT STATIC: combine all layer tiles into giant image
-                        sz = ivec2(tmx.width * tmx.tilewidth, tmx.height * tmx.tileheight)
-                        fullmap = Image.new(mode="RGBA", size=tuple(sz), color=(0,0,0,0))
-                        for x, y, image in layer.tiles():
-                            fullmap.paste(image, (int(x * tmx.tilewidth), int(y * tmx.tileheight)))
-                        pos = vec3(
-                            tmx.width/2 - 1/2,
-                            -tmx.height/2 + 1/2,
-                            layer_ofs
+                        sz = ivec2(
+                            tmx.width * tmx.tilewidth, tmx.height * tmx.tileheight
                         )
-                        m = batch_node.add(Mesh(image=fullmap, pos=pos, scale=vec3(tmx.width,tmx.height,1)))
+                        fullmap = Image.new(
+                            mode="RGBA", size=tuple(sz), color=(0, 0, 0, 0)
+                        )
+                        for x, y, image in layer.tiles():
+                            fullmap.paste(
+                                image, (int(x * tmx.tilewidth), int(y * tmx.tileheight))
+                            )
+                        pos = vec3(
+                            tmx.width / 2 - 1 / 2, -tmx.height / 2 + 1 / 2, layer_ofs
+                        )
+                        m = batch_node.add(
+                            Mesh(
+                                image=fullmap,
+                                pos=pos,
+                                scale=vec3(tmx.width, tmx.height, 1),
+                            )
+                        )
                         m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
                         # m.material.texture.anisotropy = 1.0 # def
                         m.material.texture.repeat_x = False
@@ -79,8 +89,15 @@ class TileMap(Node):
                 else:
                     # TILED OBJECTS
                     for obj in layer:
-                        pos = vec3(vec2(obj.x/tmx.tilewidth + 1/2, -obj.y/tmx.tileheight), layer_ofs)
-                        m = batch_node.add(Mesh(obj.name or '', image=obj.image, pos=pos))
+                        pos = vec3(
+                            vec2(
+                                obj.x / tmx.tilewidth + 1 / 2, -obj.y / tmx.tileheight
+                            ),
+                            layer_ofs,
+                        )
+                        m = batch_node.add(
+                            Mesh(obj.name or "", image=obj.image, pos=pos)
+                        )
                         m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
                         # m.material.texture.anisotropy = 1.0 # def
                         m.material.texture.repeat_x = False
@@ -134,12 +151,12 @@ class TileMap(Node):
                 d = flags.flipped_diagonally
                 if d or h or v:
                     if d:
-                        key += 'd'
+                        key += "d"
                     if h:
-                        key += 'h'
+                        key += "h"
                     if v:
-                        key += 'v'
-                    key = '+' + ''.join(sorted(key))
+                        key += "v"
+                    key = "+" + "".join(sorted(key))
             r = self.app.cache.get(key, None)
             if r is None:
                 # print(dim)

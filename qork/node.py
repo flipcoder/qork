@@ -552,10 +552,10 @@ class Node:
     #     pass
 
     # def reset_scale(self):
-        
-        # for i in range(3):
-        #     self._matrix.value[i] = vec4(glm.normalize(self._matrix.value[i].xyz), 0)
-        #     self._matrix.pend()
+
+    # for i in range(3):
+    #     self._matrix.value[i] = vec4(glm.normalize(self._matrix.value[i].xyz), 0)
+    #     self._matrix.pend()
 
     def reset(self):
         self._matrix(mat4(1))
@@ -817,7 +817,7 @@ class Node:
     def update(self, dt):
         if self.freeze:
             return
-        
+
         if self._spin is not None:
             # TODO: convert spin from spin space
             self.rotate(self._spin * dt, self.spin_axis)
