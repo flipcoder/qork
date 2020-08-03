@@ -2,8 +2,8 @@
 
 console(False)
 
+
 def script(ctx):
     while True:
-        print('tick')
+        print("tick")
         yield ctx.sleep(1)
-

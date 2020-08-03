@@ -19,6 +19,7 @@ score = [0] * 2
 # hud.text('0 - 0', 'white', hud.res/2, 'hv')
 # hud.y = .4
 
+
 def init():
     global speed
     speed = 1
@@ -46,4 +47,3 @@ def hit(ball, paddle, dt):
     ball.x = ball.old_pos.x
     speed += 0.2
     ball.vel = normalize(ball.pos - paddle.pos) * speed
-
