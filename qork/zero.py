@@ -195,9 +195,8 @@ class ZeroMode(Core):
         self.update_hook = self.globe.get("update", None) or self.globe.get("U", None)
         self.render_hook = self.globe.get("render", None)
         self.init_hook = self.globe.get("init", None)
+        
         self.script_hook = self.globe.get("script", None)
-        if self.script_hook:
-            self.script = Script(self.script_hook)
 
         if not self.console_called:
             self.console(True)  # console enabled by default
@@ -208,6 +207,11 @@ class ZeroMode(Core):
             self.init_hook()
 
         self.partitioner.refresh()
+
+        if self.script_hook and self.script_hook is not qork.script:
+            self.script_func = Script(self.script_hook)
+        else:
+            self.script_func = None
 
     def console(self, b):
         self.console_called = True
@@ -247,8 +251,8 @@ class ZeroMode(Core):
             # self.update_hook(dt) # doesn't load globals correctly
             exec("update(" + str(dt) + ")", self.globe, self.loc)
 
-        if self.script:
-            exec("Q.script.update(" + str(dt) + ")", self.globe, self.loc)
+        if self.script_func:
+            exec("Q.script_func.update(" + str(dt) + ")", self.globe, self.loc)
 
         if self._console:
             self._console.call_soon(self._console.stop)

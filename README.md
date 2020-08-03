@@ -566,7 +566,7 @@ Some of these are not yet implemented, but this is what is planned so far:
     - Q: stop all sound or music
     
     - S: sin(tau * X)
-    - C: cos(tau * X) if called, otherwise Camera
+    - C: cos(tau * X)
     - T: tan(tau * X)
     
     - R: rotate
