@@ -7,7 +7,6 @@ import cson
 from glm import ivec2, vec2
 from .sprite import *
 from .util import *
-from .animator import *
 from copy import copy
 from os import path
 import struct
@@ -257,6 +256,9 @@ class Mesh(Node):
                 for i in range(len(skin)):  # for img in skin:
                     img = skin[i]
                     tex = self.ctx.texture(img.size, 4, img.tobytes())
+                    tex.filter = (gl.NEAREST, gl.NEAREST)
+                    tex.repeat_x = False
+                    tex.repeat_y = False
                     if self.filter:
                         tex.filter = self.filter
                     skin[i] = tex
@@ -288,7 +290,8 @@ class Mesh(Node):
             self.resource = None
 
         if self.sprite:
-            self.material = Animator(self)
+            self.material = SpriteMaterial(self.sprite)
+        
         self.loaded = True
 
         self.resource_con = self.resource.connect(self.set_local_box)
@@ -307,12 +310,7 @@ class Mesh(Node):
                 self.world_matrix if self.inherit_transform else self.matrix
             )
 
-            if type(self.material) is Material:  # TEMP
-                self.material.use()
-            else:
-                # TODO: move this to Material/Animator and call material.use(i) above
-                for i in range(len(self.layers)):
-                    self.layers[i][self.skin][self.frame].use(i)
+            self.material.use()
 
             self.resource.render()
         super().render()

@@ -77,8 +77,9 @@ class Core(mglw.WindowConfig, CoreBase):
     window_size = (1920, 1080)
     aspect_ratio = 16 / 9
     resizable = True
-    samples = 1
+    samples = 2
     title = "qork"
+    vsync = False
     # resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
 
     Resource = {"mesh": Mesh.Resource, "sound": Sound.Resource, "sprite": Sprite}  # !
@@ -526,6 +527,7 @@ class Core(mglw.WindowConfig, CoreBase):
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
 
     def draw(self, camera, root=None, viewport=None):
+        
         if root is None:
             root = camera.root
             if not root:

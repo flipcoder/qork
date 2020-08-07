@@ -37,13 +37,51 @@ class TileMap(Node):
         rules = kwargs.get("rules", {})
         # print(tmx.layers)
         layer_ofs = 0
-        for i, layer in enumerate(tmx.layers):
+        # tmx.layers = sorted(tmx.layers)
+        layers = sorted(tmx.layers, key=lambda x: x.id)
+        # for i, layer in enumerate(tmx.layers):
+        decal_layer_skip = 0
+        
+        # let's page the map in pages
+        page = ivec2(8) # page size
+        
+        for i, layer in enumerate(layers):
+            # print(layer.id)
             if isinstance(layer, pytmx.TiledImageLayer):
                 pass
-            else:
+            elif isinstance(layer, pytmx.TiledTileLayer):
+
+                # skip previously processed decal layers
+                if decal_layer_skip:
+                    decal_layer_skip -= 1
+                    # print(layer.name,'is decal')
+                    continue
+
+                decal_layers = []
                 layer_props = layer.properties
+                group = layer_props.get('group', '')
                 layer_node = self.add(Node(layer.name))
-                batch_node = layer_node.add(Node("batch"))
+                page_node = layer_node.add(Node("page"))
+
+                # calculate which layers can be combined (decals)
+                j = i+1
+                while j < len(layers):
+                    if isinstance(layers[j], pytmx.TiledTileLayer):
+                        dgroup = layers[j].properties.get('group', None)
+                        if 'decal' in layers[j].name.lower() or \
+                            'decal' in layers[j].properties or \
+                            (dgroup!=None and group!=None and dgroup == group) \
+                        :
+                            depth = layer_props.get('depth', 'default')
+                            ddepth = layers[j].properties.get('depth', 'default')
+                            # if same group but diff depth val, don't do decal
+                            if depth is not None and ddepth is not None and depth == ddepth:
+                                decal_layers.append(layers[j])
+                                decal_layer_skip += 1
+                        else:
+                            break
+                    j += 1
+                
                 if hasattr(layer, "tiles"):
                     if layer_props.get("dynamic", 0) != 1:
                         # STATIC
@@ -57,12 +95,17 @@ class TileMap(Node):
                         )
                         for x, y, image in layer.tiles():
                             fullmap.paste(
-                                image, (int(x * tmx.tilewidth), int(y * tmx.tileheight))
+                                image, (int(x * tmx.tilewidth), int(y * tmx.tileheight)), image
                             )
+                        for decal_layer in decal_layers:
+                            for x, y, decal in decal_layer.tiles():
+                                fullmap.paste(
+                                    decal, (int(x * tmx.tilewidth), int(y * tmx.tileheight)), decal
+                                )
                         pos = vec3(
                             tmx.width / 2 - 1 / 2, -tmx.height / 2 + 1 / 2, layer_ofs
                         )
-                        m = batch_node.add(
+                        m = page_node.add(
                             Mesh(
                                 image=fullmap,
                                 pos=pos,
@@ -70,7 +113,6 @@ class TileMap(Node):
                             )
                         )
                         m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                        # m.material.texture.anisotropy = 1.0 # def
                         m.material.texture.repeat_x = False
                         m.material.texture.repeat_y = False
                         # else:
@@ -81,9 +123,8 @@ class TileMap(Node):
                         for x, y, image in layer.tiles():
                             if image:
                                 pos = vec3(vec2(x, -y), layer_ofs)
-                                m = batch_node.add(Mesh(image=image, pos=pos))
+                                m = page_node.add(Mesh(image=image, pos=pos))
                                 m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                                # m.material.texture.anisotropy = 1.0 # def
                                 m.material.texture.repeat_x = False
                                 m.material.texture.repeat_y = False
                 else:
@@ -91,20 +132,22 @@ class TileMap(Node):
                     for obj in layer:
                         pos = vec3(
                             vec2(
-                                obj.x / tmx.tilewidth + 1 / 2, -obj.y / tmx.tileheight
+                                obj.x / tmx.tilewidth,
+                                -obj.y / tmx.tileheight
                             ),
                             layer_ofs,
                         )
-                        m = batch_node.add(
+                        m = page_node.add(
                             Mesh(obj.name or "", image=obj.image, pos=pos)
                         )
                         m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                        # m.material.texture.anisotropy = 1.0 # def
                         m.material.texture.repeat_x = False
                         m.material.texture.repeat_y = False
-                batch_node.freeze = True
-                batch_node.freeze_children = True
+                page_node.freeze = True
+                page_node.freeze_children = True
                 layer_ofs += 0.1
+            # elif type(layer) is tuple:
+            #     print(layer)
 
     def _load_img(self, fn, colorkey, tileset=None):
 

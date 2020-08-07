@@ -193,7 +193,7 @@ class ZeroMode(Core):
         self.loc = {}
 
         self.update_hook = self.globe.get("update", None) or self.globe.get("U", None)
-        self.render_hook = self.globe.get("render", None)
+        # self.render_hook = self.globe.get("render", None)
         self.init_hook = self.globe.get("init", None)
         
         self.script_hook = self.globe.get("script", None)

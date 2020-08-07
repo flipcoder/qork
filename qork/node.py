@@ -72,6 +72,7 @@ class Node:
             # filename injected before super() call or resolved?
             self.fn
         except AttributeError:
+            # find the resource's true path
             self.fn = filename_from_args(args, kwargs)
             # if '.' not in self.fn:
             #     self.connections += self.watch_resource(self.fn, self.modify)
@@ -80,6 +81,20 @@ class Node:
             self.ext = pathlib.Path(self.fn).suffix
         else:
             self.ext = ""
+
+        if self.ext:
+            print(os.path.dirname(self.app.script_path))
+            script_dir = os.path.dirname(self.app.script_path)
+            pth = os.path.join(script_dir, self.fn)
+            if os.path.exists(pth):
+                self.path = pth
+            else:
+                self.path = None
+                for dp in self.app._data_paths:
+                    pth = os.path.join(os.path.join(script_dir, dp, self.fn))
+                    if os.path.exists(pth):
+                        self.path = pth
+                        break
 
         try:
             self.name
@@ -727,6 +742,9 @@ class Node:
     def wpos(self):
         return self.get_position(WORLD)
 
+    # def vec_to_local(self, v):
+    #     v = vec4(v, 0)
+    
     # @property
     # def angular_velocity(self):
     #     return self._spin

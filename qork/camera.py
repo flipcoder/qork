@@ -17,7 +17,7 @@ class Camera(Listener):
             [self.app.view_projection],
         )
         # self.connections += self.app.size.connect(self.projection)
-        self._fov = Reactive(80 / 360, [self.projection])
+        self._fov = Reactive(.1, [self.projection])
         self.view = Lazy(self.calculate_view, [self.on_pend])
         self.view_projection = Lazy(
             lambda self=self: self.projection() * self.view(),
@@ -43,8 +43,7 @@ class Camera(Listener):
                 return glm.mat4(1)
             # ratio = self.app.size[0] / self.app.size[1]
             ratio = self.app.aspect_ratio
-            ratio /= 2
-            return glm.ortho(-ratio, ratio, -0.5, 0.5, -1.0, 1000.0)
+            return glm.ortho(-ratio, ratio, -1.0, 1.0, -1.0, 1000.0)
         else:
             # ratio = self.app.size[0] / self.app.size[1]
             return glm.perspectiveFov(

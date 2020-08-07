@@ -4,8 +4,9 @@ tile_size: [ 16, 16 ]
 origin: [ 0.5, 0.75 ]
 mask: [ 0.25, 0.5, 0.75, 1.0 ]
 states: ['life', 'direction', 'stance']
+default: ['alive', 'down', 'stand']
 animation:
-    speed: 10.0
+    speed: 7.0
     frames:
         alive:
             down:

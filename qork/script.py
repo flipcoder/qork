@@ -44,7 +44,7 @@ class Script:
         self.script = script  # (this calls script property)
 
     def push(self, fn):
-        print(fn)
+        # print(fn)
         if self.script_args:
             script = Script(fn, self.obj, self.use_input, *self.script_args)
         else:

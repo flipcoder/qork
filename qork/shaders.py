@@ -7,7 +7,7 @@
 SHADER_BASIC = {
     "vertex_shader": """
     #version 330
-
+    
     uniform mat4 ModelViewProjection;
     
     in vec3 in_vert;
@@ -22,7 +22,7 @@ SHADER_BASIC = {
 """,
     "fragment_shader": """
     #version 330
-
+    
     uniform sampler2D Texture;
 
     in vec2 v_text;
@@ -31,10 +31,12 @@ SHADER_BASIC = {
 
     void main() {
         vec4 t = texture(Texture, v_text);
-        if(t.a < 0.5)
+        if(t.a < 0.95)
             discard;
-        else
+        else {
+            t.a = 0.0;
             f_color = t;
+        }
     }
 """,
 }

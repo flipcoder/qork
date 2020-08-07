@@ -124,12 +124,12 @@ class Canvas(Mesh):
             if type(col) in (tuple, list):  # unpack (stop, color)
                 stop = colors[i][0]
                 col = col[1]
-                print(stop, col)
+                # print(stop, col)
             else:
                 stop = i / max(1, stops - 1)  # auto
             col = Color(col).rgb
-            print(col)
-            print(stop)
+            # print(col)
+            # print(stop)
             grad.add_color_stop_rgb(stop, *col)
 
         def f():
@@ -290,12 +290,12 @@ class Canvas(Mesh):
         if self.dirty:
 
             # render queued cairo operations
-            print("rendered", len(self.on_render))
-            for op in self.on_render.slots:
-                if op.name:
-                    print(op.name, op.func)
-                else:
-                    print(op.func)
+            # print("rendered", len(self.on_render))
+            # for op in self.on_render.slots:
+            #     if op.name:
+            #         print(op.name, op.func)
+            #     else:
+            #         print(op.func)
             self.on_render()
 
             data = self.surface.get_data()
