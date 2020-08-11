@@ -37,6 +37,7 @@ def V(*args):
         return glm.vec4(*args)
     return glm.vec3(*args)
 
+
 X = glm.vec3(1, 0, 0)
 XY = glm.normalize(glm.vec3(1, 1, 0))
 Y = glm.vec3(0, 1, 0)

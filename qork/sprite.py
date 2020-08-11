@@ -123,22 +123,24 @@ class Sprite(Resource):
         # recursive_each(list, self.frames, visit)
 
         self.animation = SpriteAnimation(self)
-    
+
+
 class SpriteAnimation(Material):
     class Sequence:
-        
         @dataclass
         class Entry:
             frame: int
             flags: set = field(default_factory=lambda: set())
-        
+
         def __init__(self, name, tup, tup_ids, frames):
             self.name = name
             self.tup = tup
             self.tup_ids = tup_ids
             self.frames_meta = frames
             frames = list(filter(lambda x: not isinstance(x, str), frames))
-            self.frames = frames = list(map(lambda x: SpriteAnimation.Sequence.Entry(x), frames))
+            self.frames = frames = list(
+                map(lambda x: SpriteAnimation.Sequence.Entry(x), frames)
+            )
             # print('Sequence', name, tup, tup_ids, list(map(lambda x: x.frame, frames)))
 
     def __init__(self, sprite):
@@ -162,18 +164,18 @@ class SpriteAnimation(Material):
         self.possible_states = {}
         self.possible_states_name = {}
         self.state_frame_count = []
-        
+
         state_stack = Wrapper([])
-        
-        self.sequences = {} # id tuple -> Sequence
-        self.sequences_name = {} # name tuple -> Sequence
-        
+
+        self.sequences = {}  # id tuple -> Sequence
+        self.sequences_name = {}  # name tuple -> Sequence
+
         # state names to state categories
         self.state_name_to_id = {}
         self.state_id_to_name = {}
 
-        self.next_state_id = {} # state id -> next state seq id
-        
+        self.next_state_id = {}  # state id -> next state seq id
+
         # Recursive animation tree visitor function (called below)
         # Walks the sprite animation tree, creating stateful animation sequences
         def walk_anim_tree(frames, name, frame, depth=-1):
@@ -182,7 +184,7 @@ class SpriteAnimation(Material):
 
             if depth >= 0:
                 # allow conversion between state names and ids
-                
+
                 # init next_state_id for this depth?
                 # 'depth' ends up being the category id
                 if depth not in self.next_state_id:
@@ -195,9 +197,9 @@ class SpriteAnimation(Material):
                     self.state_id_to_name[new_id] = name
                 if name not in self.state_name_to_id:
                     self.state_name_to_id[name] = new_id
-            
+
             if name:
-                
+
                 category = self.categories[depth]
                 if depth not in self.default_frames:
                     # print(depth, name, type(frame), frame)
@@ -206,7 +208,7 @@ class SpriteAnimation(Material):
                     self.possible_states[depth] = []
                     self.possible_states_name[category] = []
                     self.state_frame_count += [0]
-                
+
                 self.state_frame_count[depth] += 1
                 self.possible_states[depth].append(name)
                 self.possible_states_name[category].append(name)
@@ -214,16 +216,16 @@ class SpriteAnimation(Material):
             if type(frame) is dict:
                 for k, v in frame.items():
                     state_stack(state_stack() + [k])
-                    walk_anim_tree(frames, k, v, depth+1)
+                    walk_anim_tree(frames, k, v, depth + 1)
                     state_stack(state_stack()[:-1])
             elif type(frame) is list:
                 # print(tuple(state_stack()), '=', frame)
                 state_stack_ids = []
-                
+
                 # ['alive', 'stand', 'walk'] -> [0,2,7]...
                 for s in state_stack():
                     state_stack_ids.append(self.state_name_to_id[s])
-                
+
                 tup = tuple(state_stack())
                 tup_ids = tuple(state_stack_ids)
                 seq = SpriteAnimation.Sequence(name, tup_ids, tup, frame)
@@ -232,12 +234,12 @@ class SpriteAnimation(Material):
                 self.sequences_name[tup] = seq
 
         # print(state_stack())
-        walk_anim_tree(self.frames, '', self.frames)
+        walk_anim_tree(self.frames, "", self.frames)
         # print(self.sequences)
-        
+
         for i, d in enumerate(self.defaults):
             self.defaults[i] = self.state_name_to_id[d]
-        
+
         self.t = 0
 
     def get_sequence(self, states):
@@ -245,7 +247,7 @@ class SpriteAnimation(Material):
         states = tuple(states)
         if not states:
             return []
-        if states and isinstance(states[0], (int,float)):
+        if states and isinstance(states[0], (int, float)):
             return self.sequences[states]
         else:
             return self.sequences_name[states]
@@ -258,22 +260,22 @@ class SpriteAnimation(Material):
     # def use(self, idx):
     #     pass
 
+
 class SpriteMaterial(Material):
-    
     def __init__(self, sprite, sync=True):
         self._sprite = weakref.ref(sprite)
         animation = sprite.animation
         self.skin = 0
-        self.frame = 0 # changed through update()
+        self.frame = 0  # changed through update()
         self.states = list(animation.defaults)
         self.states[2] = 1
         # self.frames_tup = tuple()
         self.t = 0
-        self.sync = sync # sync material states with sprite states
+        self.sync = sync  # sync material states with sprite states
         # if sync:
-            # TODO: node.state['blah'].change(...
+        # TODO: node.state['blah'].change(...
         self.sequence = sprite.animation.get_sequence(self.states)
-    
+
     @property
     def sprite(self):
         return self._sprite()
@@ -281,33 +283,33 @@ class SpriteMaterial(Material):
     @property
     def animation(self):
         return self.sprite.animation
-    
+
     def update(self, dt):
         anim = self.animation
         self.t += dt * anim.speed
         if self.sequence:
             idx = int(self.t) % len(self.sequence.frames)
             self.frame = self.sequence.frames[idx].frame
-    
+
     def state(self, category, state=DUMMY):
         sprite = self.sprite
-        
+
         if type(category) is str:
             # use id instead of string
             category = sprite.animation.category_name_to_id[category]
 
         if state is DUMMY:
-            return self.states[category] # GET
-        
+            return self.states[category]  # GET
+
         if type(state) is str:
             state = sprite.animation.state_name_to_id[state]
 
         s = self.states[category]
-        
+
         if s != state:
             self.states[category] = state
             # renew sequence
-            
+
             # TEMP: we don't have state wildcards yet, so we'll repeatedly pop
             #   from the back of the states to allow for unnested partial
             #   or single categories.  For example:
@@ -322,12 +324,12 @@ class SpriteMaterial(Material):
                 seq = sprite.animation.get_sequence(self.states)
                 if seq:
                     break
-                states = states[-1] # pop
+                states = states[-1]  # pop
             if seq is None or not states:
-                raise Exception('no such state: ', category, '=', state)
+                raise Exception("no such state: ", category, "=", state)
             self.sequence = seq
             # self.t = 0
-        
+
     def use(self, idx=0):
         # TODO: look up frame
         frame = self.frame
@@ -337,4 +339,3 @@ class SpriteMaterial(Material):
         for i in range(len(sprite.layers)):
             sprite.layers[i][self.skin][frame].use(i)
         return True
-

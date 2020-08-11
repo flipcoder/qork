@@ -41,12 +41,12 @@ class TileMap(Node):
         layers = sorted(tmx.layers, key=lambda x: x.id)
         # for i, layer in enumerate(tmx.layers):
         decal_layer_skip = 0
-        popup = kwargs.get('popup', False)
-        decal_offset = kwargs.get('decal_offset', 0.01)
-        group_offset = kwargs.get('group_offset', 1.0)
-        
+        popup = kwargs.get("popup", False)
+        decal_offset = kwargs.get("decal_offset", 0.01)
+        group_offset = kwargs.get("group_offset", 1.0)
+
         # let's page the map in pages
-        page = ivec2(8) # page size
+        page = ivec2(8)  # page size
 
         last_group = None
         group = None
@@ -65,7 +65,7 @@ class TileMap(Node):
                 decal_layers = []
                 layer_props = layer.properties
                 last_group = group
-                group = layer_props.get('group', None)
+                group = layer_props.get("group", None)
                 if group != last_group:
                     layer_ofs += group_offset
                     last_group = group
@@ -73,18 +73,23 @@ class TileMap(Node):
                 page_node = layer_node.add(Node("page"))
 
                 # calculate which layers can be combined (decals)
-                j = i+1
+                j = i + 1
                 while j < len(layers):
                     if isinstance(layers[j], pytmx.TiledTileLayer):
-                        dgroup = layers[j].properties.get('group', None)
-                        if 'decal' in layers[j].name.lower() or \
-                            'decal' in layers[j].properties or \
-                            (dgroup!=None and group!=None and dgroup == group) \
-                        :
-                            depth = layer_props.get('depth', 'default')
-                            ddepth = layers[j].properties.get('depth', 'default')
+                        dgroup = layers[j].properties.get("group", None)
+                        if (
+                            "decal" in layers[j].name.lower()
+                            or "decal" in layers[j].properties
+                            or (dgroup != None and group != None and dgroup == group)
+                        ):
+                            depth = layer_props.get("depth", "default")
+                            ddepth = layers[j].properties.get("depth", "default")
                             # if same group but diff depth val, don't do decal
-                            if depth is not None and ddepth is not None and depth == ddepth:
+                            if (
+                                depth is not None
+                                and ddepth is not None
+                                and depth == ddepth
+                            ):
                                 decal_layers.append(layers[j])
                                 decal_layer_skip += 1
                             else:
@@ -92,16 +97,16 @@ class TileMap(Node):
                         else:
                             break
                     j += 1
-                
+
                 if hasattr(layer, "tiles"):
                     # if layer_props.get("dynamic", 0) != 1:
                     try:
-                        depth = layer_props['depth']
+                        depth = layer_props["depth"]
                         depth = True
                         # print(layer.name, 'has depth')
                     except KeyError:
                         depth = False
-                    
+
                     # The check to determine if tile layer is static
                     # In popup mode, tiles with 'depth' need to pop out
                     if not depth:
@@ -114,17 +119,21 @@ class TileMap(Node):
                         )
                         for x, y, image in layer.tiles():
                             fullmap.paste(
-                                image, (int(x * tmx.tilewidth), int(y * tmx.tileheight)), image
+                                image,
+                                (int(x * tmx.tilewidth), int(y * tmx.tileheight)),
+                                image,
                             )
                         for decal_layer in decal_layers:
                             for x, y, decal in decal_layer.tiles():
                                 fullmap.paste(
-                                    decal, (int(x * tmx.tilewidth), int(y * tmx.tileheight)), decal
+                                    decal,
+                                    (int(x * tmx.tilewidth), int(y * tmx.tileheight)),
+                                    decal,
                                 )
                         pos = vec3(
                             tmx.width / 2 - 1 / 2,
                             -tmx.height / 2 + 1 / 2 - (layer_ofs if popup else 0),
-                            layer_ofs
+                            layer_ofs,
                         )
                         m = page_node.add(
                             Mesh(
@@ -146,42 +155,46 @@ class TileMap(Node):
                             for x in range(tmx.width):
                                 images = 0
                                 tile = tmx.images[layer.data[y][x]]
-                                
+
                                 image = None
+
                                 def make_image():
                                     return Image.new(
-                                        mode="RGBA", size=(tmx.tilewidth, tmx.tileheight), color=(0, 0, 0, 0)
+                                        mode="RGBA",
+                                        size=(tmx.tilewidth, tmx.tileheight),
+                                        color=(0, 0, 0, 0),
                                     )
-                                
+
                                 if tile:
                                     if not images:
                                         image = make_image()
-                                    image.paste(tile, (0,0), tile)
+                                    image.paste(tile, (0, 0), tile)
                                     images += 1
-                                
+
                                 decal = None
                                 for decal_layer in decal_layers:
                                     decal = tmx.images[decal_layer.data[y][x]]
                                     if decal:
                                         if not images:
                                             image = make_image()
-                                        image.paste(
-                                            decal, (0,0), decal
-                                        )
+                                        image.paste(decal, (0, 0), decal)
                                         images += 1
 
                                 if images:
-                                    pos = vec3(vec2(x, -y - (layer_ofs if popup else 0)), layer_ofs)
+                                    pos = vec3(
+                                        vec2(x, -y - (layer_ofs if popup else 0)),
+                                        layer_ofs,
+                                    )
                                     m = page_node.add(Mesh(image=image, pos=pos))
 
                                     if popup:
-                                        m.rotate(.25, X)
-                                        m.z += 1/2
-                                        m.y -= 1/2
+                                        m.rotate(0.25, X)
+                                        m.z += 1 / 2
+                                        m.y -= 1 / 2
                                     m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
                                     m.material.texture.repeat_x = False
                                     m.material.texture.repeat_y = False
-                                
+
                                 del image
                 else:
                     # TILED OBJECTS
@@ -189,24 +202,24 @@ class TileMap(Node):
                         pos = vec3(
                             vec2(
                                 obj.x / tmx.tilewidth,
-                                -obj.y / tmx.tileheight - (layer_ofs if popup else 0)
+                                -obj.y / tmx.tileheight - (layer_ofs if popup else 0),
                             ),
                             layer_ofs,
                         )
                         m = page_node.add(
                             Mesh(obj.name or "", image=obj.image, pos=pos)
                         )
-                        if popup and 'depth' in layer.properties:
-                            m.rotate(.25, X)
-                            m.z += 1/2
-                            m.y -= 1/2
+                        if popup and "depth" in layer.properties:
+                            m.rotate(0.25, X)
+                            m.z += 1 / 2
+                            m.y -= 1 / 2
                         m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
                         m.material.texture.repeat_x = False
                         m.material.texture.repeat_y = False
                 page_node.freeze = True
                 page_node.freeze_children = True
                 layer_ofs += decal_offset
-            
+
             # if last_group is not None and last_group != group:
             #     print(group)
             #     layer_ofs += 1.0

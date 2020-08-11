@@ -54,11 +54,11 @@ class Script:
 
     def pop(self, script):
         assert not isinstance(script, Script)
-        
+
         script = script()
         if not script:
             return False
-        
+
         return self.scripts.disconnect(script)
 
     def pause(self, b=True):
@@ -202,7 +202,7 @@ class Script:
                 elif r is None:
                     pass
                 else:
-                    raise Exception('unknown yield value')
+                    raise Exception("unknown yield value")
 
             except StopIteration:
                 # print("Script Finished")
@@ -219,7 +219,7 @@ class Script:
                 s.update(dt)
                 if s.done():
                     count_scripts_done += 1
-                
+
             if count_scripts_done:
                 with self.scripts:
                     self.scripts._slots = list(
@@ -235,4 +235,3 @@ class Script:
             self.dt = 0
 
         return ran_script
-

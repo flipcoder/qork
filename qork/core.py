@@ -210,7 +210,7 @@ class Core(mglw.WindowConfig, CoreBase):
 
         self.K = self.wnd.keys
 
-        self.view_projection = {} # 
+        self.view_projection = {}  #
 
         self.camera = self.scene.add(Camera())  # requires view/proj above
         self.next_camera_id = 0
@@ -224,7 +224,9 @@ class Core(mglw.WindowConfig, CoreBase):
         if camera.camera_id is None:
             cam_id = camera.camera_id = self.next_camera_id
             self.next_camera_id += 1
-            self.view_projection[cam_id] = Lazy(WeakLambda(cam, lambda: cam.projection() * cam.view()))
+            self.view_projection[cam_id] = Lazy(
+                WeakLambda(cam, lambda: cam.projection() * cam.view())
+            )
         camera.pend()
 
     @property
@@ -360,7 +362,7 @@ class Core(mglw.WindowConfig, CoreBase):
         try:
             ext = pathlib.Path(fn).suffix
         except TypeError:
-            ext = ''
+            ext = ""
         if ext:
             for typename, typelist in self.extensions.items():
                 if ext in typelist:
@@ -512,13 +514,13 @@ class Core(mglw.WindowConfig, CoreBase):
 
         self.render_clear()
         assert self.camera
-        
+
         scene = self.scene
-        
+
         if scene and scene.skybox:
             self.draw(scene.skybox.camera, scene.skybox)
             self.render_clear_depth()
-        
+
         if self.camera and self.scene:
             self.draw(self.camera, self.scene)
         else:
@@ -529,7 +531,7 @@ class Core(mglw.WindowConfig, CoreBase):
             hud = self.camera.hud
             self.render_clear_depth()
             self.draw(hud.camera, hud)
-        
+
         # if self._view_camera and self.view_hud:
         #     self.draw(self._view_camera, self.view_hud)
 
@@ -539,7 +541,7 @@ class Core(mglw.WindowConfig, CoreBase):
         fbo.color_mask = False, False, False, False
         ctx.clear()
         fbo.color_mask = True, True, True, True
-    
+
     def clear(self):
         if self.state():
             return self.state.clear()
@@ -561,7 +563,7 @@ class Core(mglw.WindowConfig, CoreBase):
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
 
     def draw(self, camera, root=None, viewport=None):
-        
+
         if root is None:
             root = camera.root
             if not root:
@@ -589,9 +591,7 @@ class Core(mglw.WindowConfig, CoreBase):
         return self.renderfrom.view()
 
     def matrix(self, m):
-        self.mvp_uniform.value = flatten(
-            self.renderfrom.view_projection() * m
-        )
+        self.mvp_uniform.value = flatten(self.renderfrom.view_projection() * m)
 
     def golf(self):
         if self.golfing:

@@ -59,4 +59,3 @@ def Composite(*args):
         return CompositeClass
 
     return CompositeClass(*args)
-

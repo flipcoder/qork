@@ -42,7 +42,7 @@ class Cache(Factory):
             # r._count += 1
             return r
         if not func:
-            func = kwargs.get('load', None)
+            func = kwargs.get("load", None)
         if func:
             r = func()
         else:
@@ -76,7 +76,7 @@ class Cache(Factory):
         # data.deref = lambda data=data: deref(data)
         if callable(data):
             data = data()
-        
+
         data._cache = self
         # data._count = 1
         if fn:  # empty filenames are temp, don't cache

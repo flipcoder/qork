@@ -19,14 +19,14 @@ class MeshResource(Resource):
             assert False
             return
         super().__init__(*args, **kwargs)
-        
+
         self.cache = self.app.cache
         self.ctx = self.app.ctx
-        
+
         self.on_pend = Signal()
 
         self._data = None
-        
+
         self.prefab = None
         if isinstance(args[0], Prefab):
             self.prefab = args[0]
@@ -36,9 +36,9 @@ class MeshResource(Resource):
         else:
             self._data = Reactive(args[0])
             self.prefab = None
-            self.width = kwargs.get('width', 5)
-            self.type = kwargs.get('T', gl.TRIANGLES)
-        
+            self.width = kwargs.get("width", 5)
+            self.type = kwargs.get("T", gl.TRIANGLES)
+
         self.shader = args[1]
         assert isinstance(self.shader, gl.Program)
         # self._type = Reactive(meshtype, [self])
@@ -70,7 +70,7 @@ class MeshResource(Resource):
     # @type.setter
     # def type(self, t):
     #     self.mesh_type
-        # self.on_pend()
+    # self.on_pend()
 
     def __iadd__(self, sig):
         self.on_pend += sig
@@ -164,10 +164,7 @@ class MeshResource(Resource):
             meshname = self.fn + ":+" + flags
         resource = MeshResource(
             self.app,
-            Prefab(
-                meshname,
-                newdata,
-            ),
+            Prefab(meshname, newdata,),
             self.shader,
             # self.type,
             *self.args,
@@ -306,7 +303,7 @@ class Mesh(Node):
             # self.type = self.data.type
             if not self.filter:
                 self.filter = (gl.NEAREST, gl.NEAREST)
-            meshname = self.data.name # for caching
+            meshname = self.data.name  # for caching
 
         # does cache already have this mesh?
         if self.data:
@@ -327,7 +324,7 @@ class Mesh(Node):
 
         if self.sprite:
             self.material = SpriteMaterial(self.sprite)
-        
+
         self.loaded = True
 
         self.resource_con = self.resource.connect(self.set_local_box)
@@ -358,8 +355,8 @@ class Mesh(Node):
         r = [None] * sz
         for i in range(sz):
             j = i * rc.width
-            vert = vec3(*data[j:j+3])
-            uv = vec2(*data[j+3:j+5])
+            vert = vec3(*data[j : j + 3])
+            uv = vec2(*data[j + 3 : j + 5])
             vert = (self.world_matrix * vec4(vert, 1.0)).xyz
             r[i] = [*vert, *uv]
         if recursive:

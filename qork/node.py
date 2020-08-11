@@ -230,7 +230,7 @@ class Node:
         if self.num is not None:
             if callable(pos):
                 pos = pos(self.num)
-        
+
         each = kwargs.pop("each", None)
         if each:
             each()
@@ -760,7 +760,7 @@ class Node:
 
     # def vec_to_local(self, v):
     #     v = vec4(v, 0)
-    
+
     # @property
     # def angular_velocity(self):
     #     return self._spin

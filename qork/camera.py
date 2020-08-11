@@ -7,48 +7,53 @@ import glm
 import math
 from enum import Enum
 
+
 class RenderLayer(Node):
     def __init__(self, app, *args, **kwargs):
         super().__init__(app, *args, root=True, **kwargs)
-        self.camera = self.add(Camera(app, mode='2D')) # 2D hud view
+        self.camera = self.add(Camera(app, mode="2D"))  # 2D hud view
 
-        self.parent_camera = kwargs.get('camera', None) # camera containing hud
+        self.parent_camera = kwargs.get("camera", None)  # camera containing hud
         if self.parent_camera:
             self.parent_camera = weakref.ref(self.parent_camera)
-        
-        console = self.console = kwargs.get('console', None)
+
+        console = self.console = kwargs.get("console", None)
         if console:
             self.add(console)
-        
-        canvas = self.canvas = kwargs.get('canvas', None)
+
+        canvas = self.canvas = kwargs.get("canvas", None)
         if canvas:
             self.add(canvas)
+
 
 class HUD(RenderLayer):
     def __init__(self, app, *args, **kwargs):
         super().__init__(app, *args, root=True, **kwargs)
 
+
 class Camera(Listener):
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hud = None
         self.skybox = None
         self._ortho = Reactive(True)
-        self.projection = kwargs.get('projection', Lazy(
-            self.calculate_projection,
-            [self._ortho, self.app._size],
-            # [self.view_projection],
-        ))
+        self.projection = kwargs.get(
+            "projection",
+            Lazy(
+                self.calculate_projection,
+                [self._ortho, self.app._size],
+                # [self.view_projection],
+            ),
+        )
         # self.connections += self.app.size.connect(self.projection)
-        self._fov = Reactive(kwargs.get('fov',.1), [self.projection])
+        self._fov = Reactive(kwargs.get("fov", 0.1), [self.projection])
         self.view = Lazy(self.calculate_view, [self.on_pend])
         self.view_projection = Lazy(
             lambda self=self: self.projection() * self.view(),
             [self.projection, self.view]
             # [self.view_projection],
         )
-        self.mode = kwargs.get('mode', '2D') # !
+        self.mode = kwargs.get("mode", "2D")  # !
 
         # self.connections += (
         #     self.projection.connect(self.app.view_projection.pend),
@@ -140,13 +145,12 @@ class Camera(Listener):
         if node is None:
             r = self._hud = RenderLayer(self.app, camera=self)
             return r
-        elif isinstance(RenderLayer, node): # hud node provided?
+        elif isinstance(RenderLayer, node):  # hud node provided?
             node.parent_camera = weakref.ref(self)
-            r = self._hud = node # set RenderLayer to custom arg
+            r = self._hud = node  # set RenderLayer to custom arg
             return r
         else:
-            raise Exception('invalid RenderLayer provided')
-    
+            raise Exception("invalid RenderLayer provided")
+
     def remove_hud(self):
         self._hud = None
-

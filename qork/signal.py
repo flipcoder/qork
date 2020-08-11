@@ -497,7 +497,7 @@ class Signal(Container):
             return None
         else:
             return cb()
-    
+
     def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name=""):
 
         if isinstance(func, (list, tuple)):

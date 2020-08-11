@@ -58,14 +58,17 @@ class Canvas(Mesh):
         #     """,
         # )
 
-        self.resource = self.cache(TEXTURED_QUAD_CENTERED.name, lambda: MeshResource(
-            self.app,
-            TEXTURED_QUAD_CENTERED,
-            # TEXTURED_QUAD_CENTERED.name,
-            # TEXTURED_QUAD_CENTERED.data,
-            self.app.shader,
-            # TEXTURED_QUAD_CENTERED.type,
-        ))
+        self.resource = self.cache(
+            TEXTURED_QUAD_CENTERED.name,
+            lambda: MeshResource(
+                self.app,
+                TEXTURED_QUAD_CENTERED,
+                # TEXTURED_QUAD_CENTERED.name,
+                # TEXTURED_QUAD_CENTERED.data,
+                self.app.shader,
+                # TEXTURED_QUAD_CENTERED.type,
+            ),
+        )
         # self.resource_con = self.resource.connect(self.set_local_box)
         self.set_local_box(self.resource.box)
         self._source = None
@@ -73,7 +76,7 @@ class Canvas(Mesh):
         self.loaded = True
         self.stack: deque[Connections] = deque()  # Connections stack
 
-        res = kwargs.pop("res", ivec2(1024,1024))
+        res = kwargs.pop("res", ivec2(1024, 1024))
         self.res = ivec2(res)
         self.buf = np.zeros(self.res[0] * self.res[1] * 4, dtype=np.int8)
         self.buf.reshape(4, self.res[0], self.res[1])
@@ -297,12 +300,12 @@ class Canvas(Mesh):
             self.on_render()
 
             buf = self.surface.get_data()
-            
+
             if self.texture:
                 self.texture.release()
             self.texture = self.app.ctx.texture(self.res, 4, buf)
-            self.texture.swizzle = 'BGRA'
-            
+            self.texture.swizzle = "BGRA"
+
             self.dirty = False
 
             # img.show()

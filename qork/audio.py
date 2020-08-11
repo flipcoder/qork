@@ -27,7 +27,7 @@ class Sound(Node):
     class Resource(Resource):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            
+
             if self.ext == ".wav":
                 # self.data = openal.oalOpen(self.fn)
                 self.data = openal.Buffer(openal.WaveFile(self.fn))
