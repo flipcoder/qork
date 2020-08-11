@@ -109,6 +109,14 @@ def is_lambda(func):
 def flatten(r):
     return tuple(itertools.chain(*r))
 
+def try_get(container, key, default=None):
+    try:
+        return container[key]
+    except IndexError:
+        pass
+    except KeyError:
+        pass
+    return default
 
 def filename_from_args(args, kwargs=None):
     fn = None
@@ -220,7 +228,7 @@ def to_vec3(*args):
         elif lenargs == 4:
             return glm.vec3(*args[:3])
 
-    print(args)
+    # print(args)
     raise ValueError("invalid vec3")
 
 

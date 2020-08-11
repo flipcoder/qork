@@ -27,16 +27,26 @@ class Cache(Factory):
 
     def __call__(self, *args, **kwargs):
         fn = None
+        func = None
         for arg in args:  # check args for filename
             if isinstance(arg, str):
                 fn = arg
+                break
+        for arg in args:  # check args for filename
+            if callable(arg):
+                func = arg
                 break
         assert fn
         if fn in self.resources:
             r = self.resources[fn]
             # r._count += 1
             return r
-        r = super().__call__(*args, **kwargs)
+        if not func:
+            func = kwargs.get('load', None)
+        if func:
+            r = func()
+        else:
+            r = super().__call__(*args, **kwargs)
         r._cache = self
         # r._count = 1
         # assert not hasattr(r, "deref")
@@ -64,6 +74,9 @@ class Cache(Factory):
         if res is not None:
             return res
         # data.deref = lambda data=data: deref(data)
+        if callable(data):
+            data = data()
+        
         data._cache = self
         # data._count = 1
         if fn:  # empty filenames are temp, don't cache

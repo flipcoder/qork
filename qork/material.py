@@ -6,7 +6,7 @@ from .resource import Resource
 class Material(Resource):
     def __init__(self, tex):
         self.texture = tex
-        pass
+        self.backfaces = False
 
     def update(self, dt):
         pass

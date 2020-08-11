@@ -1,7 +1,5 @@
 #!/usr/bin/env qork
 
-console(False)
-
 
 def script(ctx):
     while True:

@@ -2,9 +2,10 @@
 from .node import *
 from PIL import Image
 import moderngl as gl
+from .prefab import *
 from .defs import *
 import cson
-from glm import ivec2, vec2
+from glm import ivec2, vec2, vec4
 from .sprite import *
 from .util import *
 from copy import copy
@@ -13,22 +14,41 @@ import struct
 
 
 class MeshResource(Resource):
-    def __init__(self, app, name, data, shader, meshtype, *args, **kwargs):
+    def __init__(self, app, *args, **kwargs):
         if len(args) == 1:
             assert False
             return
-        super().__init__(app, name, *args, **kwargs)
-        self.cache = app.cache
-        self._data = Reactive(data)
-        self.ctx = app.ctx
-        self.shader = shader
-        self.mesh_type = meshtype
+        super().__init__(*args, **kwargs)
+        
+        self.cache = self.app.cache
+        self.ctx = self.app.ctx
+        
+        self.on_pend = Signal()
+
+        self._data = None
+        
+        self.prefab = None
+        if isinstance(args[0], Prefab):
+            self.prefab = args[0]
+            self._data = Reactive(self.prefab.data)
+            self.width = self.prefab.width
+            self.type = self.prefab.type
+        else:
+            self._data = Reactive(args[0])
+            self.prefab = None
+            self.width = kwargs.get('width', 5)
+            self.type = kwargs.get('T', gl.TRIANGLES)
+        
+        self.shader = args[1]
+        assert isinstance(self.shader, gl.Program)
+        # self._type = Reactive(meshtype, [self])
         self.flipped = {}
         self.generated = False
         self.vbo = self.vao = None
         # self.solid = kwargs.pop("solid", False)
         self._box = Lazy(self.calculate_box, [self._data])
-        self.on_pend = Signal()
+        # self.box = self.calculate_box()
+        # self._box = Lazy(self.calculate_box, [self._data, self._type])
 
     @property
     def box(self):
@@ -41,7 +61,16 @@ class MeshResource(Resource):
     @data.setter
     def data(self, d):
         self._data(d)
-        self.on_pend()
+        # self.on_pend()
+
+    # @property
+    # def type(self):
+    #     return self.mesh_type
+
+    # @type.setter
+    # def type(self, t):
+    #     self.mesh_type
+        # self.on_pend()
 
     def __iadd__(self, sig):
         self.on_pend += sig
@@ -56,12 +85,12 @@ class MeshResource(Resource):
         return self.on_pend.disconnect(sig, weak)
 
     def calculate_box(self):
-        d = self._data()
+        d = self.data
         if not d:
             return None
         mini = vec3(float("inf"))
         maxi = -mini
-        for i in range(0, len(d), 5):
+        for i in range(0, len(d), self.width):
             for c in range(3):
                 idx = i + c
                 if d[idx] < mini[c]:
@@ -95,7 +124,7 @@ class MeshResource(Resource):
     def render(self):
         if not self.generated:
             self.generate()
-        self.vao.render(self.mesh_type)
+        self.vao.render(self.type)
 
     # def __del__(self):
     #     flipped = self.flipped
@@ -126,6 +155,7 @@ class MeshResource(Resource):
             return self.flipped[flags]
         newdata = self.data.copy()
         for i in range(len(newdata) // 5):
+            # FIXME: this assumes a certain layout
             if "h" in flags:  # flip U coordinate
                 newdata[i * 5 + 3] = 1.0 - newdata[i * 5 + 3]
             if "v" in flags:  # flip V cordinate
@@ -134,10 +164,12 @@ class MeshResource(Resource):
             meshname = self.fn + ":+" + flags
         resource = MeshResource(
             self.app,
-            meshname,
-            newdata,
+            Prefab(
+                meshname,
+                newdata,
+            ),
             self.shader,
-            self.mesh_type,
+            # self.type,
             *self.args,
             **self.kwargs
         )
@@ -239,8 +271,11 @@ class Mesh(Node):
                     if not img:
                         raise FileNotFoundError()
                     # print(img)
-                    img = img.convert("RGBA")
-                    self.layers[0][0].append(img)
+                    self.image = img = img.convert("RGBA")
+                    self.layers[0][0].append(self.image)
+                    self.material = Material(
+                        self.ctx.texture(img.size, 4, img.tobytes())
+                    )
             else:
                 # image preloaded
                 if self.image:
@@ -266,22 +301,23 @@ class Mesh(Node):
         meshname = ""
 
         # no prefab or temp name? load a quad for image
-        if not isinstance(self.data, Prefab) or (not self.fn or "." not in self.fn):
+        if not self.data or (not self.fn or "." not in self.fn):
             self.data = TEXTURED_QUAD_CENTERED
-            self.mesh_type = gl.TRIANGLE_STRIP
+            # self.type = self.data.type
             if not self.filter:
                 self.filter = (gl.NEAREST, gl.NEAREST)
-            meshname = self.data.name
+            meshname = self.data.name # for caching
 
         # does cache already have this mesh?
         if self.data:
             if meshname not in self.cache:
                 resource = MeshResource(
                     self.app,
-                    self.data.name,
-                    self.data.data,
+                    # self.data.name,
+                    # self.data.data,
+                    self.data,
                     self.app.shader,
-                    self.mesh_type,
+                    # self.data.type,
                 )
                 self.resource = self.cache.ensure(meshname, resource)
             else:
@@ -314,6 +350,22 @@ class Mesh(Node):
 
             self.resource.render()
         super().render()
+
+    def calculate_vertices(self, recursive=False):
+        rc = self.resource
+        data = rc.data
+        sz = len(data) // rc.width
+        r = [None] * sz
+        for i in range(sz):
+            j = i * rc.width
+            vert = vec3(*data[j:j+3])
+            uv = vec2(*data[j+3:j+5])
+            vert = (self.world_matrix * vec4(vert, 1.0)).xyz
+            r[i] = [*vert, *uv]
+        if recursive:
+            for ch in self.children:
+                r += ch.calculate_vertices(recursive=recursive)
+        return r
 
     # def __del__(self):
     #     super().cleanup()

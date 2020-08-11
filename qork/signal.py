@@ -168,6 +168,15 @@ class Container:
         func()
         return False
 
+    def safe_call(self, cb):
+        if self._blocked:
+            self._queued[self._current_queue].append(
+                lambda slot=slot: self.connect(slot, weak, cb=cb)
+            )
+            return None
+        else:
+            return cb()
+
     # decorator
     def do(self):
         """
@@ -298,7 +307,7 @@ class Container:
             slot.once = once
             self._slots.append(slot)
             if cb:
-                cb(slot)
+                self.safe_call(lambda slot=slot: cb(slot))
             return slot
 
         # make slot from func
@@ -307,7 +316,7 @@ class Container:
         # wslot = weakref.ref(slot) if weak else slot
         self._slots.append(slot)
         if cb:
-            cb(slot)
+            self.safe_call(lambda slot=slot: cb(slot))
         return slot
 
     def once(self, func, cb=None):
@@ -337,8 +346,10 @@ class Container:
                 if func is value:
                     del self._slots[i]
                     return True, cb, i
+                else:
+                    print(func, value)
 
-        return False
+        return False, None, None
 
     @queued
     def clear_type(self, Type):
@@ -478,6 +489,15 @@ class Signal(Container):
     def __iter__(self):
         return (x.get() for x in self.iterslots())
 
+    def safe_call(self, cb):
+        if self._blocked:
+            self._queued[self._current_queue].append(
+                lambda slot=slot: self.connect(slot, weak, cb=cb)
+            )
+            return None
+        else:
+            return cb()
+    
     def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name=""):
 
         if isinstance(func, (list, tuple)):
@@ -511,7 +531,7 @@ class Signal(Container):
             if on_remove:
                 slot.on_remove.connect(on_remove, weak=False)
             if cb:
-                cb()
+                self.safe_call(cb)
             return slot
 
         # make slot from func
@@ -523,7 +543,7 @@ class Signal(Container):
         if on_remove:
             slot.on_remove.connect(on_remove, weak=False)
         if cb:
-            cb()
+            self.safe_call(cb)
         return slot
 
     def store(self, func, once=False, cb=None, on_remove=None, name=""):
@@ -553,7 +573,7 @@ class Signal(Container):
                 if self._slots[i] is slot:
                     del self._slots[i]
                     if cb:
-                        cb()
+                        self.safe_call(cb)
                     return True
                 # if self._slots[i] is wref:
                 #     print('del')
@@ -582,7 +602,7 @@ class Signal(Container):
             if clean_wrefs:
                 self._slots = list(filter(lambda s: s(), self._slots))
             if cb:
-                cb(i)
+                self.safe_call(lambda: cb(i))
             return r
 
         else:
@@ -599,6 +619,7 @@ class Signal(Container):
                         # self._slots = list(filter(lambda s: s(), self._slots))
                         r = self.disconnect(wref)
                         if cb:
+                            self.safe_call(lambda: cb(wref))
                             cb(wref)
                         return r
                 # func = slot.func
@@ -611,7 +632,7 @@ class Signal(Container):
                 if func is value:
                     del self._slots[i]
                     if cb:
-                        cb(i)
+                        self.safe_call(lambda: cb(i))
                     return True
             return False
 

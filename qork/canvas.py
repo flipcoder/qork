@@ -4,6 +4,8 @@ import cairo
 import math
 import copy
 import webcolors
+import array
+import numpy as np
 
 from .mesh import *
 from .shaders import *
@@ -56,13 +58,14 @@ class Canvas(Mesh):
         #     """,
         # )
 
-        self.resource = MeshResource(
+        self.resource = self.cache(TEXTURED_QUAD_CENTERED.name, lambda: MeshResource(
             self.app,
-            "",
-            TEXTURED_QUAD_CENTERED.data,
+            TEXTURED_QUAD_CENTERED,
+            # TEXTURED_QUAD_CENTERED.name,
+            # TEXTURED_QUAD_CENTERED.data,
             self.app.shader,
-            gl.TRIANGLE_STRIP,
-        )
+            # TEXTURED_QUAD_CENTERED.type,
+        ))
         # self.resource_con = self.resource.connect(self.set_local_box)
         self.set_local_box(self.resource.box)
         self._source = None
@@ -70,8 +73,10 @@ class Canvas(Mesh):
         self.loaded = True
         self.stack: deque[Connections] = deque()  # Connections stack
 
-        res = kwargs.pop("res", self.app.size)
-        self.res = ivec2(*res)
+        res = kwargs.pop("res", ivec2(1024,1024))
+        self.res = ivec2(res)
+        self.buf = np.zeros(self.res[0] * self.res[1] * 4, dtype=np.int8)
+        self.buf.reshape(4, self.res[0], self.res[1])
 
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *self.res)
         self.cairo = cairo.Context(self.surface)
@@ -289,23 +294,15 @@ class Canvas(Mesh):
 
         if self.dirty:
 
-            # render queued cairo operations
-            # print("rendered", len(self.on_render))
-            # for op in self.on_render.slots:
-            #     if op.name:
-            #         print(op.name, op.func)
-            #     else:
-            #         print(op.func)
             self.on_render()
 
-            data = self.surface.get_data()
-            # for i in range(len(data)//4): # ABGR -> RGBA
-            #     data[i+3] = data[i]
-            #     data[i+1] = data[i+2]
-
-            # print(list(data[0:4]))
-
-            self.texture = self.app.ctx.texture(self.res, 4, data=data)
+            buf = self.surface.get_data()
+            
+            if self.texture:
+                self.texture.release()
+            self.texture = self.app.ctx.texture(self.res, 4, buf)
+            self.texture.swizzle = 'BGRA'
+            
             self.dirty = False
 
             # img.show()
@@ -313,7 +310,7 @@ class Canvas(Mesh):
     def preview(self):
         self.refresh(now=True)
         data = self.surface.get_data()
-        img = Image.frombuffer("RGBA", tuple(self.res), data, "raw", "RGBA", 0, 1)
+        # img = Image.frombuffer("RGBA", tuple(self.res), data, "raw", "RGBA", 0, 1)
         img.show()
 
     def render(self):

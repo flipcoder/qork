@@ -41,6 +41,27 @@ SHADER_BASIC = {
 """,
 }
 
+from qork.util import DUMMY
+
+class Shader:
+    cache = {} # dict of programs with normalized ID
+    def __init__(self, vp=None, fp=None):
+        if vp is None and fp is None:
+            self.vp = SHADER_BASIC['vertex_shader']
+            self.fp = SHADER_BASIC['fragment_shader']
+            self.name = 'BASIC'
+        else:
+            self.vp = vp
+            self.fp = fp
+            self.name = ''
+        self.props = {}
+    
+    def define(self, prop, val=DUMMY):
+        self.props[prop] = val
+        if type(val) is bool:
+            val = "true" if val else "false" # glsl bools
+        self.fp = '#define ' + prop + ((' ' + val) if val is not DUMMY else '')
+
 # @shader
 # def vertex_basic(
 #     ModelViewProjection: ('uniform', 'ModelViewProjection', gpu.mat4),

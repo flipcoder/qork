@@ -2,30 +2,24 @@
 
 from pprint import pp
 
-console(False)
 camera.mode = "2D"
-scale = 0.2
-# camera.z = 1
+
+sky = camera.add(Canvas('sky'))
+sky.gradient(vec3(0.2,0.4,0.9), 'white', region=(0,0,0,sky.res[1]))
+sky.pos = -Z * 100
+sky.scale(200)
+scale = 0.25
 
 m = add("modern.tmx", pos=-Z, scale=scale)
 
-# for i, c in enumerate(m):
-#     c["batch"].children_visible = False
-# m['ground']['batch'].children_visible = True
-# m['ground decal']['batch'].children_visible = True
-# m['middle']['batch'].children_visible = True
-# m['middle decal']['batch'].children_visible = True
-# m['middle under']['batch'].children_visible = True
-# m['roof']['batch'].children_visible = True
-# pp(scene.tree("p"))
-
 player = add('player.cson', scale=scale)
-
+player.pos = -Z * 0.895 * scale
 t = 0
 
 def update(dt):
+    speed = .5
     v = vec3(key(KEY.RIGHT) - key(KEY.LEFT), key(KEY.UP) - key(KEY.DOWN), 0)
-    v *= scale * 5
+    v = glm.normalize(v)
     
     if v.y < -EPSILON:
         player.material.state('direction', 'down')
@@ -41,6 +35,5 @@ def update(dt):
     else:
         player.material.state('stance', 'stand')
     
-    camera.vel = v
-    player.vel = v
+    camera.vel = player.vel = v
 

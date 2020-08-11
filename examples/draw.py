@@ -1,23 +1,22 @@
 #!/usr/bin/env qork
-
-console(False)
+import emoji
 
 camera.mode = "3D"
 camera.z = 1.5
 
-bg = add(Canvas(scale=(Q.aspect_ratio * 10, 10), pos=-Z))
-bg.gradient("gray", "black")
+bg = skybox.add(Canvas(res=vec2(2048), scale=XY*3))
+bg.gradient("gray","black")
 bg.spin(-0.2)
 
 nodes = [None] * 2
 for i in range(len(nodes)):
-    n = nodes[i] = add(Canvas(scale=(Q.aspect_ratio, 1)))
+    n = nodes[i] = add(Canvas())
     n.font(n.res[0] / 5)
 
 nodes[0].text("Hello", "red")
-nodes[0].x = -0.5
+nodes[0].x = -0.3
 nodes[1].text("World", "blue")
-nodes[1].x = 0.5
+nodes[1].x = 0.3
 
 
 def update(dt):

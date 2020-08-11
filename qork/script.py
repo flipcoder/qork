@@ -44,16 +44,25 @@ class Script:
         self.script = script  # (this calls script property)
 
     def push(self, fn):
-        # print(fn)
         if self.script_args:
             script = Script(fn, self.obj, self.use_input, *self.script_args)
         else:
             script = Script(fn, self.obj, self.use_input)
 
         self.scripts += script
+        return weakref.ref(script)
 
-    def pause(self):
-        self.paused = True
+    def pop(self, script):
+        assert not isinstance(script, Script)
+        
+        script = script()
+        if not script:
+            return False
+        
+        return self.scripts.disconnect(script)
+
+    def pause(self, b=True):
+        self.paused = b
 
     def resume(self):
         self.paused = False
@@ -70,10 +79,17 @@ class Script:
     # pass
 
     def running(self):
-        return self._script is not None
+        """
+        Returns the number of scripts running in this context
+        """
+        c = int(self._script is not None)
+        for s in self.scripts:
+            if not s.done():
+                c += 1
+        return c
 
     def done(self):
-        return self._script is None
+        return self.running() == 0
 
     # def key(self, k):
     #     # if we're in a script: return keys since last script yield
@@ -143,9 +159,13 @@ class Script:
             raise TypeError
 
     def sleep(self, t):
+        t = float(t)
         return self.when.once(t, self.resume)
 
     def update(self, dt):
+        """
+        Scripts can yield back sleep times, slots or condition functions
+        """
 
         # accumulate dt between yields
         self.dt += dt
@@ -162,19 +182,27 @@ class Script:
             try:
 
                 self.inside = True
-                slot = next(self._script)
+                r = next(self._script)
                 ran_script = True
                 self.inside = False
 
-                if isinstance(slot, Slot):
-                    self.slots.append(slot)
+                tr = type(r)
+                if isinstance(r, Slot):
+                    self.slots.append(r)
                     self.pause()
-                elif slot:  # func?
-                    self.resume_condition = slot
+                elif tr is int or tr is float:
+                    self.slots.append(self.sleep(r))
+                    self.pause()
+                    # if not self.resume_condition():
+                    #     self.pause()
+                elif callable(r):  # func?
+                    self.resume_condition = r
                     if not self.resume_condition():
                         self.pause()
-                else:
+                elif r is None:
                     pass
+                else:
+                    raise Exception('unknown yield value')
 
             except StopIteration:
                 # print("Script Finished")
@@ -186,10 +214,17 @@ class Script:
 
         # extra scripts
         if self.scripts:
-            self.scripts.each(lambda x, dt: x.update(dt), dt)
-            self.scripts._slots = list(
-                filter(lambda x: not x.get().done(), self.scripts._slots)
-            )
+            count_scripts_done = 0
+            for s in self.scripts:
+                s.update(dt)
+                if s.done():
+                    count_scripts_done += 1
+                
+            if count_scripts_done:
+                with self.scripts:
+                    self.scripts._slots = list(
+                        filter(lambda x: not x.get().done(), self.scripts._slots)
+                    )
 
         self.inside = False
 
@@ -200,3 +235,4 @@ class Script:
             self.dt = 0
 
         return ran_script
+

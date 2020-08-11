@@ -1,24 +1,27 @@
 #!/usr/bin/env qork
 
 from glm import normalize
-
-console(False)
+from glm import vec2
 
 # load the ball and 2 paddles
 paddle = add(2, "player.png", scale=(0.1, 0.25, 0.1))
-ball = add("player.png", scale=0.075)
+ball = add("player.png", scale=0.05)
 
 # prosition paddles and set speed
-paddle[0].x, paddle[1].x = -0.5, 0.5
+edge = 0.75
+paddle[0].x, paddle[1].x = -edge, edge
 paddle_speed = 1
 
 # set score for both players
 score = [0] * 2
 
-# hud = add(Canvas(scale=vec3(app.aspect_ratio, 1, 0)))
-# hud.text('0 - 0', 'white', hud.res/2, 'hv')
 # hud.y = .4
 
+def refresh_score():
+    canvas.clear()
+    canvas.text(' - '.join(map(lambda s: str(s), score)), 'white', vec2(0,128), 'h')
+
+refresh_score()
 
 def init():
     global speed
@@ -31,8 +34,9 @@ def update(t):
     if abs(ball.y) > 0.5:
         ball.y = ball.old_pos.y
         ball.vy = -ball.vy
-    if abs(ball.x) > 0.5:
+    if abs(ball.x) > edge + 0.2:
         score[ball.x > 0] += 1
+        refresh_score()
         # hud.clear()
         # hud.text(str(score[0]) + ' - ' + str(score[1]), hud.res/2, 'white', 'hv')
         init()

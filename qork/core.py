@@ -2,9 +2,9 @@
 import glm
 import sys
 
-if __debug__:
-    if {"--vsync", "-vs"} & set(sys.argv):
-        sys.argv += ["--vsync", "off"]
+# if __debug__:
+#     if {"--vsync", "-vs"} & set(sys.argv):
+#         sys.argv += ["--vsync", "off"]
 
 import moderngl as gl
 
@@ -31,6 +31,7 @@ from .audio import *
 from .box import *
 from .tilemap import *
 from .easy import qork_app
+from .scene import *
 import cson
 import os
 from os import path
@@ -168,7 +169,8 @@ class Core(mglw.WindowConfig, CoreBase):
 
         self.partitioner = Partitioner(self)
 
-        self.scene = Node("Scene", root=True)
+        self.scene = Scene("Scene", root=True)
+        self.render_layer = RenderLayer(self, self.scene)
         self.gui = None
         self.renderfrom = None
         self._view = None  # default gui camera
@@ -208,14 +210,22 @@ class Core(mglw.WindowConfig, CoreBase):
 
         self.K = self.wnd.keys
 
-        self.view_projection = Lazy(lambda: self.projection() * self.view())
+        self.view_projection = {} # 
 
         self.camera = self.scene.add(Camera())  # requires view/proj above
+        self.next_camera_id = 0
 
         self.watch = Watchdog()
 
         # self.renderpass = RenderPass()
         # self.renderpass.app = self
+
+    def register_camera(self, camera):
+        if camera.camera_id is None:
+            cam_id = camera.camera_id = self.next_camera_id
+            self.next_camera_id += 1
+            self.view_projection[cam_id] = Lazy(WeakLambda(cam, lambda: cam.projection() * cam.view()))
+        camera.pend()
 
     @property
     def state(self):
@@ -347,30 +357,34 @@ class Core(mglw.WindowConfig, CoreBase):
         if isinstance(args[0], Node):
             return args[0]
         fn = filename_from_args(args, kwargs)
-        ext = pathlib.Path(fn).suffix
+        try:
+            ext = pathlib.Path(fn).suffix
+        except TypeError:
+            ext = ''
         if ext:
             for typename, typelist in self.extensions.items():
                 if ext in typelist:
                     return self.Type[typename](*args, **kwargs)
         else:
-            if self.golfing:  # codegolf?: try to find filename
-                found = False
-                for dp in self._data_paths:
-                    # TODO: prioritize .cson?
-                    if path.exists(fn + ".cson"):
-                        fn += ".cson"
-                        found = True
-                        break
-                    for pth in os.listdir(dp):
-                        pext = path.splitext(pth)
-                        if pext[0] == fn:
-                            fn += pext[1]
-                            found = True
-                            break
-                    if found:
-                        break
-                if found:
-                    args, kwargs = change_filename(fn, args, kwargs)
+            return Node(*args, **kwargs)
+            # if self.golfing:  # codegolf?: try to find filename
+            #     found = False
+            #     for dp in self._data_paths:
+            #         # TODO: prioritize .cson?
+            #         if path.exists(fn + ".cson"):
+            #             fn += ".cson"
+            #             found = True
+            #             break
+            #         for pth in os.listdir(dp):
+            #             pext = path.splitext(pth)
+            #             if pext[0] == fn:
+            #                 fn += pext[1]
+            #                 found = True
+            #                 break
+            #         if found:
+            #             break
+            #     if found:
+            #         args, kwargs = change_filename(fn, args, kwargs)
 
         if fn:
             return Mesh(*args, **kwargs)
@@ -394,13 +408,13 @@ class Core(mglw.WindowConfig, CoreBase):
 
     def add(self, *args, **kwargs):
         if args and isinstance(args[0], int):  # count
-            r = []
+            r = [None] * args[0]
             count = args[0]
             args = list(args)
             args = args[1:]
-            for c in range(count):
-                node = self.create(*args, num=c, **kwargs)
-                r.append(self.scene.add(node))
+            for i in range(count):
+                node = self.create(*args, num=i, **kwargs)
+                r[i] = self.scene.add(node)
             return r
         return self.scene.add(self.create(*args, **kwargs))
 
@@ -498,14 +512,34 @@ class Core(mglw.WindowConfig, CoreBase):
 
         self.render_clear()
         assert self.camera
+        
+        scene = self.scene
+        
+        if scene and scene.skybox:
+            self.draw(scene.skybox.camera, scene.skybox)
+            self.render_clear_depth()
+        
         if self.camera and self.scene:
             self.draw(self.camera, self.scene)
         else:
             assert self.camera
             assert self.scene
-        if self._view and self.gui:
-            self.draw(self._view, self.gui)
 
+        if self.camera.hud:
+            hud = self.camera.hud
+            self.render_clear_depth()
+            self.draw(hud.camera, hud)
+        
+        # if self._view_camera and self.view_hud:
+        #     self.draw(self._view_camera, self.view_hud)
+
+    def render_clear_depth(self):
+        ctx = self.ctx
+        fbo = ctx.fbo
+        fbo.color_mask = False, False, False, False
+        ctx.clear()
+        fbo.color_mask = True, True, True, True
+    
     def clear(self):
         if self.state():
             return self.state.clear()
@@ -555,7 +589,9 @@ class Core(mglw.WindowConfig, CoreBase):
         return self.renderfrom.view()
 
     def matrix(self, m):
-        self.shader["ModelViewProjection"] = flatten(self.view_projection() * m)
+        self.mvp_uniform.value = flatten(
+            self.renderfrom.view_projection() * m
+        )
 
     def golf(self):
         if self.golfing:
@@ -567,7 +603,6 @@ class Core(mglw.WindowConfig, CoreBase):
             "R": self.remove,
             "P": self.play,
             "C": self.scene.clear,
-            # 'Q': self.quit
         }
         for k, v in methods.items():
             setattr(cls, k, v)

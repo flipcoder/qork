@@ -14,6 +14,7 @@ import asyncio
 from qork import *
 from qork.easy import *
 from qork.util import *
+from qork.console import *
 from os import path
 from asyncio import sleep, create_task
 
@@ -23,6 +24,7 @@ from asyncio import sleep, create_task
 from ptpython.repl import embed
 import openal
 
+use_terminal = False
 
 class ZeroMode(Core):
     def preload(self):
@@ -53,6 +55,7 @@ class ZeroMode(Core):
 
         self.bg_color = (0, 0, 0)
         self.shader = self.ctx.program(**SHADER_BASIC)
+        self.mvp_uniform = self.shader['ModelViewProjection']
         # self.gui = Canvas(size=Lazy(lambda: self.size, [self.on_resize]))
         # self._gui = Canvas()
 
@@ -78,7 +81,7 @@ class ZeroMode(Core):
                 print("Not a qork script. Run with python.")
                 sys.exit(1)
 
-        # extract globals (hack!)
+        # [HACK] Extract globals
         for line in buflines:
             if not line.startswith(" ") and not line.startswith("\t"):
                 tok = line.split(" ")
@@ -92,6 +95,15 @@ class ZeroMode(Core):
                     if tok[1].endswith(":"):
                         tok[1] = tok[1][:-1]
                     buf = "global " + tok[1].split("(")[0] + "\n" + buf
+                # elif word == "import":
+                #     pass
+                elif word == "from":
+                    if tok[2]=='import':
+                        for t in tok[3:]:
+                            if t[-1]==',':
+                                t = t[:-1]
+                            # print('global', t)
+                            buf = "global " + t + "\n" + buf
                 elif "=" in word:
                     var = tok[0].split("=")[0]
                     if var[-1] in "+-%:|&^":
@@ -117,9 +129,19 @@ class ZeroMode(Core):
                     buf = "global " + word + "\n" + buf
 
         app = qork_app()
-        self._console = None
-        self.console_called = False
+        self._terminal = None
+        self.terminal_called = False
+        camera = self.camera
+        hud = self.hud = camera.add(RenderLayer)
+        self.canvas = hud.canvas = self.camera.hud.add(Canvas(self))
+        self.console = hud.console = self.camera.hud.add(Console)
+        self.scene.skybox = RenderLayer(self, camera=camera)
+        
         self.globe = {
+            # "__builtins__": None,
+            # "__builtins__": __builtins__,
+            # "__loader__": __loader__,
+            # "__file__": self.script_path,
             **qork.__dict__,
             **easy.__dict__,
             **util.__dict__,
@@ -158,8 +180,12 @@ class ZeroMode(Core):
             # "render": render,
             "scene": self.scene,
             # "gui": self.gui,
+            "terminal": self.terminal,
             "console": self.console,
+            "skybox": self.scene.skybox,
+            "canvas": self.canvas,
             "camera": self.camera,
+            "hud": self.camera.hud,
             "data_paths": self._data_paths,
             "data_path": self.data_path,
             "quit": app.quit,
@@ -189,8 +215,11 @@ class ZeroMode(Core):
 
         self.loc = {}
         exec(buf, self.globe, self.loc)
+        # builtins = self.globe['__builtins__']
+        # self.globe['__builtins__'] = {**builtins, **self.loc}
         self.globe = {**self.globe, **self.loc}
-        self.loc = {}
+        # self.loc = {}
+        # print(self.loc)
 
         self.update_hook = self.globe.get("update", None) or self.globe.get("U", None)
         # self.render_hook = self.globe.get("render", None)
@@ -198,8 +227,9 @@ class ZeroMode(Core):
         
         self.script_hook = self.globe.get("script", None)
 
-        if not self.console_called:
-            self.console(True)  # console enabled by default
+        if not self.terminal_called:
+            global use_terminal
+            self.terminal = use_terminal  # terminal enabled by default
 
         self.connections += self.states.on_change.connect(self.state_change)
 
@@ -213,13 +243,13 @@ class ZeroMode(Core):
         else:
             self.script_func = None
 
-    def console(self, b):
-        self.console_called = True
+    def terminal(self, b):
+        self.terminal_called = True
         if b:
-            self._console = asyncio.get_event_loop()
-            self._console.create_task(self.run_console())
+            self._terminal = asyncio.get_event_loop()
+            self._terminal.create_task(self.run_terminal())
         else:
-            self._console = None
+            self._terminal = None
 
     def state_change(self):
         state = self.states.top() or self
@@ -227,7 +257,7 @@ class ZeroMode(Core):
         self.globe["camera"] = state.camera
 
     @asyncio.coroutine
-    def run_console(self):
+    def run_terminal(self):
         yield from embed(self.globe, return_asyncio_coroutine=True, patch_stdout=True)
 
         # session = pt.PromptSession()
@@ -254,9 +284,9 @@ class ZeroMode(Core):
         if self.script_func:
             exec("Q.script_func.update(" + str(dt) + ")", self.globe, self.loc)
 
-        if self._console:
-            self._console.call_soon(self._console.stop)
-            self._console.run_forever()
+        if self._terminal:
+            self._terminal.call_soon(self._terminal.stop)
+            self._terminal.run_forever()
 
     def render(self, time, t):
         super().render(time, t)
@@ -264,14 +294,15 @@ class ZeroMode(Core):
         #     self.render()
 
     def __del__(self):
-        if self._console:
-            self._console.call_soon(self.console.stop)
+        if self._terminal:
+            self._terminal.call_soon(self.console.stop)
 
 
 def main():
     global _script
     global _script_path
-    console = True
+    global use_terminal
+    use_terminal = True
     args = sys.argv
     cut_args = []
     while True:
@@ -304,6 +335,7 @@ def main():
         _script_path = None
     else:
         _script_path = _script
+        use_terminal = False
         sys.argv = args[:-1] + cut_args
     ZeroMode.run()
 

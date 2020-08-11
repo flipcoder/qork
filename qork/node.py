@@ -83,7 +83,7 @@ class Node:
             self.ext = ""
 
         if self.ext:
-            print(os.path.dirname(self.app.script_path))
+            # print(os.path.dirname(self.app.script_path))
             script_dir = os.path.dirname(self.app.script_path)
             pth = os.path.join(script_dir, self.fn)
             if os.path.exists(pth):
@@ -96,11 +96,11 @@ class Node:
                         self.path = pth
                         break
 
+        num = self.num = kwargs.pop("num", None)
         try:
             self.name
         except AttributeError:
-            self.num = kwargs.pop("num", None)
-            if self.num is not None:
+            if num is not None:
                 self.name = kwargs.pop("name", None) or self.fn or str(self.num)
             else:
                 self.name = (
@@ -159,6 +159,11 @@ class Node:
         self.overlap = Signal()
         self.old_pos = vec3(0)
 
+        try:
+            self.script
+        except AttributeError:
+            self.script = None
+
         self._vel = None
         # self.vel_space = Space.PARENT
         self._accel = None
@@ -198,13 +203,13 @@ class Node:
         )
         scale = kwargs.pop("scale", None) or kwargs.pop("s", None)
 
-        if self.num is not None:
+        if num is not None:
             # allow `add(5, pos=lambda n: (n*10, 0, 0))
             n = self.num
             if callable(pos):
-                pos = pos(n)
+                pos = to_vec3(pos(n))
             if callable(vel):
-                vel = vel(n)
+                vel = to_vec3(vel(n))
             if callable(rot):
                 rot = rot(n)
             if callable(scale):
@@ -222,6 +227,10 @@ class Node:
         if app.partitioner:
             app.partitioner += self
 
+        if self.num is not None:
+            if callable(pos):
+                pos = pos(self.num)
+        
         each = kwargs.pop("each", None)
         if each:
             each()
@@ -299,6 +308,13 @@ class Node:
         r = Box()
         for i, v in enumerate(lbox):  # min, max
             r[i] = (self.world_matrix * vec4(v, 1)).xyz
+        return r
+
+    def calculate_vertices(self, recursive=False):
+        r = []
+        if recursive:
+            for ch in self.children:
+                r += ch.calculate_vertices(recursive=recursive)
         return r
 
     def calculate_world_matrix(self):
