@@ -4,7 +4,8 @@ from .resource import Resource
 
 
 class Material(Resource):
-    def __init__(self, tex):
+    def __init__(self, tex=None):
+        super().__init__()
         self.texture = tex
         self.backfaces = False
 
@@ -12,4 +13,5 @@ class Material(Resource):
         pass
 
     def use(self, i=0):
-        self.texture.use(i)
+        if self.texture:
+            self.texture.use(i)

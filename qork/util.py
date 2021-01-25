@@ -109,6 +109,7 @@ def is_lambda(func):
 def flatten(r):
     return tuple(itertools.chain(*r))
 
+
 def try_get(container, key, default=None):
     try:
         return container[key]
@@ -117,6 +118,7 @@ def try_get(container, key, default=None):
     except KeyError:
         pass
     return default
+
 
 def filename_from_args(args, kwargs=None):
     fn = None
@@ -350,7 +352,7 @@ def nrandb():
 def randf(*args):
     """
     Random float value in range [args[0], args[1]]
-    Or: random float value, scaled 
+    Or: random float value, scaled
     """
     lenargs = len(args)
     if lenargs == 0:

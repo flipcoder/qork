@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import sys
+import sys, os
 
 try:
     import qork
@@ -7,6 +7,11 @@ except ModuleNotFoundError:
     sys.path.append(".")
     sys.path.append("..")
     import qork
+
+QORK_PATH = os.path.dirname(os.path.abspath(__file__))
+
+# sys.path.append(os.path.join(QORK_PATH, '../lib/pythonic-reactive/'))
+# import pythonic_reactive
 
 import traceback
 import asyncio
@@ -26,6 +31,7 @@ import openal
 
 use_terminal = False
 
+
 class ZeroMode(Core):
     def preload(self):
         pass
@@ -43,6 +49,9 @@ class ZeroMode(Core):
         super().__init__(**kwargs)
         qork_app(self)
         self.script_path = _script_path
+        self.terminal_stopped = False
+        self._terminal = None
+
         pths = []
         if self.script_path:
             pths.append(path.join(path.dirname(self.script_path)))
@@ -54,8 +63,9 @@ class ZeroMode(Core):
         self.data_paths(pths)
 
         self.bg_color = (0, 0, 0)
-        self.shader = self.ctx.program(**SHADER_BASIC)
-        self.mvp_uniform = self.shader['ModelViewProjection']
+        # self.shader = self.ctx.program(**SHADER_BASIC)
+        self.shader = self.cache("FOG_SHADER", lambda: Shader(self, defs={"fog": True}))
+        self.mvp_uniform = self.shader.program["ModelViewProjection"]
         # self.gui = Canvas(size=Lazy(lambda: self.size, [self.on_resize]))
         # self._gui = Canvas()
 
@@ -98,9 +108,9 @@ class ZeroMode(Core):
                 # elif word == "import":
                 #     pass
                 elif word == "from":
-                    if tok[2]=='import':
+                    if tok[2] == "import":
                         for t in tok[3:]:
-                            if t[-1]==',':
+                            if t[-1] == ",":
                                 t = t[:-1]
                             # print('global', t)
                             buf = "global " + t + "\n" + buf
@@ -129,14 +139,28 @@ class ZeroMode(Core):
                     buf = "global " + word + "\n" + buf
 
         app = qork_app()
-        self._terminal = None
         self.terminal_called = False
         camera = self.camera
-        hud = self.hud = camera.add(RenderLayer)
-        self.canvas = hud.canvas = self.camera.hud.add(Canvas(self))
-        self.console = hud.console = self.camera.hud.add(Console)
-        self.scene.skybox = RenderLayer(self, camera=camera)
-        
+        scene = self.scene
+        self.canvas_layer = camera.add(RenderLayer)
+        self.canvas = self.canvas_layer.canvas = self.canvas_layer.add(
+            Canvas(self, res=ivec2(1920, 1080), scale=self.scale)
+        )
+
+        # TODO: add signal on resize
+        # self.console_layer = camera.add(RenderLayer)
+        # self.console = self.console_layer.console = self.console_layer.add(Canvas(self, res=ivec2(1920,1080), scale=self.scale))
+
+        self.backdrop_layer = scene.backdrop = RenderLayer(self, camera=camera)
+        self.backdrop = self.backdrop_layer.canvas = self.backdrop_layer.add(
+            Canvas(self, res=ivec2(1920, 1080), scale=self.scale)
+        )
+        # TODO: add signal on resize
+
+        #
+
+        # inject qork types and methods into Q namespace?
+
         self.globe = {
             # "__builtins__": None,
             # "__builtins__": __builtins__,
@@ -153,10 +177,9 @@ class ZeroMode(Core):
             "vec3": glm.vec3,
             "V2": glm.vec2,
             "V3": glm.vec3,
-            # "V": V,
-            "RV": Rvec,
+            "V": V,
+            # "RV": Rvec,
             "Q": app,
-            "app": app,
             "when": app.when,
             "every": app.when.every,
             "once": app.when.once,
@@ -179,13 +202,13 @@ class ZeroMode(Core):
             # "update": update,
             # "render": render,
             "scene": self.scene,
+            "backdrop": self.backdrop,
             # "gui": self.gui,
             "terminal": self.terminal,
-            "console": self.console,
-            "skybox": self.scene.skybox,
+            # "console": self.console,
+            "backdrop": self.backdrop,
             "canvas": self.canvas,
             "camera": self.camera,
-            "hud": self.camera.hud,
             "data_paths": self._data_paths,
             "data_path": self.data_path,
             "quit": app.quit,
@@ -224,12 +247,12 @@ class ZeroMode(Core):
         self.update_hook = self.globe.get("update", None) or self.globe.get("U", None)
         # self.render_hook = self.globe.get("render", None)
         self.init_hook = self.globe.get("init", None)
-        
+
         self.script_hook = self.globe.get("script", None)
 
         if not self.terminal_called:
             global use_terminal
-            self.terminal = use_terminal  # terminal enabled by default
+            self.terminal(use_terminal)
 
         self.connections += self.states.on_change.connect(self.state_change)
 
@@ -242,6 +265,11 @@ class ZeroMode(Core):
             self.script_func = Script(self.script_hook)
         else:
             self.script_func = None
+
+    @property
+    def sf(self):
+        """Shorted name for script_func, see ZeroMode.update()"""
+        return self.script_func
 
     def terminal(self, b):
         self.terminal_called = True
@@ -282,7 +310,8 @@ class ZeroMode(Core):
             exec("update(" + str(dt) + ")", self.globe, self.loc)
 
         if self.script_func:
-            exec("Q.script_func.update(" + str(dt) + ")", self.globe, self.loc)
+            # sf = script_func shortened
+            exec("Q.sf.update(" + str(dt) + ")", self.globe, self.loc)
 
         if self._terminal:
             self._terminal.call_soon(self._terminal.stop)
@@ -293,9 +322,13 @@ class ZeroMode(Core):
         # if self.render_hook:
         #     self.render()
 
-    def __del__(self):
-        if self._terminal:
+    def stop(self):
+        if self._terminal and not self.terminal_stopped:
             self._terminal.call_soon(self.console.stop)
+            self.terminal_stopped = True
+
+    def __del__(self):
+        self.stop()
 
 
 def main():
@@ -337,6 +370,7 @@ def main():
         _script_path = _script
         use_terminal = False
         sys.argv = args[:-1] + cut_args
+
     ZeroMode.run()
 
 

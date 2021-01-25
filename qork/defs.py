@@ -21,11 +21,6 @@ LOCAL = Space.LOCAL
 PARENT = Space.PARENT
 WORLD = Space.WORLD
 
-# space
-LOCAL = 0
-PARENT = 1
-WORLD = 2
-
 EPSILON = 0.00001
 
 

@@ -14,26 +14,35 @@ class Prefab:
 
 
 # fmt: off
-
 QUAD_TS = Prefab('QUAD_TS', [
 #     x    y    z
-   -0.5,-0.5, 0.0,
-    0.5,-0.5, 0.0,
-   -0.5, 0.5, 0.0,
-    0.5, 0.5, 0.0,
+   0.0, 0.0, 0.0,
+   1.0, 0.0, 0.0,
+   0.0, 1.0, 0.0,
+   1.0, 1.0, 0.0,
 ], gl.TRIANGLE_STRIP, 'xyz')
 
 QUAD = Prefab('QUAD', [
 #     x    y    z
-   -0.5,-0.5, 0.0,
-    0.5,-0.5, 0.0,
-   -0.5, 0.5, 0.0,
-   -0.5, 0.5, 0.0,
-    0.5, 0.5, 0.0,
-    0.5,-0.5, 0.0,
+   0.0, 0.0, 0.0,
+   1.0, 0.0, 0.0,
+   0.0, 1.0, 0.0,
+   0.0, 1.0, 0.0,
+   1.0, 1.0, 0.0,
+   1.0, 0.0, 0.0,
 ], gl.TRIANGLES, 'xyz')
 
-QUAD_CENTERED = Prefab('QUAD_CENTERED_TS', [
+QUAD_CENTERED = Prefab('QUAD_CENTERED', [
+#      x     y    z    u    v
+    -0.5, -0.5, 0.0,
+     0.5, -0.5, 0.0,
+    -0.5,  0.5, 0.0,
+    -0.5,  0.5, 0.0,
+     0.5, -0.5, 0.0,
+     0.5,  0.5, 0.0,
+], gl.TRIANGLES, 'xyz')
+
+QUAD_CENTERED_TS = Prefab('QUAD_CENTERED_TS', [
 #      x    y    z
     -0.5, -0.5,  0.0,
      0.5, -0.5,  0.0,
@@ -61,13 +70,13 @@ TEXTURED_QUAD_CENTERED = Prefab('TEXTURED_QUAD_CENTERED', [
 
 TEXTURED_QUAD_TS = Prefab('TEXTURED_QUAD_TS', [
 #     x    y    z    u    v
-   -0.5,-0.5, 0.0, 0.0, 1.0,
-    0.5,-0.5, 0.0, 1.0, 1.0,
-   -0.5, 0.5, 0.0, 0.0, 0.0,
-    0.5, 0.5, 0.0, 1.0, 0.0,
+   0.0, 0.0, 0.0, 0.0, 1.0,
+   1.0, 0.0, 0.0, 1.0, 1.0,
+   0.0, 1.0, 0.0, 0.0, 0.0,
+   1.0, 1.0, 0.0, 1.0, 0.0,
 ], gl.TRIANGLE_STRIP, 'xyzuv')
 
-TEXTURED_CUBE = Prefab('TEXTURED_CUBE', [
+TEXTURED_CUBE_CENTERED = Prefab('TEXTURED_CUBE', [
     -0.5, -0.5, 0.5, 0.0, 1.0, 
     0.5, -0.5, 0.5, 1.0, 1.0, 
     -0.5, 0.5, 0.5, 0.0, 0.0, 
@@ -109,7 +118,7 @@ TEXTURED_CUBE = Prefab('TEXTURED_CUBE', [
 # fmt: on
 
 
-def prefab_quad(flags="", z=0, box=None, DEF=set("ct")):
+def prefab_quad(flags="", z=0, box=None, CT=set("ct")):
     flags = set(flags)
     if CT & flags == CT:
         r = TEXTURED_QUAD_CENTERED.data[:]
@@ -152,7 +161,7 @@ Prefab.quad = prefab_quad
 def prefab_cube(flags="", box=None, DEF=set("ct")):
     # TODO
     flags = set(flags)
-    return TEXTURED_CUBE
+    return TEXTURED_CUBE_CENTERED
 
 
 Prefab.cube = prefab_cube

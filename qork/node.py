@@ -14,9 +14,10 @@ from .util import *
 from .easy import qork_app
 from itertools import chain
 import weakref
-from .script import Script
+from .script import Script, Scriptable
 from typing import Optional
 from collections import defaultdict
+from .states import StateMachine
 
 
 class MockApp:
@@ -37,7 +38,7 @@ class Events(defaultdict):
         return self[name]
 
 
-class Node:
+class Node(Scriptable):
     ROTATION_AXIS = -Z
 
     def __init__(self, *args, **kwargs):
@@ -107,8 +108,6 @@ class Node:
                     kwargs.pop("name", None) or self.fn or self.__class__.__name__
                 )
 
-        self.scripts = Container()
-
         self._inherit_transform = Reactive(True)
         self._root: Optional[weakref.ref] = None
         self.cache = self.app.cache
@@ -152,35 +151,33 @@ class Node:
         # self.on_detach_child = Signal()  # child arg
         # self.on_detach_self = Signal()  # parent arg
         self.event = Events()
-        self.on_state = Signal()
+        # self.on_state = Signal()
         self.on_update = Signal()
         self.on_pend = Signal()
 
         self.overlap = Signal()
         self.old_pos = vec3(0)
 
-        try:
-            self.script
-        except AttributeError:
-            self.script = None
-
         self._vel = None
         # self.vel_space = Space.PARENT
         self._accel = None
         # self.accel_space = Space.PARENT
-        self._states = {}
+        # self._states = {}
         self.destroyed = False
         self.connections = Connections()
-        # self.scripts = Signal()
+
+        self.state = StateMachine(self)
+        self.on_state_change = self.state.on_state_change
+        Scriptable.__init__(self)
 
         self._world_matrix = Lazy(
-            self.calculate_world_matrix, [self._matrix, self._inherit_transform, self]
+            self._calculate_world_matrix, [self._matrix, self._inherit_transform, self]
         )
 
         # self.local_box = Lazy(self.local_box, [self.on_pend])
         self._local_box = Reactive()
         self._world_box = Lazy(
-            self.calculate_world_box,
+            self._calculate_world_box,
             [self._matrix, self._local_box, self._inherit_transform],
         )
 
@@ -231,9 +228,26 @@ class Node:
             if callable(pos):
                 pos = pos(self.num)
 
+        self._object = None
+        self.object = kwargs.pop("obj", None) or kwargs.pop("object", None)
+
         each = kwargs.pop("each", None)
         if each:
-            each()
+            each(node=self, n=self.num)
+
+    @property
+    def object(self):
+        """
+        get user object associated with this node (if any)
+        """
+        # unwrap weakref
+        return self._object() if self._object else None
+
+    @object.setter
+    def object(self, obj):
+        if self._object:
+            self._object = weakref.ref(self._object)
+        return self
 
     def tree(self, props="fvam"):
         r = {}
@@ -301,7 +315,7 @@ class Node:
         for n in self.__iter__(recursive, depth, onlyself):
             func(n)
 
-    def calculate_world_box(self):
+    def _calculate_world_box(self):
         lbox = self._local_box
         if not lbox:
             return None
@@ -317,11 +331,58 @@ class Node:
                 r += ch.calculate_vertices(recursive=recursive)
         return r
 
-    def calculate_world_matrix(self):
+    def _calculate_world_matrix(self):
         if self.parent:
             return self.parent.world_matrix * self.matrix
         else:
             return self.matrix
+
+    # LOCAL <-> WORLD
+
+    def orient_world_to_local(self, vec):
+        return vec3(glm.inverse(self.world_matrix) * vec4(to_vec3(vec), 0))
+
+    def world_to_local(self, pos):
+        return vec3(glm.inverse(self.world_matrix) * vec4(to_vec3(pos), 1))
+
+    def orient_local_to_world(self, vec):
+        return vec3(self.world_matrix * vec4(to_vec3(vec), 0))
+
+    def local_to_world(self, pos):
+        return vec3(self.world_matrix * vec4(to_vec3(pos), 1))
+
+    # # PARENT <-> LOCAL
+
+    # def orient_from_parent(self, vec):
+    #     return vec3(self.parent_world_matrix * vec4(to_vec3(vec),0))
+
+    # def from_parent(self, pos):
+    #     return vec3(self.parent_world_matrix * vec4(to_vec3(pos),1))
+
+    # # local -> parent
+    def orient_local_to_parent(self, vec):
+        return vec3(self.matrix * vec4(to_vec3(vec), 0))
+
+    def local_to_parent(self, pos):
+        return vec3(self.matrix * vec4(to_vec3(pos), 1))
+
+    # def orient_local_to_parent(self, vec):
+    #     return vec3(glm.inverse(self.local_matrix) * vec4(to_vec3(vec),0))
+
+    # def local_to_parent(self, pos):
+    #     return vec3(glm.inverse(self.local_matrix) * vec4(to_vec3(pos),1))
+
+    def orient_parent_to_local(self, vec):
+        return vec3(self.local_matrix * vec4(to_vec3(vec), 0))
+
+    def parent_to_local(self, pos):
+        return vec3(self.local_matrix * vec4(to_vec3(pos), 1))
+
+    # def orient_local_to_parent(self, vec):
+    #     return vec3(glm.inverse(self.local_matrix) * vec4(to_vec3(vec),0))
+
+    # def local_to_parent(self, pos):
+    #     return vec3(glm.inverse(self.local_matrix) * vec4(to_vec3(pos),1))
 
     @property
     def world_box(self):
@@ -394,6 +455,8 @@ class Node:
                 self.tags.add(c)
             else:
                 self.add(c)
+        elif callable(c):  # script?
+            self.add_script(c)
         else:
             # on_pend signal
             self.on_pend += c
@@ -414,6 +477,8 @@ class Node:
                     pass
             else:
                 self.remove(c)
+        elif callable(c):  # script
+            self.remove_script(c)
         else:
             # on_pend signal
             self.on_pend += c
@@ -436,28 +501,6 @@ class Node:
             if ch.name == name:
                 return ch
         raise IndexError
-
-    def state(self, category, value=DUMMY):
-        # first arg is a list of states? set those instead
-        if isinstance(category, dict):
-            self._states = category
-            for state, value in self._states.items():
-                self.on_state(state, value)
-            return category
-        # otherwise, the args mean what they say
-        if s is DUMMY:
-            return self._states[category]
-        elif s is None:
-            del self._states[category]
-        if isinstance(str, category):
-            self._states[category] = value
-            self.on_state(value)
-        else:
-            assert False
-        return s
-
-    def states(self, category, value=DUMMY):
-        return self.state(category, value)
 
     @property
     def inherit_transform(self):
@@ -813,6 +856,10 @@ class Node:
         self._parent = weakref.ref(p)
 
     def attach(self, *args, **kwargs):
+        if not args:
+            raise Exception("No arguments to attach()?")
+        elif args and callable(args[0]):
+            return self.add_script(*args, **kwargs)
         if args and type(args[0]) is int:
             r = []
             for i in range(args[0]):
@@ -865,8 +912,9 @@ class Node:
 
         # for component in self.components:
         #     component.update(self, dt)
-        for script in self.scripts:
-            script.update(dt)
+        # for script in self.scripts:
+        #     script.update(dt)
+        Scriptable.update(self, dt)
 
         assert self.children._blocked == 0
         if not self.freeze_children:
@@ -942,6 +990,10 @@ class Node:
         :param cb: callback continuation pending queued operations
         """
         if node is None:  # detach self
+
+            if callable(node):
+                return self.remove_script(node)  # node is actually a script
+
             parent = self.parent
             if parent is None:
                 return
@@ -1078,3 +1130,8 @@ class Node:
     @filename.setter
     def filename(self, fn):
         self.fn = fn
+
+
+# class UserObject:
+#     def __init__(self, node, *args, **kwargs)
+#         self.node = node

@@ -4,6 +4,7 @@ import moderngl_window as mglw
 import pathlib
 from .easy import qork_app
 from .util import *
+from .signal import Connections
 
 
 class Resource:
@@ -26,10 +27,41 @@ class Resource:
             self.app = args[0]
         self.args = args
         self.kwargs = kwargs
+        self.connections = Connections()
 
-    @property
-    def count(self):
-        return self.cache.count(self) - 1
+    # @property
+    # def count(self):
+    #     return self.cache.count(self) - 1
 
     def cleanup(self):
         pass
+
+    def get(self):
+        """
+        Gets the underlying resource, used for proxy resources
+        """
+        return self
+
+    def update(self, dt):
+        pass
+
+    def __iadd__(self, con):
+        self.connections += con
+        return self
+
+    def __isub__(self, con):
+        self.connections -= con
+        return self
+
+
+# example: a textured quad model which shares the underlying
+class ResourceInstance(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rc = None
+
+    def update(self, dt):
+        pass
+
+    def get(self):
+        return self.rc

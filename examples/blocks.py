@@ -54,7 +54,7 @@ def fall():
         # piece.collapse()
         add(piece.collapse())
         drop()
-        pp(len(scene.children))
+        # pp(scene.tree())
 
 
 falling = every(0.5, fall)
@@ -65,6 +65,7 @@ fall_speed.on_change += falling.set_speed
 #     global piece
 #     if (a.parent == piece) != (b.parent == piece):
 #         if a.parent != b.parent:
+#             print('ok')
 #             # piece.y += .1
 #             piece.y = .8
 #             piece.detach(collapse=True)
@@ -75,13 +76,16 @@ fall_speed.on_change += falling.set_speed
 
 def update(dt):
     global piece
-    app.scene.pend()
+    # Q.scene.pend()
 
     piece.x += (key_pressed(KEY.RIGHT) - key_pressed(KEY.LEFT)) * 0.1
 
     if key_pressed(KEY.UP):
         piece.rotate(0.25)
+        for block in piece:
+            block.rotate(-0.25)
     if key(KEY.DOWN):
         fall_speed(3)
     else:
         fall_speed(1)
+

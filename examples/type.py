@@ -1,7 +1,5 @@
 #!/usr/bin/env qork
 
-canvas = add(Canvas())
-
 def script(ctx):
     msg = 'Hello there!'
     for x in range(len(msg)+1):

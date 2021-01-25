@@ -18,3 +18,5 @@ import pytweening
 
 import moderngl as gl
 import moderngl_window as mglw
+
+Q = qork

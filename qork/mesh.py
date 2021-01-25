@@ -8,6 +8,7 @@ import cson
 from glm import ivec2, vec2, vec4
 from .sprite import *
 from .util import *
+from .shaders import Shader
 from copy import copy
 from os import path
 import struct
@@ -40,15 +41,15 @@ class MeshResource(Resource):
             self.type = kwargs.get("T", gl.TRIANGLES)
 
         self.shader = args[1]
-        assert isinstance(self.shader, gl.Program)
+        assert isinstance(self.shader, Shader)
         # self._type = Reactive(meshtype, [self])
         self.flipped = {}
         self.generated = False
         self.vbo = self.vao = None
         # self.solid = kwargs.pop("solid", False)
-        self._box = Lazy(self.calculate_box, [self._data])
-        # self.box = self.calculate_box()
-        # self._box = Lazy(self.calculate_box, [self._data, self._type])
+        self._box = Lazy(self._calculate_box, [self._data])
+        # self.box = self._calculate_box()
+        # self._box = Lazy(self._calculate_box, [self._data, self._type])
 
     @property
     def box(self):
@@ -84,7 +85,7 @@ class MeshResource(Resource):
     def disconnect(self, sig, weak=True):
         return self.on_pend.disconnect(sig, weak)
 
-    def calculate_box(self):
+    def _calculate_box(self):
         d = self.data
         if not d:
             return None
@@ -117,13 +118,15 @@ class MeshResource(Resource):
         self.vbo = self.ctx.buffer(struct.pack("f" * len(self.data), *self.data))
         # self.vbo = self.ctx.buffer(self.data.bytes())
         self.vao = self.ctx.simple_vertex_array(
-            self.shader, self.vbo, "in_vert", "in_text"
+            self.shader.program, self.vbo, "in_vert", "in_text"
         )
         self.generated = True
 
-    def render(self):
+    def render(self, material=None):
         if not self.generated:
             self.generate()
+        if material:
+            material.use()
         self.vao.render(self.type)
 
     # def __del__(self):
@@ -164,7 +167,10 @@ class MeshResource(Resource):
             meshname = self.fn + ":+" + flags
         resource = MeshResource(
             self.app,
-            Prefab(meshname, newdata,),
+            Prefab(
+                meshname,
+                newdata,
+            ),
             self.shader,
             # self.type,
             *self.args,
@@ -176,8 +182,31 @@ class MeshResource(Resource):
         return flipped
 
 
+class MeshResourceInstance(ResourceInstance):
+    """
+    Proxy resource for mesh resource with modified data
+    get() gets underlying shared resource, so no need to expose MeshResource methods
+    """
+
+    def __init__(self, rc, material=None):
+        super().__init__(rc)
+        self.material = material
+
+    def update(self, dt):
+        mat = self.material
+        if mat:
+            return mat.update(dt)
+
+    def render(self):
+        return self.rc.render(self.material)
+
+
 class Mesh(Node):
     Resource = MeshResource
+
+    def cube(*args, **kwargs):
+        kwargs["prefab"] = Prefab.cube()
+        return Mesh(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -198,12 +227,13 @@ class Mesh(Node):
         self.resources = []
         self.vbo = None
         self.vao = None
-        self.mesh_type = kwargs.get("mesh_type")
+        self.resource_con = Connections()
 
         self.data_con = None
 
         self.filter = kwargs.get("filter")
-        self._data = Reactive(kwargs.get("data"))
+        self._data = Reactive(kwargs.get("data") or kwargs.get("prefab"))
+        # self.mesh_type = kwargs.get("mesh_type")
         # if self._data():
         #     self.connections += self._data().data.connect(self.set_box)
 
@@ -226,17 +256,26 @@ class Mesh(Node):
         self._data(d)
 
     def flip(self, flags):
-        self.resource = self.resource.hflip(flags)
+        rcs = self.resources
+        for i, rc in enumerate(rcs):
+            rcs[i] = rc.hflip(flags)
 
     def hflip(self):
-        self.resource = self.resource.hflip()
+        rcs = self.resources
+        for i, rc in enumerate(rcs):
+            rcs[i] = rc.hflip()
 
     def vflip(self):
-        self.resource = self.resource.vflip()
+        rcs = self.resources
+        for i, rc in enumerate(rcs):
+            rcs[i] = rc.vflip()
 
     def hvflip(self):
-        self.resource = self.resource.hvflip()
+        rcs = self.resources
+        for i, rc in enumerate(rcs):
+            rcs[i] = rc.hvflip()
 
+    # TODO: This function is ugly.  Improve it!
     def load(self, fn=None):
         assert not self.loaded
 
@@ -245,6 +284,7 @@ class Mesh(Node):
         # cson = sprite data
         if fn and fn.lower().endswith(".cson"):
             self.sprite = self.app.cache(fn)
+            assert isinstance(self.sprite, Sprite)
             self.resources.append(self.sprite)
             self.layers = self.sprite.layers
             if not self.layers or not self.sprite:
@@ -316,36 +356,49 @@ class Mesh(Node):
                     self.app.shader,
                     # self.data.type,
                 )
-                self.resource = self.cache.ensure(meshname, resource)
+                self.resources = [self.cache.ensure(meshname, resource)]
             else:
-                self.resource = self.cache(meshname)
+                self.resources = [self.cache(meshname)]
         else:
-            self.resource = None
+            self.resources = []
 
         if self.sprite:
             self.material = SpriteMaterial(self.sprite)
+            self.material += self.on_state_change.connect(
+                lambda category, value: self.material.state(category, value)
+            )
 
         self.loaded = True
 
-        self.resource_con = self.resource.connect(self.set_local_box)
-        self.set_local_box(self.resource.box)
+        for rc in self.resources:
+            self.resource_con += rc.connect(self.set_local_box)
 
-    def update(self, t):
-        super().update(t)
+            # TODO: combine resoure boxes
+            self.set_local_box(rc.box)
+
+    def update(self, dt):
+        super().update(dt)
+
         if self.material:
-            self.material.update(t)
+            self.material.update(dt)
+
+        for rc in self.resources:
+            rc.update(dt)
 
     def render(self):
         if not self.loaded:
             return
-        if self.visible and self.resource:
+        if self.visible and self.resources:
             self.app.matrix(
                 self.world_matrix if self.inherit_transform else self.matrix
             )
 
-            self.material.use()
+            if self.material:
+                self.material.use()
 
-            self.resource.render()
+            for rc in self.resources:
+                rc.render()
+
         super().render()
 
     def calculate_vertices(self, recursive=False):

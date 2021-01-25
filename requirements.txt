@@ -1,7 +1,6 @@
 moderngl
 moderngl-window
-PIL
-pyglm
+PyGLM==2.0.0a3
 cson
 overrides
 pycairo
@@ -13,3 +12,4 @@ pyogg
 pyopenal
 pyassimp
 webcolors
+pytmx

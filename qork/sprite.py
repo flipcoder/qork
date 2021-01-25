@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bn/env python
 from .resource import *
 from .util import *
 from glm import ivec2, vec2
@@ -43,7 +43,6 @@ class Sprite(Resource):
         self.speed = self.animation_meta.get("speed", 1.0)
         images = []
         self.layers = [[[]]]
-        self.extra = []  # extra generated images, like hflip
 
         # @dataclass
         # class SpriteFlags:
@@ -66,7 +65,7 @@ class Sprite(Resource):
             assert sheet
             if sheet_sz is None:
                 sheet_sz = ivec2(sheet.size) / self.tile_size
-                tile_count = sheet_sz.x * sheet_sz.y
+                self.tile_count = tile_count = sheet_sz.x * sheet_sz.y
 
             for i in range(tile_count):
                 # crop frame from spritesheet
@@ -86,41 +85,50 @@ class Sprite(Resource):
             self.layers[0][skin_id] = images
             skin_id += 1
 
-        # process sequence flags (hflip, once)
-        # hflip_imgs = {}
-        # tile_id = Wrapper(tile_count)
-        # def visit(seq, path):
-        #     global frame_id
-        #     i = 0
-        #     hflip = False
-        #     for tile in seq:
-        #         if tile == 'hflip' or tile=='+hflip':
-        #             hflip = True
-        #         elif tile == '-hflip':
-        #             hflip = False
-        #         elif tile == 'once':
-        #             name = path[-1]
-        #             if not name in self.flags:
-        #                 self.flags[name] = SpriteFlags()
-        #             self.flags[name].once = True
-        #         elif hflip:
-        #             if tile not in hflip_imgs:
-        #                 print(tile)
-        #                 for layer in self.layers:
-        #                     for skin in layer:
-        #                         img = skin[tile].copy()
-        #                         img.transpose(Image.FLIP_LEFT_RIGHT)
-        #                         skin.append(tile_id())
-        #                 print('new tile: ', tile_id())
-        #                 seq[i] = tile_id() # change ID to modified version
-        #                 hflip_imgs[tile] = tile_id()
-        #                 tile_id.value += 1
-        #             else:
-        #                 seq[i] = hflip_imgs[tile]
-        #         i += 1
-        #     # remove flags from sequence
-        #     seq = filter(lambda x: not isinstance(x, str), seq)
-        # recursive_each(list, self.frames, visit)
+        # Process and store sequence flags (hflip, once)
+        # This will generate flipped versions of tiles
+        flipped_images = {}
+        tile_id = Wrapper(tile_count)
+        def visit(seq, path):
+            global frame_id
+            i = 0
+            hflip, vflip = False, False
+            print(seq, path)
+            for tile in seq:
+                if tile == 'hflip' or tile=='+hflip':
+                    hflip = True
+                elif tile == '-hflip':
+                    hflip = False
+                elif tile == 'vflip' or tile=='+vflip':
+                    vflip = True
+                elif tile == '-vflip':
+                    vflip = False
+                elif tile == 'default':
+                    name = path[-1]
+                    if not name in self.flags:
+                        self.flags[name] = SpriteFlags()
+                    self.flags[name].default = True
+                elif tile == 'once':
+                    name = path[-1]
+                    if not name in self.flags:
+                        self.flags[name] = SpriteFlags()
+                    self.flags[name].once = True
+                elif hflip:
+                    if tile not in flipped_images:
+                        for layer in self.layers:
+                            for skin in layer:
+                                img = skin[tile].copy()
+                                img = img.transpose(Image.FLIP_LEFT_RIGHT)
+                                skin.append(img)
+                        seq[i] = tile_id() # change ID to modified version
+                        flipped_images[tile] = tile_id()
+                        tile_id.value += 1
+                    else:
+                        seq[i] = flipped_images[tile]
+                i += 1
+            # remove flags from sequence
+            seq = filter(lambda x: not isinstance(x, str), seq)
+        recursive_each(list, self.frames, visit)
 
         self.animation = SpriteAnimation(self)
 
@@ -263,12 +271,12 @@ class SpriteAnimation(Material):
 
 class SpriteMaterial(Material):
     def __init__(self, sprite, sync=True):
+        super().__init__(None)
         self._sprite = weakref.ref(sprite)
         animation = sprite.animation
         self.skin = 0
         self.frame = 0  # changed through update()
         self.states = list(animation.defaults)
-        self.states[2] = 1
         # self.frames_tup = tuple()
         self.t = 0
         self.sync = sync  # sync material states with sprite states

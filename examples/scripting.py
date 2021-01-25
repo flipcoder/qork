@@ -4,4 +4,4 @@
 def script(ctx):
     while True:
         print("tick")
-        yield ctx.sleep(1)
+        yield 1

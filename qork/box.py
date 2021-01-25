@@ -18,13 +18,20 @@ class Box:
         self.on_change(v)
         self.on_pend(v)
 
-    def __iadd__(self, v):
-        if callable(v):
+    def __iadd__(self, arg):
+        if callable(arg):  # function?
             # params = len(inspect.signature(v).parameters)
             # if params:
             #     self.on_change += v
             # else:
-            self.on_pend += v
+            self.on_pend += arg
+        elif isinstance(v, Box):
+            raise Exception("Box.iadd(Box) not yet impl")
+            # combine boxes
+
+        # assume point?
+        arg = to_vec3(arg)
+        raise Exception("Box.iadd(vec3) not yet impl")
 
     def min(self):
         return self.region[0]

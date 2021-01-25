@@ -1,4 +1,4 @@
-# qork
+e qork
 
 Qork is a zero-boilerplate 3D+2D python OpenGL framework
 
@@ -615,7 +615,26 @@ Qork includes an async scripting system using generators:
 def script(ctx):
     while True:
         # do this every second
-        yield ctx.sleep(1) # wait 1 second
+        yield 1 # wait 1 second
+```
+
+Delay a script for a specific length of time in seconds:
+
+
+```
+yield 1.0
+```
+
+Delay a script until a condition is true
+
+```
+yield lambda: ctx.key(KEY.SPACE)
+```
+
+(Advanced) You can also yield event slots:
+
+```
+yield when.once(1, script.resume)
 ```
 
 Calling a function 'script' in a qorkscript starts it with the program.

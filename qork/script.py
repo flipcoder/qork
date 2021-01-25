@@ -10,11 +10,31 @@ import traceback
 
 
 class Script:
+    class Interleave:
+        def __init__(self, *scripts, ctx):
+            self.ctx = ctx
+            print(scripts)
+            self.scripts = scripts
+
+        def __enter__(self):
+            r = [None] * len(self.scripts)
+            for i, s in enumerate(self.scripts):
+                r[i] = self.ctx.push(s)
+            self.scripts = r
+            return self
+
+        def __exit__(self, typ, val, tb):
+            for s in self.scripts:
+                self.ctx.pop(s)
+
     def __init__(self, script, obj=None, use_input=True, script_args=None):
         # self.app = app
         self.obj = obj
         self.when = When()
         self.slots = []
+
+        # scoped script push
+        self.interleave = lambda *args, ctx=self: Script.Interleave(*args, ctx=ctx)
 
         self.paused = False
         self.dt = 0
@@ -55,9 +75,10 @@ class Script:
     def pop(self, script):
         assert not isinstance(script, Script)
 
-        script = script()
-        if not script:
-            return False
+        if isinstance(script, weakref.ref):
+            script = script()
+            if not script:
+                return False
 
         return self.scripts.disconnect(script)
 
@@ -150,13 +171,13 @@ class Script:
 
         if callable(script):  # function
             if self.script_args:
-                self._script = script(*self.script_args, self)
+                self._script = Script(*self.script_args, self)
             else:
-                self._script = script(self)
+                self._script = Script(self, self.obj)
         elif script is None:
             self._script = None
         else:
-            raise TypeError
+            raise TypeError()
 
     def sleep(self, t):
         t = float(t)
@@ -235,3 +256,18 @@ class Script:
             self.dt = 0
 
         return ran_script
+
+
+class Scriptable:
+    def __init__(self):
+        self.scripts = Container()
+
+    def update(self, dt):
+        for script in self.scripts:
+            script.update(dt)
+
+    def add_script(self, script):
+        self.scripts += Script(script, self)
+
+    def remove_script(self, script):
+        self.scripts -= Script(script, self)

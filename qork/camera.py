@@ -35,7 +35,7 @@ class Camera(Listener):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.hud = None
-        self.skybox = None
+        self.backdrop = None
         self._ortho = Reactive(True)
         self.projection = kwargs.get(
             "projection",

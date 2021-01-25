@@ -91,7 +91,7 @@ class Canvas(Mesh):
         self.texture = None
         self._use_text = False
 
-        self.clear()
+        self.clear(kwargs.get("color"))
         text = kwargs.pop("text", None)
         if text:
             self.text(text)
@@ -109,7 +109,8 @@ class Canvas(Mesh):
         # TODO: allow reactive colors (Rcolor)
 
         if region is None:
-            grad = cairo.LinearGradient(0, 0, *self.res)
+            # grad = cairo.LinearGradient(0, 0, *self.res)
+            grad = cairo.LinearGradient(0, 0, 0, self.res[1])
         else:
             grad = cairo.LinearGradient(*region)
 
@@ -192,7 +193,7 @@ class Canvas(Mesh):
         self.refresh()
         self._use_text = True
 
-    def text(self, s, col="white", pos=None, flags="c"):
+    def text(self, s, col="white", pos=None, flags="c", shadow=None):
         """
         :param align: string: char flags
             l: relative to left
@@ -224,8 +225,10 @@ class Canvas(Mesh):
                 elif ch == "b":
                     pos += ivec2(0, self.res[1] // 2)
 
+        if shadow is True:  # True, but not a vector
+            shadow = vec2(-3, 3)
+
         def f(s=s, pos=pos):
-            self.cairo.set_source_rgba(*col)
 
             # this has to be called in f, since the order of this func matters
             extents = self.cairo.text_extents(s)
@@ -244,6 +247,12 @@ class Canvas(Mesh):
             # print(pos)
             # print(x, y)
 
+            if shadow:
+                self.cairo.set_source_rgba(0, 0, 0, 1)
+                self.cairo.move_to(*(pos + shadow))
+                self.cairo.show_text(s)
+
+            self.cairo.set_source_rgba(*col)
             self.cairo.move_to(*pos)
             self.cairo.show_text(s)
 
@@ -251,8 +260,9 @@ class Canvas(Mesh):
         # self.on_render.store(f, name='text(' + str(full_args) + ')')
         self.refresh()
 
-    def clear(self, col=(0, 0, 0, 0)):
-        col = Color(col)
+    def clear(self, col=None):
+        if col is not None:
+            col = Color(col)
 
         self.on_render.clear()
         self.stack.clear()
@@ -260,10 +270,14 @@ class Canvas(Mesh):
         def f():
             # self.cairo.rectangle(0, 0, *self.res)
             # self.cairo.set_source_rgba(*col)
-            self.source = col
-            self.cairo.set_operator(cairo.OPERATOR_CLEAR)
-            self.cairo.paint()
-            self.cairo.set_operator(cairo.OPERATOR_OVER)
+            if col is None:
+                self.cairo.set_source_rgba(0, 0, 0, 0)
+                self.cairo.set_operator(cairo.OPERATOR_CLEAR)
+                self.cairo.paint()
+                self.cairo.set_operator(cairo.OPERATOR_OVER)
+            else:
+                self.cairo.set_source_rgba(*col)
+                self.cairo.paint()
 
         # self.on_render += f
         self.on_render.store(f, name="clear")

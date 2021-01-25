@@ -1,11 +1,42 @@
 #!/usr/bin/env python
 
 from copy import copy
-from .util import *
+
+# from .util import *
 from .signal import *
 import glm
 import enum
 import traceback
+
+
+class Dummy:
+    pass
+
+
+DUMMY = Dummy()
+
+try:
+    weakmethod
+except:
+
+    def weakmethod(func):
+        """
+        Weak Method decorator
+        class A:
+            @weakmethod
+            def test(weakself, *args):
+                pass
+        """
+
+        def f(weakself, *args, **kwargs):
+            self = weakself()
+            if self:
+                return getattr(self, func.__name__)(*args, **kwargs)
+            # elif throws:
+            #     raise throws
+
+        return f
+
 
 """
 Reactive and Lazy objects and decorators using signals:
@@ -42,12 +73,11 @@ class WeakLambda:
 
     # Error = enum.Enum('WeakLambda.Error', 'Dereference')
 
-    def __init__(self, capture, func):  # , errors=False):
+    def __init__(self, capture, func, errors=True):
         self.func = func
-        self.dead = False
-        # self.errors = errors
+        self._dead = False
 
-        self.observe = tuple(weakref.ref(var) for var in capture)
+        self.capture = tuple(weakref.ref(var) for var in capture)
 
     def __call__(self, *args):
         if self.func is None:
@@ -56,10 +86,19 @@ class WeakLambda:
         capture = tuple(x() for x in self.capture)
         if None not in capture:
             return self.func(*capture, *args)
-        # if self.errors:
-        #     raise ErrorCode(Error.Dereference)
-        self.dead = True
+        self._dead = True
         return None
+
+    def dead(self):
+        if self._dead:
+            return True
+        if self.func is None:
+            self._dead = True
+            return True
+        capture = tuple(x() for x in self.capture)
+        if None in capture:
+            self._dead = True
+            return True
 
     # def clear():
     #     self.dead = True
@@ -383,7 +422,8 @@ class Lazy:
         for sig in observe:
             ws = weakref.ref(self)
             self.connections += sig.connect(
-                self.pend, on_remove=lambda s, ws=ws: cls.weak_remove(ws, s),
+                self.pend,
+                on_remove=lambda s, ws=ws: cls.weak_remove(ws, s),
             )
         for func in callbacks:
             try:
@@ -487,7 +527,7 @@ def lazy(*deps, **kwargs):
 def reactive(*args, **kwargs):
     """
     INCOMPLETE
-    
+
     Class or Function Decorator
     For classes: Generate props/setters for all the reactive "_members" of the class
     The class must "templatable", meaning a default arg version must contain

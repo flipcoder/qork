@@ -161,6 +161,8 @@ class Core(mglw.WindowConfig, CoreBase):
         # self.on_resize = Signal()
         self.connections = Connections()
         self.on_update = Signal()
+
+        self.scale = vec3(self.aspect_ratio, 1, 1)
         # self.on_quit = Signal()
         # self.on_render = Signal()
         # self.on_collision_enter = Signal()
@@ -508,7 +510,7 @@ class Core(mglw.WindowConfig, CoreBase):
         self.update(dt)
         self.post_update(dt)
 
-        if self.state:
+        if self.state and self.state.render:
             self.state.render(dt)
             return
 
@@ -517,8 +519,8 @@ class Core(mglw.WindowConfig, CoreBase):
 
         scene = self.scene
 
-        if scene and scene.skybox:
-            self.draw(scene.skybox.camera, scene.skybox)
+        if scene and scene.backdrop:
+            self.draw(scene.backdrop.camera, scene.backdrop)
             self.render_clear_depth()
 
         if self.camera and self.scene:
@@ -530,17 +532,20 @@ class Core(mglw.WindowConfig, CoreBase):
         if self.camera.hud:
             hud = self.camera.hud
             self.render_clear_depth()
-            self.draw(hud.camera, hud)
+            self.draw(hud.camera, hud)  # , hud.viewport)
 
         # if self._view_camera and self.view_hud:
         #     self.draw(self._view_camera, self.view_hud)
 
+    def render_color_mask(self, b):
+        self.ctx.fbo.color_mask = b, b, b, b
+
     def render_clear_depth(self):
         ctx = self.ctx
         fbo = ctx.fbo
-        fbo.color_mask = False, False, False, False
+        self.render_color_mask(False)
         ctx.clear()
-        fbo.color_mask = True, True, True, True
+        self.render_color_mask(True)
 
     def clear(self):
         if self.state():
@@ -572,6 +577,7 @@ class Core(mglw.WindowConfig, CoreBase):
             viewport = self.viewport
 
         self.renderfrom = camera
+        # TODO: partitioner.render(camera) instead
         root.render()
         self.renderfrom = None
 
