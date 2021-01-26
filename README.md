@@ -1,4 +1,4 @@
-e qork
+# qork
 
 Qork is a zero-boilerplate 3D+2D python OpenGL framework
 
@@ -25,12 +25,13 @@ If you're familiar with gamedev, dive into the example folder or source!
 
 - Matrix Transforms: Position, Rotation, Scale
 - Position, Velocity, Acceleration
-- Hierarchical Scenegraph similar to Unity
+- Hierarchical Scenegraph, similar to modern game engines
+- Input Handling
 - Live-coding async console using ptpython (prompt-toolkit)
 - Resource Management
 - Object Events
 - State Machines
-- Sprite Animation (not yet done)
+- Sprite Animation
 - Time-based callback scheduling
 - Reactive Types (signals, reactive variables, observer-based lazy evaluation)
 - Reactive Metadata (Easily add reactive properties to your states and nodes)
@@ -40,6 +41,7 @@ If you're familiar with gamedev, dive into the example folder or source!
 
 - pyGLM: matrix and vector math
 - Cairo (pyCairo): canvas drawing
+- pyTMX: tilemaps
 - OpenAL (pyOpenAL): 3d sound (SOON)
 - bullet (SOON): physics
 - pytweening (SOON): easing functions
@@ -197,21 +199,25 @@ You can use pos or position if you prefer.
 
 Global vectors X, Y and Z are basis vectors that point in that direction.
 
-The below code will start node moving at 1unit/sec in the positive X
+The below velocity code will start node moving at 1unit/sec in the positive X
 
 ```
 node.velocity = X
+```
 
-node.acceleration = Z
+You can also change acceleration
 
-node.acceleration = (1,2) # 2d
+```
+node.acceleration = Z # set acceleration in positive Z direction
 
-node.acceleration = (1,2,3) # 3d
+node.acceleration = (1,2) # in 2d
+
+node.acceleration = (1,2,3) # in 3d
 
 node.stop() # stops velocity and acceleration
 ```
 
-You can use `vel` and `accel` if you prefer.
+You can use `vel` and `accel` if you prefer shorter names.
 
 You can also change components individually, like this:
 
@@ -235,7 +241,10 @@ node.az = 2
 
 ### Attaching
 
-Nodes can be attached to another, so they are moved along with the parent.
+Like most game engines, nodes in the scene can be attached to each other so
+that child nodes are connected to their parents, inheriting the position and
+orientation changes of the parent while keeping their own relative positioning and
+orientation.
 
 ```
 parent = add() # add parent to scene
@@ -274,7 +283,7 @@ child.remove()
 
 # or...
 
-parent = remove(child)
+parent.remove(child)
 
 # and to remove the parent
 
@@ -290,17 +299,13 @@ remove(parent)
 
 Qork angles are based on **turns**. Rotating .5 is half a turn.
 
-This will be changeable in the future.
-
-This is similar to multiplying a value by 2*PI radians or 360 degrees.
-
 ```
 node.rotate(.25) # rotate quarter turn in 2D
 
 node.rotate(.5, Y) # rotate half turn in 3D around Y axis
 ```
 
-The second parameter to rotate can take any vector.
+The second parameter to rotate can take any vector to rotate around.
 
 ### Names and Tags
 
@@ -320,7 +325,7 @@ find_one('#red') # -> p
 
 # or use a function....
 
-p.find(lambda x: x.name=='Player')
+find(lambda obj: obj.name=='Player') # -> p
 
 ```
 
@@ -374,8 +379,8 @@ camera.mode = '3D' # same as setting ortho to False
 - keys_pressed(): a set containing all the keys that were just pressed
 - keys_released(): a set containing all the keys that were just pressed
 - click(n): True if mouse button number `n` was just pressed
-- unclick(n): True iif mouse button number `n` was just released
-- hold_click(n): True iif mouse button `n` is being held
+- unclick(n): True if mouse button number `n` was just released
+- hold_click(n): True if mouse button `n` is being held
 - mouse_buttons(): a set containing all the pressed mouse buttons
 - mouse_buttons_pressed(): a set containing the mouse buttons that were just pressed
 - mouse_buttons_released(): a set containing the mouse buttons that were just released
@@ -638,6 +643,24 @@ yield when.once(1, script.resume)
 ```
 
 Calling a function 'script' in a qorkscript starts it with the program.
+
+### Node Scripting
+
+All nodes are scriptable, and you can attach a script to them using
+the `+=` operator, and remove it using the `-=` operator.
+
+```
+def my_script(ctx):
+    while True:
+        # TODO: do this every second
+        yield 1
+    
+node = Node()
+node += my_script
+```
+
+The script will start when attached and continue until it reaches the end
+or is detached.
 
 ## LICENSE
 
