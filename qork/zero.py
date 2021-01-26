@@ -311,7 +311,7 @@ class ZeroMode(Core):
 
         if self.script_func:
             # sf = script_func shortened
-            exec("Q.sf.update(" + str(dt) + ")", self.globe, self.loc)
+            exec("Q.sf(" + str(dt) + ")", self.globe, self.loc)
 
         if self._terminal:
             self._terminal.call_soon(self._terminal.stop)

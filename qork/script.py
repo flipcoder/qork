@@ -61,7 +61,10 @@ class Script:
         # Useful for checking assert for script-only functions
         self.inside = False
 
-        self.script = script  # (this calls script property)
+        # prevent recursion of scripts (scripts as script functions)
+        assert type(script) is not Script
+        
+        self.set_script(script)
 
     def push(self, fn):
         if self.script_args:
@@ -165,17 +168,23 @@ class Script:
         return self._script
 
     @script.setter
-    def script(self, script):
+    def script(self, scr):
+        return self.set_script(scr)
+    
+    def set_script(self, scr):
         self.slots = []
         self.paused = False
 
-        if callable(script):  # function
+        assert type(scr) is not Script
+        
+        if callable(scr):  # function
             if self.script_args:
-                self._script = Script(*self.script_args, self)
+                self._script = scr(*self.script_args, self)
             else:
-                self._script = Script(self, self.obj)
-        elif script is None:
+                self._script = scr(self)
+        elif scr is None:
             self._script = None
+            pass
         else:
             raise TypeError()
 
@@ -257,6 +266,8 @@ class Script:
 
         return ran_script
 
+    def __call__(self, dt):
+        self.update(dt)
 
 class Scriptable:
     def __init__(self):
