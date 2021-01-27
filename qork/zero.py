@@ -244,6 +244,7 @@ class ZeroMode(Core):
         # self.loc = {}
         # print(self.loc)
 
+        # TODO: count number of args for update() and do fixed fps if empty
         self.update_hook = self.globe.get("update", None) or self.globe.get("U", None)
         # self.render_hook = self.globe.get("render", None)
         self.init_hook = self.globe.get("init", None)
@@ -254,7 +255,7 @@ class ZeroMode(Core):
             global use_terminal
             self.terminal(use_terminal)
 
-        self.connections += self.states.on_change.connect(self.state_change)
+        # self.connections += self.states.on_change.connect(self.state_change)
 
         if self.init_hook:
             self.init_hook()
@@ -279,10 +280,10 @@ class ZeroMode(Core):
         else:
             self._terminal = None
 
-    def state_change(self):
-        state = self.states.top() or self
-        self.globe["scene"] = state.scene
-        self.globe["camera"] = state.camera
+    # def state_change(self):
+    #     state = self.states.state or self
+    #     self.globe["scene"] = state.scene
+    #     self.globe["camera"] = state.camera
 
     @asyncio.coroutine
     def run_terminal(self):

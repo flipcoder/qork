@@ -32,6 +32,7 @@ from .box import *
 from .tilemap import *
 from .easy import qork_app
 from .scene import *
+from .states import StateStack
 import cson
 import os
 from os import path
@@ -180,7 +181,9 @@ class Core(mglw.WindowConfig, CoreBase):
 
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
-        self.states = Container(reactive=True)  # state stack
+        
+        # self.states = Container(reactive=True)  # state stack
+        self.states = StateStack()
 
         # signal dicts
         class SwitchSignal:
@@ -233,10 +236,7 @@ class Core(mglw.WindowConfig, CoreBase):
 
     @property
     def state(self):
-        try:
-            return self.states[-1]
-        except IndexError:
-            return None
+        return self.states.state
 
     @property
     def size(self):
@@ -450,7 +450,8 @@ class Core(mglw.WindowConfig, CoreBase):
         self.on_update(dt)
 
         if self.state:
-            self.state.update(dt)
+            if self.state.hasattr(self.state, 'update'):
+                self.state.update(dt)
         else:
             self.scene.update(dt)
 
@@ -506,13 +507,14 @@ class Core(mglw.WindowConfig, CoreBase):
             return
 
         self.dt = dt
+
         # self.time = time
         self.update(dt)
         self.post_update(dt)
 
-        if self.state and self.state.render:
-            self.state.render(dt)
-            return
+        if self.state:
+            if hasattr(self.state,'render'):
+                self.state_render()
 
         self.render_clear()
         assert self.camera
@@ -536,6 +538,9 @@ class Core(mglw.WindowConfig, CoreBase):
 
         # if self._view_camera and self.view_hud:
         #     self.draw(self._view_camera, self.view_hud)
+
+        # Do state changes now, before the next update()
+        self.states.refresh()
 
     def render_color_mask(self, b):
         self.ctx.fbo.color_mask = b, b, b, b

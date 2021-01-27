@@ -379,7 +379,7 @@ class Container:
         return self
 
     def __del__(self):
-        assert not self._blocked
+        # assert not self._blocked
         self.clear()
 
     def __enter__(self):
@@ -408,14 +408,19 @@ class Container:
 
     @queued
     def pop(self):
-        e = self.slots[-1]
+        try:
+            e = self._slots[-1]
+        except IndexError:
+            return None
         self._slots = self._slots[:-1]
         self.on_pend()
         return e
 
     def top(self):
-        return self._slots[-1]
-
+        try:
+            return self._slots[-1]
+        except IndexError:
+            return None
 
 class Signal(Container):
     def __init__(self, simple=False, T=Slot, *args, **kwargs):
