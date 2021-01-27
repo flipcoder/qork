@@ -450,7 +450,7 @@ class Core(mglw.WindowConfig, CoreBase):
         self.on_update(dt)
 
         if self.state:
-            if self.state.hasattr(self.state, 'update'):
+            if hasattr(self.state, 'update'):
                 self.state.update(dt)
         else:
             self.scene.update(dt)
@@ -514,7 +514,7 @@ class Core(mglw.WindowConfig, CoreBase):
 
         if self.state:
             if hasattr(self.state,'render'):
-                self.state_render()
+                self.state.render()
 
         self.render_clear()
         assert self.camera

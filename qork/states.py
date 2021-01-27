@@ -3,6 +3,16 @@
 from .signal import Signal, Container
 import weakref
 
+class State:
+    """
+    State class for state stack
+    """
+    def update(self, t):
+        pass
+    def render(self):
+        pass
+    def deinit(self):
+        pass
 
 class StateMachine:
     def __init__(self, ctx, *args, **kwargs):
@@ -43,27 +53,55 @@ class StateStack:
     State stack maintains core game state transitions and update/render calls
 
     A state can have (all optional):
-        ctor -> init() -> [ update() -> render() ] -> deinit()/del
+        factory func -> ctor -> [ update() -> render() ] -> deinit()/del
 
     This class is a wrapper around reactive container, which acts as the stack.
     """
-    
+
+    """
+    A wrapper to discern between a State duck type and a function
+        (since states can have call operators too)
+    """
+    class FactoryFunctionWrapper:
+        # func = ...
+        def __init__(self, func=None):
+            self.func = func
+        def __call__(self):
+            return self.func()
+
     def __init__(self):
         self.container = Container(reactive=True)
         
         self.pre_refresh = Signal()
         self.post_refresh = Signal()
         
-        self.pending_state = None # the state currently being changed (if any)
+        self.pending_states = [] # the states currently being changed (if any)
 
         # explicitly set all operations on underlying container to queue
         self.container._blocked += 1
     
-    def push(self, state):
+    def _push_state_direct(self, state):
         self.container.push(state)
-        self.pending_state = state
         if hasattr(state, 'init'):
-            self.post_refresh += state.init
+            self.post_refresh.once(state.init, weak=False)
+        
+    def push(self, state):
+        """
+        Push a state, a state class, or a "factory" function that creates a state.
+        If a state is pushed directly the ctor will have been already called by you.
+        If you want the state ctor deferred until AFTER the other states clean up
+        (deinit()), then pass the state class or creation function instead.
+        """
+        
+        if isinstance(state, State):
+            print('1')
+            # Pushing state directly
+            self._push_state_direct(state)
+        else:
+            print('2')
+            # Factory function, create during refresh
+            self.pending_states.append(StateStack.FactoryFunctionWrapper(state))
+            # self.container.push(state)
 
     def pop(self): # schedule a pop of states
         state = self.container.top()
@@ -74,19 +112,25 @@ class StateStack:
         else:
             return None
 
-    def clear(self): # schedule a pop of states
+    def clear(self, state=None): # schedule a pop of states
+        """
+        Clear state stack and optionally push a state or state factory function `state`
+        """
         self.container.clear()
 
-        # TODO: schedule all deinit function calls in top-down order
-        # for state in reversed(self.container._slots):
-            # if hasattr(state, 'deinit'):
-                # self.pre_refresh += state.deinit
+        # schedule all deinit function calls in top-down order
+        for state in reversed(self.container._slots):
+            if hasattr(state, 'deinit'):
+                self.pre_refresh.once(state.deinit, weak=False)
+        
+        if state is not None:
+            self.container.push(state)
 
     def change(self, state):
         if self.container.top():
             self.container.pop()
         self.container.push(state)
-    
+
     def update(self, dt):
         state = self.container.top()
         if hasattr(state, 'update'):
@@ -98,12 +142,30 @@ class StateStack:
             state.render()
 
     def refresh(self):
+        assert self.container._blocked == 1
+
+        # for each state factory fuction, call it here to create the state
+        if self.pending_states:
+            for i in range(len(self.pending_states)):
+                state_func = self.pending_states[i]
+                if type(state_func) is StateStack.FactoryFunctionWrapper:
+                    # unwrap factory function and call it, replacing state
+                    self._push_state_direct(state_func())
+            self.pending_states = []
+
         self.container._blocked -= 1
         assert self.container._blocked == 0
+        
+        # pre-refresh signal
         self.pre_refresh()
+
+        # now that underlying container is unblocked, run queued operations
         self.container.refresh()
-        self.pending_state = None
+
+        # post-refresh signal
         self.post_refresh()
+        
+        # block underlying container again
         self.container._blocked += 1
     
     @property
