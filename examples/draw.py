@@ -1,5 +1,4 @@
 #!/usr/bin/env qork
-import emoji
 
 camera.mode = "3D"
 camera.z = 1.5
