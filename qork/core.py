@@ -76,8 +76,8 @@ def _try_load(fn, paths, func, *args, **kwargs):
 
 class Core(mglw.WindowConfig, CoreBase):
     gl_version = (3, 3)
-    window_size = (1920, 1080)
-    aspect_ratio = 16 / 9
+    # window_size = (1920, 1080)
+    # aspect_ratio = 16 / 9
     resizable = True
     samples = 2
     title = "qork"
@@ -105,8 +105,30 @@ class Core(mglw.WindowConfig, CoreBase):
     def sys_stop():
         openal.oalQuit()
 
-    @classmethod
-    def run(cls):
+    # @classmethod
+    def run(cls, title, script_path):
+        # load settings file
+        if script_path is None:
+            script_path = os.getcwd()
+        settings_fn = os.path.join(os.path.dirname(script_path), "settings.cson")
+        print(settings_fn)
+        settings = {}
+        try:
+            with open(settings_fn, "rb") as f:
+                settings = cson.load(f)
+        except FileNotFoundError:
+            pass
+        
+        # load resolution
+        res = settings.get("video", {}).get('resolution', "1920x1080")
+        res = tuple(int(x) for x in res.split('x'))
+        
+        cls.settings = settings
+        cls.window_size = res
+        cls.aspect_ratio = max(1.0, res[0] / res[1])
+        cls.resizable = True
+        cls.title = title
+        cls.samples = 2
         mglw.run_window_config(cls)
 
     # def data_path(self, p=None):
@@ -162,7 +184,7 @@ class Core(mglw.WindowConfig, CoreBase):
         # self.on_resize = Signal()
         self.connections = Connections()
         self.on_update = Signal()
-
+        
         self.scale = vec3(self.aspect_ratio, 1, 1)
         # self.on_quit = Signal()
         # self.on_render = Signal()

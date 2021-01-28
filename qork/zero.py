@@ -37,11 +37,8 @@ class ZeroMode(Core):
         pass
 
     @classmethod
-    def run(cls):
-        try:
-            mglw.run_window_config(cls)
-        except KeyboardInterrupt:
-            pass
+    def run(cls, title, script_path):
+        return Core.run(cls, title, script_path)
 
     def __init__(self, **kwargs):
         global _script_path
@@ -54,7 +51,7 @@ class ZeroMode(Core):
 
         pths = []
         if self.script_path:
-            pths.append(path.join(path.dirname(self.script_path)))
+            pths.append(path.dirname(self.script_path))
             pths.append(path.join(path.dirname(path.dirname(self.script_path)), "data"))
         else:
             self.script_path = os.getcwd()
@@ -372,7 +369,7 @@ def main():
         use_terminal = False
         sys.argv = args[:-1] + cut_args
 
-    ZeroMode.run()
+    ZeroMode.run('qork', _script_path)
 
 
 if __name__ == "__main__":
