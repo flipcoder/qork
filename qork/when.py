@@ -3,7 +3,7 @@ import weakref
 
 from .signal import Signal, Slot, Container
 from .defs import *
-from .util import map_range
+from .util import map_range, Color
 
 
 class WhenSlot(Slot):
@@ -175,6 +175,14 @@ class When(Signal):
         """
         if duration < EPSILON:
             return None
+
+        # convert strings to Colors (ex. "blue" is Color("blue"))
+        if range_:
+            for i in range(len(range_)):
+                colorstring = range_[i]
+                if isinstance(colorstring, str): # string?
+                    range_[i] = Color(colorstring) # strings are colors
+        
         slot = self.every(0, func, weak=weak)
         slot.duration = slot.remaining = float(duration)
         slot.fade = True

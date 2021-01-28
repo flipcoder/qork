@@ -364,6 +364,12 @@ class Container:
                 slot.disconnect()
 
     @queued
+    def filter_slot(self, func):
+        for slot in self._slots:
+            if func(slot):
+                slot.disconnect()
+
+    @queued
     def clear(self):
         b = bool(len(self._slots))
         self._slots = []
@@ -551,6 +557,13 @@ class Signal(Container):
             self.safe_call(cb)
         return slot
 
+    def replace(self, func, once=False, cb=None, on_remove=None, name=""):
+        """
+        Replace all slots with `name` with the provided slot
+        """
+        self.clear_name(name)
+        return self.connect(func, False, once, cb, on_remove, name)
+
     def store(self, func, once=False, cb=None, on_remove=None, name=""):
         """
         Equivalent to +=, connects but stores slot instead of a weakref
@@ -640,6 +653,9 @@ class Signal(Container):
                         self.safe_call(lambda: cb(i))
                     return True
             return False
+
+    def clear_name(self, name):
+        self.filter_slot(lambda slot: slot.name==name)
 
     def clear_type(self, Type):
         if self._blocked:

@@ -101,10 +101,10 @@ class Canvas(Mesh):
             self.gradient(grad)
         # self.shadow = False
 
-    def gradient(self, *colors, region=None):
+    def gradient(self, *colors, region=None, clear=True):
         if not colors:
             return None
-
+        
         # TODO: check colors for Gradient object, use that instead
         # TODO: allow reactive colors (Rcolor)
 
@@ -146,7 +146,12 @@ class Canvas(Mesh):
             self.cairo.set_source(grad)
             self.cairo.fill()
 
-        self.on_render += f
+        # self.on_render += f
+        if clear:
+            self.on_render.replace(f, "gradient")
+        else:
+            self.on_render += f
+        
         self.refresh()
         return grad
 
@@ -169,8 +174,9 @@ class Canvas(Mesh):
     def source(self, col):
         # print('source', col)
         self._source = col = Color(col)
-        self.on_render += lambda col=col: self.set_source_rgba(*col)
+        slot = self.on_render.connect(lambda col=col: self.set_source_rgba(*col), weak=False)
         self.refresh()
+        return slot
 
     def font(self, *args):
         name = ""

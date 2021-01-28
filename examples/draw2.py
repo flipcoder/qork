@@ -13,7 +13,7 @@ def script(ctx):
             lambda col: backdrop.gradient(col, Color(1) - col)
         )
         yield 2
-
+        
         # fade white to black
         when.fade(
             2, # seconds
