@@ -2,7 +2,8 @@
 
 import sys
 sys.path.append("..")
-from qork.states import StateMachine, StateStack, State
+from qork.state import State
+from qork.states import StateMachine, StateStack
 
 class DebugState(State):
     def __init__(self):

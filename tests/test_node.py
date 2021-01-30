@@ -7,7 +7,7 @@ sys.path.append("..")
 from glm import vec3
 from qork.util import *
 from qork.node import Node
-from qork.corebase import CoreBase
+from qork.minimal import MinimalCore
 from qork.util import walk
 
 
@@ -83,7 +83,7 @@ def test_node_find():
     assert list(a.find("baz")) == []
     assert list(a.find("#baz")) == [b]
 
-def test_node_detach_no_collapse():
+def test_node_detach():
     # given a tree like this:
     #   root
     #     a
@@ -99,14 +99,14 @@ def test_node_detach_no_collapse():
     
     assert tuple(map(lambda x: x.name, root.children)) == ('a',)
     
-    # detach without collapsing
     a.detach()
 
     # a is gone
-    assert tuple(map(lambda x: x.name, root.children)) == ((),)
+    # print(tuple(map(lambda x: x.name, root.children)))
+    assert tuple(map(lambda x: x.name, root.children)) == tuple()
 
     # b and c are still on detached a
-    assert tuple(map(lambda x: x.name, a.children)) == (('b','c'),)
+    assert tuple(map(lambda x: x.name, a.children)) == ('b','c')
 
 def test_node_detach_collapse():
     # given a tree like this:
@@ -133,5 +133,5 @@ def test_node_detach_collapse():
     assert tuple(map(lambda x: x.name, root.children)) == ('b','c')
 
     # children were removed from a?
-    assert tuple(map(lambda x: x.name, a.children)) == ((),)
+    assert tuple(map(lambda x: x.name, a.children)) == tuple()
 

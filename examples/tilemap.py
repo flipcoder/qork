@@ -21,17 +21,6 @@ def update(dt):
     v = vec3(key(KEY.RIGHT) - key(KEY.LEFT), key(KEY.UP) - key(KEY.DOWN), 0)
     v = glm.normalize(v)
     
-    # if v.y < -EPSILON:
-    #     player.state.direction = 'down'
-    # elif v.y > EPSILON:
-    #     player.state.direction = 'up'
-    # elif v.x > EPSILON:
-    #     player.state.direction = 'right'
-    # elif v.x < -EPSILON:
-    #     player.state.direction = 'left'
-
-    # player.state.stance = 'walk' if glm.length(v) > EPSILON else 'stand'
-
     if v.y < -EPSILON:
         player.state['direction'] = 'down'
     elif v.y > EPSILON:

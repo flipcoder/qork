@@ -309,8 +309,6 @@ The second parameter to rotate can take any vector to rotate around.
 
 ### Names and Tags
 
-(not yet implemented)
-
 An object can have any named tag and you can filter objects with these tags.
 
 ```
@@ -392,7 +390,7 @@ def update(dt):
         shoot()
 ```
 
-The following function implements "pong" controls:
+The following function implements "pong" controls for two players:
 
 ```
 def update(dt):
@@ -401,17 +399,68 @@ def update(dt):
      
 ```
 
-## Resources
+## Spritesheets
 
-Resources are automatically cached for later reuse and reference counted.
-
-You can set the data_path two ways:
+Spritesheet example (cson format):
 
 ```
-data_path('data')
-
-data_paths(['.'], ['data'])
+type: 'Sprite'
+size: [ 16, 16 ]
+tile_size: [ 16, 16 ]
+origin: [ 0.5, 0.75 ]
+mask: [ 0.25, 0.5, 0.75, 1.0 ]
+states: ['life', 'direction', 'stance']
+animation_speed: 10.0
+frames:
+    alive:
+        down:
+            stand: ['default',0]
+            walk: [0,1,0,2]
+        up:
+            stand: [3]
+            walk: [3,4,3,5]
+        left:
+            stand: [6]
+            walk: [6,7,6,8]
+        right:
+            stand: ['hflip',6]
+            walk: ['hflip',6,7,6,8]
+    dead: ['once',9,10,11]
 ```
+
+Load a spritesheet with add() and make it do the walk animation:
+
+```
+player = add('player.cson')
+player.state['stance'] = 'walk'
+```
+
+## Audio
+
+```
+sound = add('sound.wav') # Add a sound (does not autoplay)
+sound.play() # play a sound
+sound.play(once=True) # play a sound once, but keep it attached
+sound.play(temp=True) # temporary sound, detach when done playing
+
+sound.on_done += lambda: print('done') # callback when sound it done playing
+
+play('test.wav') # play sound once and remove when done (attached to camera)
+add('test.wav', temp=True).play() # same as above
+add('test.wav').play(temp=True) # same as above
+
+cache('test.wav') # preload a sound
+
+sound = create('test.wav') # create a sound node to attach later
+add(sound).play() # attach the precreated sound node and play it
+
+sound.stop() # stop sound, but keep it attached
+sound.remove() # stop sound and remove it from scene
+
+play('music.ogg') # playing music is the same
+```
+
+3D positioning of sound is not yet implemented.
 
 ## Advanced (Reactive Classes)
 
@@ -499,7 +548,7 @@ x(1) # invalidates the equation
 equation() # 4 (recomputes since it was invalidated)
 ```
 
-## Composites
+### Composites
 
 This feature is not fully implemented.
 
@@ -515,46 +564,6 @@ ten_objects.scale(2) # scale all of these objects by 2
 
 for obj in ten_objects: # loop through them like a list
     print(obj)
-```
-
-## Spritesheets
-
-This is not yet fully implemented.
-
-Spritesheet example (cson format):
-
-```
-type: 'Sprite'
-size: [ 16, 16 ]
-tile_size: [ 16, 16 ]
-origin: [ 0.5, 0.75 ]
-mask: [ 0.25, 0.5, 0.75, 1.0 ]
-states: ['life', 'direction', 'stance']
-animation_speed: 10.0
-frames:
-    alive:
-        down:
-            stand: ['default',0]
-            walk: [0,1,0,2]
-        up:
-            stand: [3]
-            walk: [3,4,3,5]
-        left:
-            stand: [6]
-            walk: [6,7,6,8]
-        right:
-            stand: ['hflip',6]
-            walk: ['hflip',6,7,6,8]
-    dead: ['once',9,10,11]
-```
-
-Load a spritesheet with add() and make it do the walk animation:
-
-Note: This is not yet fully implemented.
-
-```
-player = add('player.cson')
-player.state['stance'] = 'walk'
 ```
 
 ## "Code-Golfing"
