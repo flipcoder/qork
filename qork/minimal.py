@@ -3,6 +3,7 @@
 from .reactive import Reactive, Lazy, WeakLambda
 from .indexlist import IndexList
 from glm import ivec2
+from .easy import qork_app
 
 
 def get_app_from_args(args):
@@ -11,14 +12,14 @@ def get_app_from_args(args):
         arg0 = args[0]
 
         if isinstance(arg0, MinimalCore):
-            app = self.app = arg0
+            app = arg0
         else:
-            app = self.app = qork_app()
+            app = qork_app()
     else:
-        app = self.app = qork_app()
+        app = qork_app()
 
     if app is None:
-        app = self.app = MinimalCore()
+        app = MinimalCore()
 
 
 class MinimalCore:
@@ -46,3 +47,8 @@ class MinimalCore:
     def deregister_camera(self, camera):
         if camera is not None and camera.camera_id is not None:
             self.cameras.remove(camera.camera_id)
+
+class StateBase:
+    def update(self, dt):
+        pass
+

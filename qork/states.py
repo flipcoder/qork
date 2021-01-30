@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from .signal import Signal, Container
-from .state import State
+from .minimal import StateBase
 import weakref
 
 
@@ -87,7 +87,7 @@ class StateStack:
         (deinit()), then pass the state class or creation function instead.
         """
 
-        if isinstance(state, State):
+        if isinstance(state, StateBase):
             print("1")
             # Pushing state directly
             self._push_state_direct(state)

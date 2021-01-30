@@ -352,6 +352,31 @@ my_heal_event = player.heal.connect(lambda: wrapper.func())
 del my_heal_event # goodbye
 ```
 
+### Node Groups
+
+This feature is not fully implemented.
+
+Qork supports the composite design pattern for Nodes.  That means, you can treat groups of
+objects as a single object, where every function
+you call on those trigger the objects with that function.
+
+This is different than just attaching nodes to a common parent, which is
+probably what you want if you only want nodes to move or reorient together.
+
+The nodes in a group may not be attached with each other in the scenegraph.
+
+```py
+ten_objects = add(10) # make 10 objects
+ten_objects.scale(2) # scale all of these objects by 2
+
+for obj in ten_objects: # loop through them like a list
+    print(obj)
+```
+
+Node grouping is ideal for spawning an arbitrary number of similar objects
+that you need to loop through.  When a group goes out of scope,
+the attached nodes remain attached.
+
 ### Camera
 
 In zero mode, the camera is a global node called `camera`.
@@ -366,6 +391,17 @@ camera.ortho = True # turn on 2D mode
 camera.mode = '3D' # same as setting ortho to False
 
 ```
+
+If you change game states, you get a new default camera and scene for that state.
+You don't have to use this camera as the default.  You can create your own camera
+and set it to be the default.
+
+```
+newCamera = add(Camera(default=True))
+```
+
+This will assoiate the camera with the current game state or, if you have no states,
+the app itself.
 
 ## Input
 
@@ -462,6 +498,137 @@ play('music.ogg') # playing music is the same
 
 3D positioning of sound is not yet implemented.
 
+## Canvas
+
+Qork contains a canvas class that can be used to draw text, shapes,
+and gradients using a library called Cairo.
+
+The default qork boilerplate contains two canvases: The background (called "backdrop"),
+and the foreground canvas, simply called "canvas".  The background canvas always
+draws below objects, while the main foreground canvas draws on top.
+
+The qork canvas works similar to vector graphics and relies on pycairo.
+Qork's canvas saves all the operations you do to a canvas and redraws them
+whenever something changed since the last render.
+
+It does this so that individual draw operations can be changed dynamically,
+keeping the canvas elements individually accessible.  Let's touch more on this later.
+
+### Text
+
+To draw text to the screen, we have the canvas draw function:
+
+```
+def text(self, s, color, pos, flags, shadow=None)
+```
+
+It is used like this:
+
+```
+canvas.text('Hello world!', 'green')
+```
+
+...
+
+### Gradients
+
+This clears the backdrop to a 3-color gradient:
+
+```
+backdrop.gradient("lightblue", "blue", "black")
+```
+
+You can also add "stops", which are values from 0 to 1, which specify
+where the color will fall.  Stops are automatically calculated if they
+are not provided, and they should be called in order.
+
+To add stop values, instead of providing just the color, provide a tuple per step:
+
+```
+backdrop.gradient(
+    (0.0, 'red'),
+    (0.1, 'orange'),
+    (0.3, 'green'),
+    (1.0, 'white')
+)
+```
+
+The colors you specify can eiher be string names or types of class Color,
+which are 4d vectors of RGBA colors.
+
+```
+backdrop.gradient(Color(1,0,0), Color(0,1,0), Color(.5,.5,.5))
+```
+
+It should be noted that clearing to a gradient ADDS a clear to the canvas draw routine.
+it doesn't remove past gradients.  So if you keep calling this function, the gradients
+will be combined every time you need to redraw.
+
+So if you wish to reset the primary gradient, pass `clear=True` into the gradient function:
+
+```
+backdrop.gradient('white', 'black', clear=True)
+```
+
+or simply clear beforehand, which removes all draw steps:
+
+```
+backdrop.clear()
+backdrop.gradient('white', 'black')
+```
+
+Or if you want to clear to a solid color:
+
+```
+backdrop.clear('black')
+```
+
+To set gradient region:
+
+```
+backdrop.gradient('red', 'green', region=[0,0,0,100])
+```
+
+To do a radial gradient, provide a tuple of the (x,y,rad) of the 
+2 circles, as you would in pycairo.
+
+We'll use half the screen size and a radius of 10 to 1000:
+
+```
+r = (
+    (*Q.size/2, 10),
+    (*Q.size/2, 1000)
+)
+backdrop.gradient('white', 'black', radial=r)
+```
+
+### Shapes (and pycairo access)
+
+Each cairo operation inserts a draw step that only gets called
+when the canvas needs to be redrawn.  You can remove these draw steps
+by disconnecting the connection that is returned by the pycairo function
+that is called, or you may clear the entire canvas to remove everything.
+
+This will draw a centered red rectangle of half the screen size
+
+```
+canvas.rectangle(*canvas.res/4, *canvas.res/2)
+canvas.source = 'red'
+canvas.fill()
+```
+
+Qork's canvas methods contain mostly mirrors of pycairo methods, so you
+can use pycairo's api, with the exception of methods with the same name
+as Node methods, in which case the cairo method will be prefixed with "canvas_"
+to distinguish it from operations on the Canvas node itself.  An example
+of this is `translate`, which has been renamed to `canvas_translate` as not
+to confuse translation of the Canvas node itself.  Keep this in mind if you
+ever have issues with using cairo methods!
+
+### Batching
+
+...
+
 ## Advanced (Reactive Classes)
 
 ### Signal
@@ -547,79 +714,6 @@ x(1) # invalidates the equation
 
 equation() # 4 (recomputes since it was invalidated)
 ```
-
-### Composites
-
-This feature is not fully implemented.
-
-Qork supports the composite design pattern.  That means, you can treat containers of
-objects as a single object, where every function
-you call on those trigger the objects with that function.
-
-These objects may of may not be attached with each other in the scenegraph.
-
-```py
-ten_objects = add(10) # make 10 objects
-ten_objects.scale(2) # scale all of these objects by 2
-
-for obj in ten_objects: # loop through them like a list
-    print(obj)
-```
-
-## "Code-Golfing"
-
-Qork includes some code-golfing functions and variables.
-
-Some of these are not yet implemented, but this is what is planned so far:
-
--globals:
-    - A: add
-    - R: remove
-    
-    - P: play wav sound or stream music
-    - Q: stop all sound or music
-    
-    - S: sin(tau * X)
-    - C: cos(tau * X)
-    - T: tan(tau * X)
-    
-    - R: rotate
-    - X: scale
-    - P: translate/reposition
-    
-    - W: world/scene
-
--node properties and methods
-
-    - p: pos (or x, y, z)
-    - v: vel (or vx, vy, vz)
-    - a: accel (or ax, ay, az)
-    
-    - o: orientation
-    - h: heading
-
-    - s: scale (relative)
-    - S: set scale (use S=2 to scale 2)
-    - ss: scale space
-    
-    - ps: pos space
-    - vs: vel space
-    - as: accel space
-    
-    - rp: relative pos (or rx, ry, rz)
-    
-    - wp: world pos (or wx, wy, wz)
-    
-    - ra: rotation axis (or rax, ray, raz)
-    - rs: rotation space
-    - r: rotate
-    
-    - ro: reset orientation
-    - rp: reset pos
-    - rs: reset scale
-    
-    - w: spin/omega angle
-    - W: spin/omega axis
 
 ## Scripting
 

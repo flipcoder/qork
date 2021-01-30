@@ -33,6 +33,7 @@ from .tilemap import *
 from .easy import qork_app
 from .scene import *
 from .states import StateStack
+from .state import State
 from .indexlist import IndexList
 import cson
 import os
@@ -75,7 +76,7 @@ def _try_load(fn, paths, func, *args, **kwargs):
     return r
 
 
-class Core(mglw.WindowConfig, MinimalCore):
+class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
     gl_version = (3, 3)
     # window_size = (1920, 1080)
     # aspect_ratio = 16 / 9
@@ -113,7 +114,6 @@ class Core(mglw.WindowConfig, MinimalCore):
         if script_path is None:
             script_path = os.getcwd()
         settings_fn = os.path.join(os.path.dirname(script_path), "settings.cson")
-        print(settings_fn)
         settings = {}
         try:
             with open(settings_fn, "rb") as f:
@@ -179,6 +179,7 @@ class Core(mglw.WindowConfig, MinimalCore):
 
     def __init__(self, wnd=None, ctx=None, **kwargs):
         MinimalCore.__init__(self)
+        Scriptable.__init__(self)
         mglw.WindowConfig.__init__(self, wnd=wnd, ctx=ctx, **kwargs)
 
         self.script_path = None  # script path is using script
@@ -188,6 +189,9 @@ class Core(mglw.WindowConfig, MinimalCore):
 
         self.wnd = wnd
         self.ctx = ctx
+
+        # self.states = Container(reactive=True)  # state stack
+        self.states = StateStack()
 
         # self.timer = kwargs.get("timer")
 
@@ -203,7 +207,7 @@ class Core(mglw.WindowConfig, MinimalCore):
         self.connections = Connections()
         self.on_update = Signal()
         self.cameras = IndexList()  # index list of cameras (registered in camera ctor)
-
+        
         self.scale = vec3(self.aspect_ratio, 1, 1)
         # self.on_quit = Signal()
         # self.on_render = Signal()
@@ -213,18 +217,22 @@ class Core(mglw.WindowConfig, MinimalCore):
 
         self.partitioner = Partitioner(self)
 
-        self.scene = Scene("Scene", root=True)
-        self.render_layer = RenderLayer(self, self.scene)
-        self.gui = None
-        self.renderfrom = None
-        self._view = None  # default gui camera
+        # The core is a state because it shares common code with states
+        # (such as having a scene and camera), but it does not
+        # count as a state since it is never pushed to the StateStack.
+        # Instead, it contains and controls the StateStack
+        State.__init__(self)
+
+        # self.scene = Scene("Scene", root=True)
+        # self.render_layer = RenderLayer(self, self.scene)
+        # self.gui = None
+        # self._view = None  # default gui camera
+        
         self._bg_color = vec4(0, 0, 0, 0)
+        self.renderfrom = None # the current camera in the render cycle
 
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
-
-        # self.states = Container(reactive=True)  # state stack
-        self.states = StateStack()
 
         # signal dicts
         class SwitchSignal:
@@ -258,7 +266,6 @@ class Core(mglw.WindowConfig, MinimalCore):
 
         # self.view_projection = {}  #
 
-        self.camera = self.scene.add(Camera())  # requires view/proj above
         # self.next_camera_id = 0
 
         self.watch = Watchdog()
@@ -273,6 +280,18 @@ class Core(mglw.WindowConfig, MinimalCore):
 
         # self.renderpass = RenderPass()
         # self.renderpass.app = self
+
+    @property
+    def state_scene(self):
+        if self.state:
+            return self.state.scene
+        return self.scene
+
+    def render_from(self, camera):
+        if self.state:
+            self.state.camera = self.camera = camera
+        else:
+            self.camera = camera
 
     @property
     def state(self):
@@ -453,6 +472,7 @@ class Core(mglw.WindowConfig, MinimalCore):
         return snd
 
     def add(self, *args, **kwargs):
+        scene = self.state_scene
         if args and isinstance(args[0], int):  # count
             r = [None] * args[0]
             count = args[0]
@@ -460,9 +480,9 @@ class Core(mglw.WindowConfig, MinimalCore):
             args = args[1:]
             for i in range(count):
                 node = self.create(*args, num=i, **kwargs)
-                r[i] = self.scene.add(node)
+                r[i] = scene.add(node)
             return r
-        return self.scene.add(self.create(*args, **kwargs))
+        return scene.add(self.create(*args, **kwargs))
 
     def __iadd__(self, node):
         self.add(node)
@@ -473,7 +493,8 @@ class Core(mglw.WindowConfig, MinimalCore):
         return self
 
     def remove(self, *args, **kwargs):
-        self.scene.remove(*args, **kwargs)
+        scene = self.state_scene
+        scene.remove(*args, **kwargs)
 
     def update(self, dt):
         if not self.partitioner:
@@ -491,6 +512,8 @@ class Core(mglw.WindowConfig, MinimalCore):
         self.when.update(dt)
         self.on_update(dt)
 
+        Scriptable.update(self, dt)
+         
         if self.state:
             if hasattr(self.state, "update"):
                 self.state.update(dt)
@@ -561,7 +584,11 @@ class Core(mglw.WindowConfig, MinimalCore):
         self.render_clear()
         assert self.camera
 
-        scene = self.scene
+        # if the current state has a scene, use that instead
+        if self.state:
+            scene = self.state.scene
+        else:
+            scene = self.scene
 
         if scene and scene.backdrop:
             self.draw(scene.backdrop.camera, scene.backdrop)

@@ -80,3 +80,15 @@ def call_when(cond, context=None, lifespan=None, **kwargs):
         return func
 
     return when_decorator
+
+def coro(context=None, lifespan=None):
+    context = context or easy.qork_app()
+    
+    def coro_decorator(func):
+        slot = context.add_script(func, weak=(lifespan is not None))
+
+        if lifespan is not None:
+            lifespan.connections += slot
+        return func
+
+    return coro_decorator

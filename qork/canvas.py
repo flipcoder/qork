@@ -20,6 +20,23 @@ from qork import easy
 
 # @mixin(cairo.Context, 'ctx')
 class Canvas(Mesh):
+    
+    class Batch:
+        """
+        A batch of draw calls associated with a canvas
+        These are tagged so that they can be removed or changed independently
+            of the entire canvas, much like a vector graphics object.
+        """
+        def __init__(self, canvas, tags):
+            self.canvas = canvas
+            self.tags
+    def __enter__(self):
+        self.canvas._batch_tags += [self.tags]
+    def __exit__(self):
+        self.canvas._batch_tags = self.canvas._batch_tags[:-1]
+    
+    def __exit__(self):
+        pass
     # def __new__(cls, *args, **kwargs):
     #     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *isz)
     #     ctx = cairo.Context(self.surface)
@@ -29,6 +46,8 @@ class Canvas(Mesh):
     def __init__(self, *args, **kwargs):
         args, kwargs = remove_filename(args, kwargs)
         super().__init__(*args, **kwargs)
+
+        self._batch_stack = [] # current batch tag stack
 
         # self.size = to_vec3(kwargs.get('size'))
 
@@ -101,14 +120,26 @@ class Canvas(Mesh):
             self.gradient(grad)
         # self.shadow = False
 
-    def gradient(self, *colors, region=None, clear=True):
+    @property
+    def _batch(self):
+        """
+        Combine all tags from the batch tag stack
+        """
+        r = set()
+        for batch in self._batch_stack:
+            r |= batch
+        return r
+
+    def gradient(self, *colors, region=None, clear=True, radial=None):
         if not colors:
             return None
 
         # TODO: check colors for Gradient object, use that instead
         # TODO: allow reactive colors (Rcolor)
 
-        if region is None:
+        if radial:
+            grad = cairo.RadialGradient(*flatten(radial))
+        elif region is None:
             # grad = cairo.LinearGradient(0, 0, *self.res)
             grad = cairo.LinearGradient(0, 0, 0, self.res[1])
         else:
@@ -172,10 +203,11 @@ class Canvas(Mesh):
 
     @source.setter
     def source(self, col):
-        # print('source', col)
         self._source = col = Color(col)
+        print(*col)
         slot = self.on_render.connect(
-            lambda col=col: self.set_source_rgba(*col), weak=False
+            (lambda col=col: self.cairo.set_source_rgba(*col)),
+            weak=False
         )
         self.refresh()
         return slot
@@ -201,7 +233,7 @@ class Canvas(Mesh):
         self.refresh()
         self._use_text = True
 
-    def text(self, s, col="white", pos=None, flags="c", shadow=None):
+    def text(self, s, color="white", pos=None, flags="c", shadow=None):
         """
         :param align: string: char flags
             l: relative to left
@@ -209,13 +241,12 @@ class Canvas(Mesh):
             t: relative to top
             b: relative to bottom
         """
-        full_args = locals()
 
         if not self._use_text:
             self.font()
             self._use_text = True
 
-        col = Color(col)
+        color = Color(color)
 
         if pos is None:
             pos = vec2(0)
@@ -260,12 +291,11 @@ class Canvas(Mesh):
                 self.cairo.move_to(*(pos + shadow))
                 self.cairo.show_text(s)
 
-            self.cairo.set_source_rgba(*col)
+            self.cairo.set_source_rgba(*color)
             self.cairo.move_to(*pos)
             self.cairo.show_text(s)
 
         self.on_render += f
-        # self.on_render.store(f, name='text(' + str(full_args) + ')')
         self.refresh()
 
     def clear(self, col=None):
@@ -282,7 +312,7 @@ class Canvas(Mesh):
                 self.cairo.set_source_rgba(0, 0, 0, 0)
                 self.cairo.set_operator(cairo.OPERATOR_CLEAR)
                 self.cairo.paint()
-                self.cairo.set_operator(cairo.OPERATOR_OVER)
+                self.cairo.set_operator(cairo.OPERATOR_OVER) # default op
             else:
                 self.cairo.set_source_rgba(*col)
                 self.cairo.paint()
@@ -335,7 +365,7 @@ class Canvas(Mesh):
     def preview(self):
         self.refresh(now=True)
         data = self.surface.get_data()
-        # img = Image.frombuffer("RGBA", tuple(self.res), data, "raw", "RGBA", 0, 1)
+        img = Image.frombuffer("RGBA", tuple(self.res), data, "raw", "RGBA", 0, 1)
         img.show()
 
     def render(self):
@@ -356,7 +386,6 @@ class Canvas(Mesh):
         #     self.app.ctx.enable(gl.BLEND)
         #     self.texture.use(location=0)
         # self.quad_fs.render(self.shader)
-
 
 # Mix in cairo context members
 

@@ -272,14 +272,18 @@ class Script:
 
 class Scriptable:
     def __init__(self):
-        self.scripts = Container()
+        self.scripts = Signal()
 
     def update(self, dt):
-        for script in self.scripts:
-            script.update(dt)
+        if self.scripts:
+            self.scripts.each(lambda x, dt: x.update(dt), dt)
+            self.scripts._slots = list(
+                filter(lambda x: not x.get().done(), self.scripts.slots)
+            )
 
-    def add_script(self, script):
-        self.scripts += Script(script, self)
+    def add_script(self, script, weak=False):
+        return self.scripts.connect(Script(script, self), weak=weak)
 
     def remove_script(self, script):
         self.scripts -= Script(script, self)
+

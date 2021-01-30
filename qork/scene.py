@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from qork.node import *
+from qork.node import Node
 
 
 class Scene(Node):
