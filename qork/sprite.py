@@ -20,17 +20,24 @@ class Sprite(Resource):
         assert self.app
         fn = self.fn
         assert fn.lower().endswith(".cson")
-        data = None
-        for dp in self.app._data_paths:
-            try:
-                full_fn = path.join(dp, fn)
-                with open(full_fn, "rb") as f:
-                    data = self.data = cson.load(f)
-                    self.full_fn = full_fn
-                    break
-            except FileNotFoundError:
-                pass
+        # data = None
+        # for dp in self.app._data_paths:
+        #     try:
+        #         full_fn = path.join(dp, fn)
+        #         with open(full_fn, "rb") as f:
+        #             data = self.data = cson.load(f)
+        #             self.full_fn = full_fn
+        #             break
+        #     except FileNotFoundError:
+        #         pass
+        # assert data
+        self.full_fn = self.app.resource_path(fn)
+        if self.full_fn is None:
+            raise FileNotFoundError('Could not find sprite CSON for ' + self.fn)
+        with open(self.full_fn, "rb") as f:
+            self.data = data = cson.load(f)
         assert data
+        
         self.skins = data["skins"]
         # self.skin = 0
         self.tile_size = ivec2(data["tile_size"])
@@ -93,7 +100,7 @@ class Sprite(Resource):
             global frame_id
             i = 0
             hflip, vflip = False, False
-            print(seq, path)
+            # print(seq, path)
             for tile in seq:
                 if tile == 'hflip' or tile=='+hflip':
                     hflip = True

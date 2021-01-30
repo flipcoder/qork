@@ -9,7 +9,7 @@ from .signal import *
 from .when import *
 from glm import vec2, vec3, vec4, mat4
 from .defs import *
-from .corebase import *
+from .minimal import MinimalCore
 from .util import *
 from .easy import qork_app
 from itertools import chain
@@ -18,17 +18,6 @@ from .script import Script, Scriptable
 from typing import Optional
 from collections import defaultdict
 from .states import StateMachine
-
-
-class MockApp:
-    def __init__(self):
-        self.cache = None
-        self.ctx = None
-        self.partitioner = None
-
-    def create(self, *args, **kwargs):
-        return Node(*args, **kwargs)
-
 
 class Events(defaultdict):
     def __init__(self, *args, **kwargs):
@@ -45,7 +34,7 @@ class Node(Scriptable):
         if args:
             arg0 = args[0]
 
-            if isinstance(arg0, CoreBase):
+            if isinstance(arg0, MinimalCore):
                 app = self.app = arg0
             else:
                 app = self.app = qork_app()
@@ -56,7 +45,7 @@ class Node(Scriptable):
             # if arg0 is None or isinstance(arg0, str):  # None or filename
             #     self.app = app = qork_app()
             #     if not app:
-            #         self.app = app = MockApp()
+            #         self.app = app = MinimalCore()
             # elif isinstance(arg0, (tuple,float,vec3,vec2)):
             #     return qork_app()
             # else:
@@ -65,7 +54,7 @@ class Node(Scriptable):
             app = self.app = qork_app()
 
         if not app:
-            app = self.app = MockApp()
+            app = self.app = MinimalCore()
 
         assert self.app
 
@@ -143,6 +132,10 @@ class Node(Scriptable):
 
         # transform matrix, triggers inherited children on change and any listeners
         self._matrix = Reactive(mat4(1.0), [self])
+        
+        # set this manually to override the world matrix when rendering
+        # self._matrix_func = None
+        
         # self.detach_me = []
         # self.deinited = False
 
@@ -164,15 +157,14 @@ class Node(Scriptable):
         # self.accel_space = Space.PARENT
         # self._states = {}
         self.destroyed = False
+        
         self.connections = Connections()
 
         self.state = StateMachine(self)
         self.on_state_change = self.state.on_state_change
         Scriptable.__init__(self)
 
-        self._world_matrix = Lazy(
-            self._calculate_world_matrix, [self._matrix, self._inherit_transform, self]
-        )
+        self._setup_world_matrix()
 
         # self.local_box = Lazy(self.local_box, [self.on_pend])
         self._local_box = Reactive()
@@ -540,6 +532,10 @@ class Node(Scriptable):
     def local_matrix(self, m):
         self._matrix(m)
 
+    # @property
+    # def matrix_func(self):
+    #     return self._matrix_func()
+    
     @property
     def world_matrix(self):
         if self.inherit_transform:
@@ -978,7 +974,7 @@ class Node(Scriptable):
 
         return new_parent.add(self, cb=cb)
 
-    def detach(self, node=None, collapse=True, inherit=True, reset=False, cb=None):
+    def detach(self, node=None, collapse=False, inherit=True, reset=False, cb=None):
         """
         Detach a node from its parent and collapse its matrix into new_parent space (None means WORLD)
         If you wish to do that, call collapse()
@@ -991,9 +987,6 @@ class Node(Scriptable):
         """
         if node is None:  # detach self
 
-            if callable(node):
-                return self.remove_script(node)  # node is actually a script
-
             parent = self.parent
             if parent is None:
                 return
@@ -1005,21 +998,25 @@ class Node(Scriptable):
             if reset:
                 self.reset()
 
-            parent.detach(self, cb=cb)
+            parent.detach(self, cb=cb) # note: might be queued
 
             if (not reset) and inherit and self.inherit_transform:
                 self.matrix = wm
 
-            if inherit:
-                for ch in self.children:
-                    # collapse child transforms into parent space
-                    if ch.inherit_transform:
-                        ch.matrix = lm * ch.matrix
+            for ch in self.children:
+                # collapse child transforms into parent space
+                if inherit and ch.inherit_transform:
+                    ch.matrix = lm * ch.matrix
+                if collapse:
                     parent.attach(ch)
 
             self._parent = None
             return self
-        else:  # detach child
+        else:  # node is not None, detach child
+            
+            if callable(node):
+                return self.remove_script(node)  # node is actually a script
+            
             # self.on_detach_child(node)
             # node.on_detach_self(self)
             if type(node) is int:
@@ -1131,6 +1128,14 @@ class Node(Scriptable):
     def filename(self, fn):
         self.fn = fn
 
+    def _setup_world_matrix(self):
+        self._world_matrix = Lazy(
+            self._calculate_world_matrix, [
+                self._matrix,
+                self._inherit_transform,
+                self,
+            ]
+        )
 
 # class UserObject:
 #     def __init__(self, node, *args, **kwargs)

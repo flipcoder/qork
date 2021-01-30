@@ -229,6 +229,13 @@ class Mesh(Node):
         self.vao = None
         self.resource_con = Connections()
 
+        self.billboard = False
+        self.billboard_matrix = None
+        # self.billboard_matrix = Lazy(
+        #     self._calculate_billboard_matrix,
+        #     [self.app.on_change_camera]
+        # )
+
         self.data_con = None
 
         self.filter = kwargs.get("filter")
@@ -244,6 +251,9 @@ class Mesh(Node):
 
         if self.image or self.fn:
             self.load()
+
+    def _calculate_billboard_matrix(self):
+        pass
 
     # resource
     @property
@@ -389,10 +399,15 @@ class Mesh(Node):
         if not self.loaded:
             return
         if self.visible and self.resources:
-            self.app.matrix(
-                self.world_matrix if self.inherit_transform else self.matrix
-            )
-
+            if self.billboard:
+                self.app.matrix(
+                    self.billboard_matrix
+                )
+            else:
+                self.app.matrix(
+                    self.world_matrix# if self.inherit_transform else self.matrix
+                )
+            
             if self.material:
                 self.material.use()
 

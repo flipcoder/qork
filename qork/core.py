@@ -13,7 +13,7 @@ import moderngl_window as mglw
 import pathlib
 
 # from moderngl_window.intergrations import imgui as ImguiWindow
-from .corebase import *
+from .minimal import *
 from .reactive import *
 from .signal import *
 from .sprite import *
@@ -33,6 +33,7 @@ from .tilemap import *
 from .easy import qork_app
 from .scene import *
 from .states import StateStack
+from .indexlist import IndexList
 import cson
 import os
 from os import path
@@ -74,7 +75,7 @@ def _try_load(fn, paths, func, *args, **kwargs):
     return r
 
 
-class Core(mglw.WindowConfig, CoreBase):
+class Core(mglw.WindowConfig, MinimalCore):
     gl_version = (3, 3)
     # window_size = (1920, 1080)
     # aspect_ratio = 16 / 9
@@ -102,6 +103,7 @@ class Core(mglw.WindowConfig, CoreBase):
         openal.pyoggSetStreamBufferSize(4096 * 4)
         openal.oalSetStreamBufferCount(4)
 
+    @staticmethod
     def sys_stop():
         openal.oalQuit()
 
@@ -161,8 +163,23 @@ class Core(mglw.WindowConfig, CoreBase):
         self._data_paths = []  # reset
         return self.data_path(p)
 
+    def resource_path(self, fn):
+        """
+        Find full path to resource with filename `fn`
+        """
+        data = None
+        for dp in self._data_paths:
+            try:
+                full_fn = path.join(dp, fn)
+                if os.path.exists(full_fn):
+                    return full_fn
+            except FileNotFoundError:
+                pass
+        return None
+
     def __init__(self, wnd=None, ctx=None, **kwargs):
-        super().__init__(wnd=wnd, ctx=ctx, **kwargs)
+        MinimalCore.__init__(self)
+        mglw.WindowConfig.__init__(self, wnd=wnd, ctx=ctx, **kwargs)
 
         self.script_path = None  # script path is using script
         self.cache = Cache(self.resolve_resource, self.transform_resource)
@@ -171,12 +188,13 @@ class Core(mglw.WindowConfig, CoreBase):
 
         self.wnd = wnd
         self.ctx = ctx
+        
         # self.timer = kwargs.get("timer")
 
         # super(mglw.WindowConfig, self).__init__(self)
 
         self.audio = Audio(self)
-
+        
         self.when = When()
         self._size = Reactive(ivec2(*self.window_size))
         self._data_paths = []
@@ -184,6 +202,7 @@ class Core(mglw.WindowConfig, CoreBase):
         # self.on_resize = Signal()
         self.connections = Connections()
         self.on_update = Signal()
+        self.cameras = IndexList() # index list of cameras (registered in camera ctor)
         
         self.scale = vec3(self.aspect_ratio, 1, 1)
         # self.on_quit = Signal()
@@ -237,24 +256,21 @@ class Core(mglw.WindowConfig, CoreBase):
 
         self.K = self.wnd.keys
 
-        self.view_projection = {}  #
+        # self.view_projection = {}  #
 
         self.camera = self.scene.add(Camera())  # requires view/proj above
-        self.next_camera_id = 0
+        # self.next_camera_id = 0
 
         self.watch = Watchdog()
 
+        # Modules are components that persist across game state changes
+        class Modules: pass
+        # The user can add their own modules as attributes to the below object
+        # example: app.modules.net = NetModule()
+        self.modules = Modules()
+        
         # self.renderpass = RenderPass()
         # self.renderpass.app = self
-
-    def register_camera(self, camera):
-        if camera.camera_id is None:
-            cam_id = camera.camera_id = self.next_camera_id
-            self.next_camera_id += 1
-            self.view_projection[cam_id] = Lazy(
-                WeakLambda(cam, lambda: cam.projection() * cam.view())
-            )
-        camera.pend()
 
     @property
     def state(self):
@@ -430,7 +446,9 @@ class Core(mglw.WindowConfig, CoreBase):
         """
         Quick-play a sound
         """
-        return camera.add(fn, temp=True)
+        snd = camera.add(fn, temp=True)
+        snd.play()
+        return snd
 
     def add(self, *args, **kwargs):
         if args and isinstance(args[0], int):  # count

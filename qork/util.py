@@ -82,12 +82,6 @@ class Wrapper:
         return self.value
 
 
-class MockApp:
-    def __init__(self):
-        self.cache = None
-        self.ctx = None
-
-
 def map_range(val, r1, r2):
     return (val - r1[0]) / (r1[1] - r1[0]) * (r2[1] - r2[0]) + r2[0]
 

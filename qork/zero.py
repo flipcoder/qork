@@ -264,8 +264,11 @@ class ZeroMode(Core):
         else:
             self.script_func = None
 
+    # def _run_mode_script(self, fn, state):
+    #     pass
+
     @property
-    def sf(self):
+    def _sf(self):
         """Shorted name for script_func, see ZeroMode.update()"""
         return self.script_func
 
@@ -309,7 +312,7 @@ class ZeroMode(Core):
 
         if self.script_func:
             # sf = script_func shortened
-            exec("Q.sf(" + str(dt) + ")", self.globe, self.loc)
+            exec("Q._sf(" + str(dt) + ")", self.globe, self.loc)
 
         if self._terminal:
             self._terminal.call_soon(self._terminal.stop)

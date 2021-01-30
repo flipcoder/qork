@@ -38,7 +38,12 @@ class TileMap(Node):
         # print(tmx.layers)
         layer_ofs = 0.0
         # tmx.layers = sorted(tmx.layers)
-        layers = sorted(tmx.layers, key=lambda x: x.id)
+        def get_id(layer):
+            try:
+                return layer.id
+            except AttributeError:
+                return 0
+        layers = sorted(tmx.layers, key=get_id)
         # for i, layer in enumerate(tmx.layers):
         decal_layer_skip = 0
         popup = kwargs.get("popup", False)

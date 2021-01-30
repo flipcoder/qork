@@ -25,7 +25,6 @@ class RenderLayer(Node):
         if canvas:
             self.add(canvas)
 
-
 class HUD(RenderLayer):
     def __init__(self, app, *args, **kwargs):
         super().__init__(app, *args, root=True, **kwargs)
@@ -46,6 +45,7 @@ class Camera(Listener):
             ),
         )
         # self.connections += self.app.size.connect(self.projection)
+        # FOV is specified in TURNS (use fov(deg(degrees)) for degrees)
         self._fov = Reactive(kwargs.get("fov", 0.1), [self.projection])
         self.view = Lazy(self.calculate_view, [self.on_pend])
         self.view_projection = Lazy(
@@ -61,9 +61,19 @@ class Camera(Listener):
         # )
         # self.connections += self.connect(self.app.view_projection.pend)
 
-        # self.camera_id = None
+        self.camera_id = None
         # self.app.register_camera(self)
         self.pend()
+        
+        # associate camera with app so it can optimize transform caching
+        # NOTE: cameras are registered even when they're not attached
+        self.camera_id = None
+        if self.app:
+            self.app.register_camera(self)
+
+    def __del__(self):
+        if self.camera_id is not None:
+            self.app.deregister_camera(self)
 
     def calculate_view(self):
         return glm.inverse(self.world_matrix)

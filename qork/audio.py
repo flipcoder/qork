@@ -28,12 +28,14 @@ class Sound(Node):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
+            self.full_fn = self.app.resource_path(self.fn)
+            
             if self.ext == ".wav":
                 # self.data = openal.oalOpen(self.fn)
-                self.data = openal.Buffer(openal.WaveFile(self.fn))
+                self.data = openal.Buffer(openal.WaveFile(self.full_fn))
                 self.stream = False
             elif self.ext in (".mp3", ".ogg"):
-                self.data = openal.oalStream(self.fn)
+                self.data = openal.oalStream(self.full_fn)
                 # print(self.data)
                 # self.stream = self.app.on_update.connect(
                 #     self.data.update
@@ -46,6 +48,14 @@ class Sound(Node):
             else:
                 raise ValueError("invalid audio filetype")
 
+    @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, v):
+        self._volume = max(0.0, min(1.0, v))
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.ext == ".wav":
@@ -61,17 +71,22 @@ class Sound(Node):
         self.on_done = Signal()
 
         self.played = 0
-        self.play()
+        if kwargs.get('play', False):
+            self.play()
 
     @property
     def loop(self, b):
         pass
 
-    def play(self, fn=None, once=False, temp=False):
-        if temp:
+    def play(self, once=False, temp=DUMMY):
+        if temp is not DUMMY:
             self.temp = temp
         self.source.play()
         self.played += 1
+        return True
+
+    def stop(self):
+        self.source.stop()
         return True
 
     def update(self, dt):

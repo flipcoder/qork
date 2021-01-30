@@ -1,18 +1,8 @@
 #!/usr/bin/env python
 
 from .signal import Signal, Container
+from .state import State
 import weakref
-
-class State:
-    """
-    State class for state stack
-    """
-    def update(self, t):
-        pass
-    def render(self):
-        pass
-    def deinit(self):
-        pass
 
 class StateMachine:
     def __init__(self, ctx, *args, **kwargs):
