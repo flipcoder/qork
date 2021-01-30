@@ -4,6 +4,7 @@ from .signal import Signal, Container
 from .state import State
 import weakref
 
+
 class StateMachine:
     def __init__(self, ctx, *args, **kwargs):
         self.on_state_change = Signal()
@@ -38,6 +39,7 @@ class StateMachine:
     # def __setattr__(self, key, val):
     #     self[key] = val
 
+
 class StateStack:
     """
     State stack maintains core game state transitions and update/render calls
@@ -52,29 +54,31 @@ class StateStack:
     A wrapper to discern between a State duck type and a function
         (since states can have call operators too)
     """
+
     class FactoryFunctionWrapper:
         # func = ...
         def __init__(self, func=None):
             self.func = func
+
         def __call__(self):
             return self.func()
 
     def __init__(self):
         self.container = Container(reactive=True)
-        
+
         self.pre_refresh = Signal()
         self.post_refresh = Signal()
-        
-        self.pending_states = [] # the states currently being changed (if any)
+
+        self.pending_states = []  # the states currently being changed (if any)
 
         # explicitly set all operations on underlying container to queue
         self.container._blocked += 1
-    
+
     def _push_state_direct(self, state):
         self.container.push(state)
-        if hasattr(state, 'init'):
+        if hasattr(state, "init"):
             self.post_refresh.once(state.init, weak=False)
-        
+
     def push(self, state):
         """
         Push a state, a state class, or a "factory" function that creates a state.
@@ -82,27 +86,27 @@ class StateStack:
         If you want the state ctor deferred until AFTER the other states clean up
         (deinit()), then pass the state class or creation function instead.
         """
-        
+
         if isinstance(state, State):
-            print('1')
+            print("1")
             # Pushing state directly
             self._push_state_direct(state)
         else:
-            print('2')
+            print("2")
             # Factory function, create during refresh
             self.pending_states.append(StateStack.FactoryFunctionWrapper(state))
             # self.container.push(state)
 
-    def pop(self): # schedule a pop of states
+    def pop(self):  # schedule a pop of states
         state = self.container.top()
         if state:
-            if hasattr(state, 'deinit'):
+            if hasattr(state, "deinit"):
                 self.pre_refresh += state.deinit
             return self.container.pop()
         else:
             return None
 
-    def clear(self, state=None): # schedule a pop of states
+    def clear(self, state=None):  # schedule a pop of states
         """
         Clear state stack and optionally push a state or state factory function `state`
         """
@@ -110,9 +114,9 @@ class StateStack:
 
         # schedule all deinit function calls in top-down order
         for state in reversed(self.container._slots):
-            if hasattr(state, 'deinit'):
+            if hasattr(state, "deinit"):
                 self.pre_refresh.once(state.deinit, weak=False)
-        
+
         if state is not None:
             self.container.push(state)
 
@@ -123,12 +127,12 @@ class StateStack:
 
     def update(self, dt):
         state = self.container.top()
-        if hasattr(state, 'update'):
+        if hasattr(state, "update"):
             state.update(dt)
-    
+
     def render(self):
         state = self.container.top()
-        if hasattr(state, 'render'):
+        if hasattr(state, "render"):
             state.render()
 
     def refresh(self):
@@ -145,7 +149,7 @@ class StateStack:
 
         self.container._blocked -= 1
         assert self.container._blocked == 0
-        
+
         # pre-refresh signal
         self.pre_refresh()
 
@@ -154,14 +158,13 @@ class StateStack:
 
         # post-refresh signal
         self.post_refresh()
-        
+
         # block underlying container again
         self.container._blocked += 1
-    
+
     @property
     def state(self):
         """
         NOTE: This is the current state stack top, not the pending state
         """
         return self.container.top()
-

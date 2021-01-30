@@ -43,6 +43,7 @@ class TileMap(Node):
                 return layer.id
             except AttributeError:
                 return 0
+
         layers = sorted(tmx.layers, key=get_id)
         # for i, layer in enumerate(tmx.layers):
         decal_layer_skip = 0

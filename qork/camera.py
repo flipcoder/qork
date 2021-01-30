@@ -25,6 +25,7 @@ class RenderLayer(Node):
         if canvas:
             self.add(canvas)
 
+
 class HUD(RenderLayer):
     def __init__(self, app, *args, **kwargs):
         super().__init__(app, *args, root=True, **kwargs)
@@ -64,7 +65,7 @@ class Camera(Listener):
         self.camera_id = None
         # self.app.register_camera(self)
         self.pend()
-        
+
         # associate camera with app so it can optimize transform caching
         # NOTE: cameras are registered even when they're not attached
         self.camera_id = None

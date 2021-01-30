@@ -33,11 +33,11 @@ class Sprite(Resource):
         # assert data
         self.full_fn = self.app.resource_path(fn)
         if self.full_fn is None:
-            raise FileNotFoundError('Could not find sprite CSON for ' + self.fn)
+            raise FileNotFoundError("Could not find sprite CSON for " + self.fn)
         with open(self.full_fn, "rb") as f:
             self.data = data = cson.load(f)
         assert data
-        
+
         self.skins = data["skins"]
         # self.skin = 0
         self.tile_size = ivec2(data["tile_size"])
@@ -96,26 +96,27 @@ class Sprite(Resource):
         # This will generate flipped versions of tiles
         flipped_images = {}
         tile_id = Wrapper(tile_count)
+
         def visit(seq, path):
             global frame_id
             i = 0
             hflip, vflip = False, False
             # print(seq, path)
             for tile in seq:
-                if tile == 'hflip' or tile=='+hflip':
+                if tile == "hflip" or tile == "+hflip":
                     hflip = True
-                elif tile == '-hflip':
+                elif tile == "-hflip":
                     hflip = False
-                elif tile == 'vflip' or tile=='+vflip':
+                elif tile == "vflip" or tile == "+vflip":
                     vflip = True
-                elif tile == '-vflip':
+                elif tile == "-vflip":
                     vflip = False
-                elif tile == 'default':
+                elif tile == "default":
                     name = path[-1]
                     if not name in self.flags:
                         self.flags[name] = SpriteFlags()
                     self.flags[name].default = True
-                elif tile == 'once':
+                elif tile == "once":
                     name = path[-1]
                     if not name in self.flags:
                         self.flags[name] = SpriteFlags()
@@ -127,7 +128,7 @@ class Sprite(Resource):
                                 img = skin[tile].copy()
                                 img = img.transpose(Image.FLIP_LEFT_RIGHT)
                                 skin.append(img)
-                        seq[i] = tile_id() # change ID to modified version
+                        seq[i] = tile_id()  # change ID to modified version
                         flipped_images[tile] = tile_id()
                         tile_id.value += 1
                     else:
@@ -135,6 +136,7 @@ class Sprite(Resource):
                 i += 1
             # remove flags from sequence
             seq = filter(lambda x: not isinstance(x, str), seq)
+
         recursive_each(list, self.frames, visit)
 
         self.animation = SpriteAnimation(self)

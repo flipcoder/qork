@@ -372,7 +372,7 @@ def main():
         use_terminal = False
         sys.argv = args[:-1] + cut_args
 
-    ZeroMode.run('qork', _script_path)
+    ZeroMode.run("qork", _script_path)
 
 
 if __name__ == "__main__":

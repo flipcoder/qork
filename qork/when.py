@@ -180,9 +180,9 @@ class When(Signal):
         if range_:
             for i in range(len(range_)):
                 colorstring = range_[i]
-                if isinstance(colorstring, str): # string?
-                    range_[i] = Color(colorstring) # strings are colors
-        
+                if isinstance(colorstring, str):  # string?
+                    range_[i] = Color(colorstring)  # strings are colors
+
         slot = self.every(0, func, weak=weak)
         slot.duration = slot.remaining = float(duration)
         slot.fade = True

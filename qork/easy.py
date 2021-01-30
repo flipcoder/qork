@@ -42,8 +42,10 @@ def create(*args, **kwargs):
 def clear():
     return APP.scene.clear()
 
+
 def play(*args, **kwargs):
     return APP.scene.play(*args, **kwargs)
+
 
 # def music(fn):
 #     return APP.add(fn, loop=True)

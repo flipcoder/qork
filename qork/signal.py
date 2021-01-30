@@ -428,6 +428,7 @@ class Container:
         except IndexError:
             return None
 
+
 class Signal(Container):
     def __init__(self, simple=False, T=Slot, *args, **kwargs):
         super().__init__(*args, Element=T, **kwargs)
@@ -655,7 +656,7 @@ class Signal(Container):
             return False
 
     def clear_name(self, name):
-        self.filter_slot(lambda slot: slot.name==name)
+        self.filter_slot(lambda slot: slot.name == name)
 
     def clear_type(self, Type):
         if self._blocked:

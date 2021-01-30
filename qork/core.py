@@ -120,11 +120,11 @@ class Core(mglw.WindowConfig, MinimalCore):
                 settings = cson.load(f)
         except FileNotFoundError:
             pass
-        
+
         # load resolution
-        res = settings.get("video", {}).get('resolution', "1920x1080")
-        res = tuple(int(x) for x in res.split('x'))
-        
+        res = settings.get("video", {}).get("resolution", "1920x1080")
+        res = tuple(int(x) for x in res.split("x"))
+
         cls.settings = settings
         cls.window_size = res
         cls.aspect_ratio = max(1.0, res[0] / res[1])
@@ -188,13 +188,13 @@ class Core(mglw.WindowConfig, MinimalCore):
 
         self.wnd = wnd
         self.ctx = ctx
-        
+
         # self.timer = kwargs.get("timer")
 
         # super(mglw.WindowConfig, self).__init__(self)
 
         self.audio = Audio(self)
-        
+
         self.when = When()
         self._size = Reactive(ivec2(*self.window_size))
         self._data_paths = []
@@ -202,8 +202,8 @@ class Core(mglw.WindowConfig, MinimalCore):
         # self.on_resize = Signal()
         self.connections = Connections()
         self.on_update = Signal()
-        self.cameras = IndexList() # index list of cameras (registered in camera ctor)
-        
+        self.cameras = IndexList()  # index list of cameras (registered in camera ctor)
+
         self.scale = vec3(self.aspect_ratio, 1, 1)
         # self.on_quit = Signal()
         # self.on_render = Signal()
@@ -222,7 +222,7 @@ class Core(mglw.WindowConfig, MinimalCore):
 
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
-        
+
         # self.states = Container(reactive=True)  # state stack
         self.states = StateStack()
 
@@ -264,11 +264,13 @@ class Core(mglw.WindowConfig, MinimalCore):
         self.watch = Watchdog()
 
         # Modules are components that persist across game state changes
-        class Modules: pass
+        class Modules:
+            pass
+
         # The user can add their own modules as attributes to the below object
         # example: app.modules.net = NetModule()
         self.modules = Modules()
-        
+
         # self.renderpass = RenderPass()
         # self.renderpass.app = self
 
@@ -490,7 +492,7 @@ class Core(mglw.WindowConfig, MinimalCore):
         self.on_update(dt)
 
         if self.state:
-            if hasattr(self.state, 'update'):
+            if hasattr(self.state, "update"):
                 self.state.update(dt)
         else:
             self.scene.update(dt)
@@ -553,7 +555,7 @@ class Core(mglw.WindowConfig, MinimalCore):
         self.post_update(dt)
 
         if self.state:
-            if hasattr(self.state,'render'):
+            if hasattr(self.state, "render"):
                 self.state.render()
 
         self.render_clear()

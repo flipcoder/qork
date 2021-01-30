@@ -29,7 +29,7 @@ class Sound(Node):
             super().__init__(*args, **kwargs)
 
             self.full_fn = self.app.resource_path(self.fn)
-            
+
             if self.ext == ".wav":
                 # self.data = openal.oalOpen(self.fn)
                 self.data = openal.Buffer(openal.WaveFile(self.full_fn))
@@ -55,7 +55,7 @@ class Sound(Node):
     @volume.setter
     def volume(self, v):
         self._volume = max(0.0, min(1.0, v))
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.ext == ".wav":
@@ -71,7 +71,7 @@ class Sound(Node):
         self.on_done = Signal()
 
         self.played = 0
-        if kwargs.get('play', False):
+        if kwargs.get("play", False):
             self.play()
 
     @property

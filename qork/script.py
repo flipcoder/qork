@@ -63,7 +63,7 @@ class Script:
 
         # prevent recursion of scripts (scripts as script functions)
         assert type(script) is not Script
-        
+
         self.set_script(script)
 
     def push(self, fn):
@@ -170,13 +170,13 @@ class Script:
     @script.setter
     def script(self, scr):
         return self.set_script(scr)
-    
+
     def set_script(self, scr):
         self.slots = []
         self.paused = False
 
         assert type(scr) is not Script
-        
+
         if callable(scr):  # function
             if self.script_args:
                 self._script = scr(*self.script_args, self)
@@ -268,6 +268,7 @@ class Script:
 
     def __call__(self, dt):
         self.update(dt)
+
 
 class Scriptable:
     def __init__(self):

@@ -19,6 +19,7 @@ from typing import Optional
 from collections import defaultdict
 from .states import StateMachine
 
+
 class Events(defaultdict):
     def __init__(self, *args, **kwargs):
         super().__init__(Signal)
@@ -132,10 +133,10 @@ class Node(Scriptable):
 
         # transform matrix, triggers inherited children on change and any listeners
         self._matrix = Reactive(mat4(1.0), [self])
-        
+
         # set this manually to override the world matrix when rendering
         # self._matrix_func = None
-        
+
         # self.detach_me = []
         # self.deinited = False
 
@@ -157,7 +158,7 @@ class Node(Scriptable):
         # self.accel_space = Space.PARENT
         # self._states = {}
         self.destroyed = False
-        
+
         self.connections = Connections()
 
         self.state = StateMachine(self)
@@ -535,7 +536,7 @@ class Node(Scriptable):
     # @property
     # def matrix_func(self):
     #     return self._matrix_func()
-    
+
     @property
     def world_matrix(self):
         if self.inherit_transform:
@@ -998,7 +999,7 @@ class Node(Scriptable):
             if reset:
                 self.reset()
 
-            parent.detach(self, cb=cb) # note: might be queued
+            parent.detach(self, cb=cb)  # note: might be queued
 
             if (not reset) and inherit and self.inherit_transform:
                 self.matrix = wm
@@ -1013,10 +1014,10 @@ class Node(Scriptable):
             self._parent = None
             return self
         else:  # node is not None, detach child
-            
+
             if callable(node):
                 return self.remove_script(node)  # node is actually a script
-            
+
             # self.on_detach_child(node)
             # node.on_detach_self(self)
             if type(node) is int:
@@ -1130,12 +1131,14 @@ class Node(Scriptable):
 
     def _setup_world_matrix(self):
         self._world_matrix = Lazy(
-            self._calculate_world_matrix, [
+            self._calculate_world_matrix,
+            [
                 self._matrix,
                 self._inherit_transform,
                 self,
-            ]
+            ],
         )
+
 
 # class UserObject:
 #     def __init__(self, node, *args, **kwargs)

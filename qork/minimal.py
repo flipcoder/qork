@@ -4,6 +4,7 @@ from .reactive import Reactive, Lazy, WeakLambda
 from .indexlist import IndexList
 from glm import ivec2
 
+
 def get_app_from_args(args):
     app = None
     if args:
@@ -15,24 +16,27 @@ def get_app_from_args(args):
             app = self.app = qork_app()
     else:
         app = self.app = qork_app()
-    
+
     if app is None:
         app = self.app = MinimalCore()
+
 
 class MinimalCore:
     """
     Core base class that does the minimal amount for testing purposes.
     Similar to a mock app.
     """
+
     def __init__(self):
         self.cache = None
         self.ctx = None
         self.partitioner = None
-        self._size = Reactive(ivec2(1920,1080))
+        self._size = Reactive(ivec2(1920, 1080))
         self.cameras = IndexList()
 
     def create(self, *args, **kwargs):
         from .node import Node
+
         return Node(*args, **kwargs)
 
     def register_camera(self, camera):
@@ -42,4 +46,3 @@ class MinimalCore:
     def deregister_camera(self, camera):
         if camera is not None and camera.camera_id is not None:
             self.cameras.remove(camera.camera_id)
-

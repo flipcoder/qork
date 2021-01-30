@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+
 def schema_verify(settings, schema):
     """
     Verify settings according to schema format.
@@ -8,7 +9,6 @@ def schema_verify(settings, schema):
         https://github.com/flipcoder/fig
     """
 
-    #TODO
-    
-    return True
+    # TODO
 
+    return True

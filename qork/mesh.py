@@ -400,14 +400,12 @@ class Mesh(Node):
             return
         if self.visible and self.resources:
             if self.billboard:
-                self.app.matrix(
-                    self.billboard_matrix
-                )
+                self.app.matrix(self.billboard_matrix)
             else:
                 self.app.matrix(
-                    self.world_matrix# if self.inherit_transform else self.matrix
+                    self.world_matrix  # if self.inherit_transform else self.matrix
                 )
-            
+
             if self.material:
                 self.material.use()
 

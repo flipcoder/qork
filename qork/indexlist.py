@@ -5,8 +5,9 @@ from .signal import Signal
 from .reactive import Container
 from dataclasses import dataclass
 
+
 def next_power_of_two_ge(x):
-    
+
     x = int(x)
     x -= 1
     for i in range(5):
@@ -14,20 +15,23 @@ def next_power_of_two_ge(x):
     x += 1
     return x
 
+
 class IndexList:
     @dataclass
     class Element:
         num: int = -1
         item: any = None
         on_remove: Signal = None
-        
+
     def __init__(self):
         self.next_id = 0
-        self.container = [] # (element, on_remove)
+        self.container = []  # (element, on_remove)
+
     def ensure_length(self, length):
         lenct = len(self.container)
         if lenct < length:
             self.container += [None] * (length - lenct)
+
     def add(self, obj):
         while True:
             idx = self.next_id
@@ -36,6 +40,7 @@ class IndexList:
                 self.container[idx] = IndexList.Element(idx, obj, Signal())
             self.next_id += 1
             return idx
+
     def remove(self, idx):
         try:
             item = self.container[idx]
@@ -43,7 +48,7 @@ class IndexList:
                 item.on_remove()
         except IndexError:
             pass
-        
+
         try:
             self.container[idx] = None
             return True
@@ -65,7 +70,7 @@ class IndexList:
     def clear(self):
         for cb in self.container[:]:
             cb.on_remove()
-        
+
         self.next_id = 0
         self.container = []
 
@@ -76,4 +81,3 @@ class IndexList:
         for e in self.container:
             if e.item == item:
                 return e.num
-
