@@ -625,7 +625,27 @@ of this is `translate`, which has been renamed to `canvas_translate` as not
 to confuse translation of the Canvas node itself.  Keep this in mind if you
 ever have issues with using cairo methods!
 
+### Custom Canvas
+
+If you wish to make a custom canvas, simply add one as a node:
+
+```
+mycanvas = add(Canvas())
+```
+
+Canvases are quad meshes which allow you to draw onto the texture.  They can be
+manipulated just like any other Node in qork.  You can use them to easily
+create procedural game textures.
+
+Canvases which are declared separately are rendered in the same layer as other
+objects since they are not restricted to the background or foreground like the two
+default canvases.
+
 ### Batching
+
+...
+
+## Game States
 
 ...
 
