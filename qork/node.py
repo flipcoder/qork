@@ -130,6 +130,7 @@ class Node(Scriptable):
         # self.self_visible = True
         self.children_visible = True
         self._parent = None
+        self._partitioner = None
 
         # transform matrix, triggers inherited children on change and any listeners
         self._matrix = Reactive(mat4(1.0), [self])
@@ -148,6 +149,9 @@ class Node(Scriptable):
         # self.on_state = Signal()
         self.on_update = Signal()
         self.on_pend = Signal()
+        
+        self.on_add = Signal()
+        self.on_remove = Signal()
 
         self.overlap = Signal()
         self.old_pos = vec3(0)
@@ -163,7 +167,6 @@ class Node(Scriptable):
 
         self.state = StateMachine(self)
         self.on_state_change = self.state.on_state_change
-        Scriptable.__init__(self)
 
         self._setup_world_matrix()
 
@@ -214,9 +217,6 @@ class Node(Scriptable):
         if rot is not None:
             self.rotate(rot)
 
-        if app.partitioner:
-            app.partitioner += self
-
         if self.num is not None:
             if callable(pos):
                 pos = pos(self.num)
@@ -227,6 +227,22 @@ class Node(Scriptable):
         each = kwargs.pop("each", None)
         if each:
             each(node=self, n=self.num)
+        
+        Scriptable.__init__(self)
+
+        # register with partitioner
+        def add():
+            if self.partitioner:
+                self.partitioner += self
+        self.on_add += add
+        def remove():
+            if self.partitioner:
+                self.partitioner -= self
+        self.on_remove += remove
+
+    @property
+    def partitioner(self):
+        return self._partitioner
 
     @property
     def object(self):

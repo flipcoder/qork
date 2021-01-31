@@ -15,6 +15,12 @@ import webcolors
 from .defs import *
 
 
+def BIT(x):
+    return 1 << x
+
+def MASK(x):
+    return (1 << x) - 1
+
 class BlockOutput:
     def __init__(self):
         self.stdout = sys.stdout

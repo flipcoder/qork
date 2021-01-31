@@ -25,15 +25,15 @@ def get_app_from_args(args):
 class MinimalCore:
     """
     Core base class that does the minimal amount for testing purposes.
-    Similar to a mock app.
+    Used both as a base and a mock app.
     """
 
     def __init__(self):
         self.cache = None
         self.ctx = None
-        self.partitioner = None
         self._size = Reactive(ivec2(1920, 1080))
         self.cameras = IndexList()
+        self._partitioner = None
 
     def create(self, *args, **kwargs):
         from .node import Node
@@ -47,6 +47,10 @@ class MinimalCore:
     def deregister_camera(self, camera):
         if camera is not None and camera.camera_id is not None:
             self.cameras.remove(camera.camera_id)
+
+    @property
+    def partitioner(self):
+        return self._partitioner
 
 class StateBase:
     def update(self, dt):

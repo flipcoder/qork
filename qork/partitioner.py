@@ -9,9 +9,10 @@ class Partitioner:
     CollisionRef = enum.Enum("Ref", "ref type name")
     CollisionEvent = enum.Enum("Event", "overlap exclusive enter leave")
 
-    def __init__(self, app):
+    def __init__(self, scene):
 
-        self.app = app
+        # self.app = app
+        self.scene = scene
 
         # reftype -> (a, b) -> action
         # self.signals = [defaultdict(lambda: defaultdict(Signal)) for x in range(RefType)]
@@ -30,6 +31,9 @@ class Partitioner:
         self.collisions(dt)
 
     def refresh(self):
+        pass
+
+    def register_node(self):
         pass
 
     #     scene = self.app.scene
@@ -57,6 +61,14 @@ class Partitioner:
 
     #     self.initial_refresh = True
 
+    @staticmethod
+    def collision(aa, bb):
+        """
+        Manually check collision between 2 objects.
+        Will not fire any collision signals.
+        """
+        return aa.world_box.overlap(bb.world_box)
+
     def collisions(self, dt):
         """
         Do collision checks.  This is horribly unoptimized but it works for now
@@ -66,7 +78,7 @@ class Partitioner:
         if not self.overlap:
             return
 
-        scene = self.app.scene
+        scene = self.scene
         with scene:
 
             for a in scene.walk():
@@ -86,18 +98,7 @@ class Partitioner:
                         if b.world_box is None:
                             continue
 
-                        aa = a.world_box
-                        bb = b.world_box
-
-                        col = not (
-                            bb[0].x > aa[1].x
-                            or bb[1].x < aa[0].x
-                            or bb[0].y > aa[1].y
-                            or bb[1].y < aa[0].y
-                            or bb[0].z > aa[1].z
-                            or bb[1].z < aa[0].z
-                        )
-                        if col:
+                        if self.collision(a, b):
                             ta = type(a)
                             tb = type(b)
                             an = a.name

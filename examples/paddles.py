@@ -4,8 +4,13 @@ from glm import normalize
 from glm import vec2
 
 # load the ball and 2 paddles
-paddle = add(2, "player.png", scale=(0.1, 0.25, 0.1))
-ball = add("player.png", scale=0.05)
+# paddle = add(2, "player.png", scale=(0.1, 0.25, 0.1))
+paddle = [None] * 2
+paddle[0] = add(Canvas(color='white', res=ivec2(1), scale=(0.1, 0.25, 0.1)))
+paddle[1] = add(Canvas(color='white', res=ivec2(1), scale=(0.1, 0.25, 0.1)))
+
+ball = add(Canvas(color='white', res=ivec2(1), scale=0.05))
+# ball = add("player.png", scale=0.05)
 
 # prosition paddles and set speed
 edge = 0.75

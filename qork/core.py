@@ -215,8 +215,6 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         # self.on_collision_leave = Signal()
         # self.cleanup_list = []  # nodes awaiting dtor/destuctor/deinit calls
 
-        self.partitioner = Partitioner(self)
-
         # The core is a state because it shares common code with states
         # (such as having a scene and camera), but it does not
         # count as a state since it is never pushed to the StateStack.
@@ -496,9 +494,13 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         scene = self.state_scene
         scene.remove(*args, **kwargs)
 
+    @property
+    def partitioner(self):
+        return self.state_scene.partitioner
+
     def update(self, dt):
-        if not self.partitioner:
-            return
+        # if not self.partitioner:
+        #     return
 
         for key in self.keys:
             self.key_events[key].while_pressed(key, dt)
@@ -507,7 +509,6 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             self.mouse_events[btn].while_pressed(btn, dt)
 
         self.audio.update(dt)
-        self.partitioner.update(dt)
 
         self.when.update(dt)
         self.on_update(dt)
@@ -515,10 +516,9 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         Scriptable.update(self, dt)
          
         if self.state:
-            if hasattr(self.state, "update"):
-                self.state.update(dt)
+            self.state.update(dt)
         else:
-            self.scene.update(dt)
+            State.update(self, dt)
 
     def post_update(self, t):
 

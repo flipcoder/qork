@@ -62,6 +62,7 @@ class Slot:
         self.once = False
         self.count = 0
         self.dead = False
+        self.tags = None
         self.on_remove = Signal()
 
     def __call__(self, *args, **kwargs):
@@ -428,6 +429,12 @@ class Container:
         except IndexError:
             return None
 
+    def clear_tag(self, tag):
+        self.clear_tags(set((tag,)))
+    
+    def clear_tags(self, tags):
+        self.filter_slot(lambda slot, tags=tags: bool((slot.tags or set()) & tags))
+
 
 class Signal(Container):
     def __init__(self, simple=False, T=Slot, *args, **kwargs):
@@ -510,12 +517,12 @@ class Signal(Container):
         else:
             return cb()
 
-    def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name=""):
+    def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name="", tags=None):
 
         if isinstance(func, (list, tuple)):
             r = []
             for f in func:
-                r.append(self.connect(f, weak, once, cb, on_remove, name))
+                r.append(self.connect(f, weak, once, cb, on_remove, name, tags))
             return r
 
         if self._blocked:
@@ -558,21 +565,21 @@ class Signal(Container):
             self.safe_call(cb)
         return slot
 
-    def replace(self, func, once=False, cb=None, on_remove=None, name=""):
+    def replace(self, func, once=False, cb=None, on_remove=None, name="", tags=None):
         """
         Replace all slots with `name` with the provided slot
         """
         self.clear_name(name)
-        return self.connect(func, False, once, cb, on_remove, name)
+        return self.connect(func, False, once, cb, on_remove, name, tags)
 
-    def store(self, func, once=False, cb=None, on_remove=None, name=""):
+    def store(self, func, once=False, cb=None, on_remove=None, name="", tags=None):
         """
         Equivalent to +=, connects but stores slot instead of a weakref
         """
-        return self.connect(func, False, once, cb, on_remove, name)
+        return self.connect(func, False, once, cb, on_remove, name, tags)
 
-    def once(self, func, weak=True):
-        return self.connect(func, weak, once=True)
+    def once(self, func, weak=True, name="", tags=None):
+        return self.connect(func, weak, once=True, name=name, tags=tags)
 
     def disconnect(self, slot, cb=None):
 

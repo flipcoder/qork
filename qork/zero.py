@@ -257,7 +257,7 @@ class ZeroMode(Core):
         if self.init_hook:
             self.init_hook()
 
-        self.partitioner.refresh()
+        # self.partitioner.refresh()
 
         if self.script_hook and self.script_hook is not qork.script:
             self.script_func = Script(self.script_hook)

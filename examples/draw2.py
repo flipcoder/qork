@@ -3,14 +3,8 @@
 camera.mode = "3D"
 camera.z = 1.5
 
-def init():
-    canvas.source = 'red'
-    canvas.rectangle(.25, .25, .5, .5)
-    canvas.fill()
-
 def script(ctx):
     while True:
-        init()
 
         # fade black to white
         yield when.fade(
