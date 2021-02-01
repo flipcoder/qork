@@ -230,7 +230,7 @@ class Node(Scriptable):
         
         Scriptable.__init__(self)
 
-        # register with partitioner
+        # register with partitioner on add/remove
         def add():
             if self.partitioner:
                 self.partitioner += self
@@ -891,6 +891,7 @@ class Node(Scriptable):
                 if cb:
                     cb()
                 node.pend()
+                node.on_add()
 
             self.children.connect(node, cb=lambda *a: callback())
             node._parent = weakref.ref(self)
@@ -1040,6 +1041,7 @@ class Node(Scriptable):
                 self.children.disconnect(self.children[node], cb=cb)
             else:
                 self.children.disconnect(node, cb=cb)
+            node.on_remove()
             return node
 
     # def safe_remove(self, node=None):

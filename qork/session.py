@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 
+from .minimal import get_app_from_args
+
 class Session:
-    # Keep information across game states
-    pass
+    def __init__(self, *args, **kwargs):
+        self.app = get_app_from_args(args)
+    def update(self, dt):
+        pass
 

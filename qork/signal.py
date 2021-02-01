@@ -55,14 +55,20 @@ class Connections:
 
 
 class Slot:
-    def __init__(self, func, sig, name=""):
+    def __init__(self, func, sig, name=None, tags=None):
         self.name = name
         self.func = func
         self.sig = weakref.ref(sig)
         self.once = False
         self.count = 0
         self.dead = False
-        self.tags = None
+        if tags is not None:
+            if type(tags) is set:
+                self.tags = tags
+            else:
+                self.tags = set(tags)
+        else:
+            self.tags = None
         self.on_remove = Signal()
 
     def __call__(self, *args, **kwargs):
@@ -171,9 +177,10 @@ class Container:
 
     def safe_call(self, cb):
         if self._blocked:
-            self._queued[self._current_queue].append(
-                lambda slot=slot: self.connect(slot, weak, cb=cb)
-            )
+            # self._queued[self._current_queue].append(
+            #     lambda slot=slot: self.connect(slot, weak, cb=cb)
+            # )
+            self._queued[self._current_queue].append(cb)
             return None
         else:
             return cb()
@@ -281,12 +288,12 @@ class Container:
     def __bool__(self):
         return bool(self._slots)
 
-    def connect(self, func, once=False, cb=None, name=""):
+    def connect(self, func, once=False, cb=None, name="", tags=None):
 
         if isinstance(func, (list, tuple)):
             r = []
             for f in func:
-                r.append(self.connect(f, once, cb))
+                r.append(self.connect(f, once, cb, name, tags))
             return r
 
         if self._blocked:
@@ -294,7 +301,7 @@ class Container:
             if isinstance(func, Slot):
                 slot = func
             else:
-                slot = Slot(func, self, name=name)
+                slot = Slot(func, self, name=name, tags=tags)
             slot.once = once
             # wslot = weakref.ref(slot) if weak else slot
             # self._queued.append(lambda wslot=wslot: self._slots.append(wslot))
@@ -306,13 +313,15 @@ class Container:
         if isinstance(func, Slot):
             slot = func  # already a slot
             slot.once = once
+            slot.name = name
+            slot.tags = tags
             self._slots.append(slot)
             if cb:
                 self.safe_call(lambda slot=slot: cb(slot))
             return slot
 
         # make slot from func
-        slot = Slot(func, self, name=name)
+        slot = Slot(func, self, name=name, tags=tags)
         slot.once = once
         # wslot = weakref.ref(slot) if weak else slot
         self._slots.append(slot)
@@ -430,10 +439,40 @@ class Container:
             return None
 
     def clear_tag(self, tag):
-        self.clear_tags(set((tag,)))
+        self.clear_tags({tag})
     
     def clear_tags(self, tags):
         self.filter_slot(lambda slot, tags=tags: bool((slot.tags or set()) & tags))
+
+    def clear_name(self, name):
+        self.filter_slot(lambda slot: slot.name == name)
+
+    def clear_type(self, Type):
+        if self._blocked:
+            self.queue(self.clear_type)
+            return None
+
+        with self:
+            for slot in self._slots:
+                # TODO: what about weakrefs?
+                if isinstance(slot.get(), Type):
+                    slot.disconnect()
+
+    def filter(self, func):
+        if self._blocked:
+            self.queue(lambda f=func: self.filter(func))
+            return None  # return promise?
+
+        with self:
+            for slot in self._slots:
+                if func(slot.get()):
+                    slot.disconnect()
+
+    def find(self, func):
+        for ch in self._slots:
+            if func(ch):
+                return ch
+        return None
 
 
 class Signal(Container):
@@ -510,9 +549,10 @@ class Signal(Container):
 
     def safe_call(self, cb):
         if self._blocked:
-            self._queued[self._current_queue].append(
-                lambda slot=slot: self.connect(slot, weak, cb=cb)
-            )
+            # self._queued[self._current_queue].append(
+            #     lambda slot=slot: self.connect(slot, weak, cb=cb)
+            # )
+            self._queued[self._current_queue].append(cb)
             return None
         else:
             return cb()
@@ -534,7 +574,7 @@ class Signal(Container):
             slot.once = once
             # wslot = weakref.ref(slot) if weak else slot
             self._queued[self._current_queue].append(
-                lambda slot=slot: self.connect(slot, weak, cb=cb)
+                lambda slot=slot: self.connect(slot, weak, cb, on_remove, name, tags)
             )
             if on_remove:
                 slot.on_remove.connect(on_remove, weak=False)
@@ -554,7 +594,7 @@ class Signal(Container):
             return slot
 
         # make slot from func
-        slot = self.Element(self._adapt(func), self)
+        slot = self.Element(self._adapt(func), self, name=name, tags=tags)
         slot.once = once
         wslot = weakref.ref(slot) if weak else slot
         self._slots.append(wslot)
@@ -662,31 +702,3 @@ class Signal(Container):
                     return True
             return False
 
-    def clear_name(self, name):
-        self.filter_slot(lambda slot: slot.name == name)
-
-    def clear_type(self, Type):
-        if self._blocked:
-            self.queue(self.clear_type)
-            return None
-
-        with self:
-            for slot in self._slots:
-                if isinstance(slot.get(), Type):
-                    slot.disconnect()
-
-    def filter(self, func):
-        if self._blocked:
-            self.queue(lambda f=func: self.filter(func))
-            return None  # return promise?
-
-        with self:
-            for slot in self._slots:
-                if func(slot.get()):
-                    slot.disconnect()
-
-    def find(self, func):
-        for ch in self._slots:
-            if func(ch):
-                return ch
-        return None

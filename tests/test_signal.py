@@ -114,3 +114,14 @@ def test_signal_once():
     assert len(s._slots) == 1
     s()
     # assert len(s.slots) == 0
+
+def test_signal_tags():
+
+    s = Signal()
+    assert len(s) == 0
+    s.connect((lambda: 1), weak=False, tags=['foo'])
+    assert len(s) == 1
+    assert(s._slots[0].tags == {'foo'})
+    s.clear_tag('foo')
+    assert len(s) == 0
+

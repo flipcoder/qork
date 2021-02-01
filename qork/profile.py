@@ -1,8 +1,22 @@
 #!/usr/bin/python
 
+from .minimal import get_app_from_args
+
 class Profile:
     """
     Player information & controller
     """
-    pass
+    def __init__(self, *args, **kwargs):
+        self.app = get_app_from_args(args)
+        self.num = None
+
+    def enable(self):
+        if self.num is None:
+            self.app.profiles += self
+            self.num = self.app.profiles.get_id(self)
+
+    def disable(self):
+        if self.num:
+            self.app.profiles -= self
+            self.num = None
 

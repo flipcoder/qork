@@ -20,7 +20,8 @@ def get_app_from_args(args):
 
     if app is None:
         app = MinimalCore()
-
+    
+    return app
 
 class MinimalCore:
     """
@@ -33,7 +34,15 @@ class MinimalCore:
         self.ctx = None
         self._size = Reactive(ivec2(1920, 1080))
         self.cameras = IndexList()
+        self.profiles = IndexList()
+        self.controllers = IndexList()
         self._partitioner = None
+        self.session = None
+
+    # def plug(self, ctrl):
+    #     self.controllers += ctrl
+    # def unplug(self, ctrl):
+    #     self.controllers -= ctrl
 
     def create(self, *args, **kwargs):
         from .node import Node
@@ -47,6 +56,15 @@ class MinimalCore:
     def deregister_camera(self, camera):
         if camera is not None and camera.camera_id is not None:
             self.cameras.remove(camera.camera_id)
+
+    def update(self, dt):
+        self.session.update(dt)
+        if self.profiles:
+            for prof in safe_iter(self.profiles):
+                prof.update(dt)
+        if self.controllers:
+            for ctrl in safe_iter(self.controllers):
+                ctrl.update(dt)
 
     @property
     def partitioner(self):

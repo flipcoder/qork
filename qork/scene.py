@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-from qork.node import Node
-from qork.partitioner import Partitioner
+from .node import Node
+from .partitioner import Partitioner
+from .minimal import get_app_from_args
 
 
 class Scene(Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.app = get_app_from_args(args)
         self.backdrop = None
-        self.is_root = True
         self._partitioner = Partitioner(self)
     def update(self, dt):
         self._partitioner.update(dt)

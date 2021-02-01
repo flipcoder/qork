@@ -34,6 +34,7 @@ from .easy import qork_app
 from .scene import *
 from .states import StateStack
 from .state import State
+from .session import Session
 from .indexlist import IndexList
 import cson
 import os
@@ -276,6 +277,8 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         # example: app.modules.net = NetModule()
         self.modules = Modules()
 
+        self.session = Session()
+
         # self.renderpass = RenderPass()
         # self.renderpass.app = self
 
@@ -501,6 +504,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
     def update(self, dt):
         # if not self.partitioner:
         #     return
+        MinimalCore.update(self, dt)
 
         for key in self.keys:
             self.key_events[key].while_pressed(key, dt)
