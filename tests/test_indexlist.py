@@ -26,5 +26,4 @@ def test_indexlist_basic():
     print(mylist.container)
     for i, e in enumerate(mylist.container):
         assert cmplist[i] == (e.item if e else None)
-    
 

@@ -16,5 +16,14 @@ with blue_square:
     canvas.rectangle(0, 0, *canvas.res/2)
     canvas.fill()
 
-red_square.disconnect() # remove the red square draw calls, but leave the blue
+def script(ctx):
+    yield
+    for x in range(3):
+        red_square.disable()
+        blue_square.enable()
+        yield .5
+        red_square.enable()
+        blue_square.disable()
+        yield .5
+    red_square.disconnect() # completely remove red
 

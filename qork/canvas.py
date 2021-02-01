@@ -37,7 +37,19 @@ class Canvas(Mesh):
         
         def __exit__(self, a, b, c):
             self.canvas._tag_stack = self.canvas._tag_stack[:-1]
-            
+        
+        def block(self):
+            self.canvas.block_batch(self.tags)
+
+        def unblock(self):
+            self.canvas.unblock_batch(self.tags)
+
+        def disable(self):
+            self.canvas.disable_batch(self.tags)
+
+        def enable(self):
+            self.canvas.enable_batch(self.tags)
+        
         def disconnect(self):
             if self.connected:
                 if self.tags:
@@ -138,7 +150,33 @@ class Canvas(Mesh):
         return Canvas.Batch(self, set(tags))
 
     def clear_batch(self, tags):
+        if type(tags) is Canvas.Batch:
+            tags = tags.tags
         self.on_render.clear_tags(tags)
+        self.refresh()
+
+    def block_batch(self, tags):
+        if type(tags) is Canvas.Batch:
+            tags = tags.tags
+        self.on_render.block_tags(tags)
+        self.refresh()
+
+    def unblock_batch(self, tags):
+        if type(tags) is Canvas.Batch:
+            tags = tags.tags
+        self.on_render.unblock_tags(tags)
+        self.refresh()
+
+    def disable_batch(self, tags):
+        if type(tags) is Canvas.Batch:
+            tags = tags.tags
+        self.on_render.disable_tags(tags)
+        self.refresh()
+
+    def enable_batch(self, tags):
+        if type(tags) is Canvas.Batch:
+            tags = tags.tags
+        self.on_render.enable_tags(tags)
         self.refresh()
 
     @property

@@ -125,3 +125,17 @@ def test_signal_tags():
     s.clear_tag('foo')
     assert len(s) == 0
 
+def test_signal_disabled():
+    c = Counter()
+    s = Signal()
+    slot = s.connect(lambda: c.increment())
+    assert c() == 0
+    s()
+    assert c() == 1
+    slot.enabled = False
+    s()
+    assert c() == 1
+    slot.enabled = True
+    s()
+    assert c() == 2
+

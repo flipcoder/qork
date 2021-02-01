@@ -62,6 +62,7 @@ class Slot:
         self.once = False
         self.count = 0
         self.dead = False
+        self.blocked = 0 # 0 = enabled, >=1 = disabled
         if tags is not None:
             if type(tags) is set:
                 self.tags = tags
@@ -70,6 +71,18 @@ class Slot:
         else:
             self.tags = None
         self.on_remove = Signal()
+
+    def block(self):
+        self.blocked += 1
+    
+    def unblock(self):
+        self.blocked = max(0, self.blocked - 1)
+
+    def enable(self):
+        self.blocked = 0
+
+    def disable(self):
+        self.blocked = 1
 
     def __call__(self, *args, **kwargs):
         if self.dead:
@@ -474,6 +487,42 @@ class Container:
                 return ch
         return None
 
+    def block_tag(self, tag):
+        return self.block_tags({tag})
+    def unblock_tag(self, tag):
+        return self.unblock_tags({tag})
+    def enable_tag(self, tag):
+        return self.enable_tags({tag})
+    def disable_tag(self, tag):
+        return self.disable_tags({tag})
+
+    @queued
+    def block_tags(self, tags):
+        assert tags
+        for s in self._slots:
+            if s.tags is not None and (s.tags & tags) == tags:
+                s.block()
+
+    @queued
+    def unblock_tags(self, tags):
+        assert tags
+        for s in self._slots:
+            if s.tags is not None and (s.tags & tags) == tags:
+                s.unblock()
+
+    @queued
+    def enable_tags(self, tags):
+        assert tags
+        for s in self._slots:
+            if s.tags is not None and (s.tags & tags) == tags:
+                s.enable()
+
+    @queued
+    def disable_tags(self, tags):
+        assert tags
+        for s in self._slots:
+            if s.tags is not None and (s.tags & tags) == tags:
+                s.disable()
 
 class Signal(Container):
     def __init__(self, simple=False, T=Slot, *args, **kwargs):
@@ -489,7 +538,7 @@ class Signal(Container):
                     if not slot:
                         self.disconnect(wref)  # we're blocked, so this will queue
                         continue
-                if slot is not None and not slot.dead:
+                if slot is not None and not slot.dead and slot.blocked == 0:
                     slot(*args)
 
     def refresh(self):
