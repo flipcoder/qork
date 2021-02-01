@@ -286,4 +286,3 @@ class Scriptable:
 
     def remove_script(self, script):
         self.scripts -= Script(script, self)
-

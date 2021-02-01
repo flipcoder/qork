@@ -6,10 +6,10 @@ from glm import vec2
 # load the ball and 2 paddles
 # paddle = add(2, "player.png", scale=(0.1, 0.25, 0.1))
 paddle = [None] * 2
-paddle[0] = add(Canvas(color='white', res=ivec2(1), scale=(0.1, 0.25, 0.1)))
-paddle[1] = add(Canvas(color='white', res=ivec2(1), scale=(0.1, 0.25, 0.1)))
+paddle[0] = add(Canvas(color="white", res=ivec2(1), scale=(0.1, 0.25, 0.1)))
+paddle[1] = add(Canvas(color="white", res=ivec2(1), scale=(0.1, 0.25, 0.1)))
 
-ball = add(Canvas(color='white', res=ivec2(1), scale=0.05))
+ball = add(Canvas(color="white", res=ivec2(1), scale=0.05))
 # ball = add("player.png", scale=0.05)
 
 # prosition paddles and set speed
@@ -22,11 +22,14 @@ score = [0] * 2
 
 # hud.y = .4
 
+
 def refresh_score():
     canvas.clear()
-    canvas.text(' - '.join(map(lambda s: str(s), score)), 'white', vec2(0,128), 'h')
+    canvas.text(" - ".join(map(lambda s: str(s), score)), "white", vec2(0, 128), "h")
+
 
 refresh_score()
+
 
 def init():
     global speed

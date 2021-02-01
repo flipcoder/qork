@@ -72,7 +72,7 @@ class Camera(Listener):
         if self.app:
             self.app.register_camera(self)
 
-        if kwargs.get('default', False):
+        if kwargs.get("default", False):
             self.app.render_from(self)
 
     def __del__(self):

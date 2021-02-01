@@ -2,13 +2,15 @@
 
 from .minimal import get_app_from_args
 
+
 class Profile:
     """
     Player information & controller
     """
+
     def __init__(self, *args, **kwargs):
         self.app = get_app_from_args(args)
-        self.default = kwargs.get('default', False)
+        self.default = kwargs.get("default", False)
         self.num = None
 
     # def update(self, dt):
@@ -23,4 +25,3 @@ class Profile:
         if self.num:
             self.app.profiles -= self
             self.num = None
-

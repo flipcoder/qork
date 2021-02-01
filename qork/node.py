@@ -149,7 +149,7 @@ class Node(Scriptable):
         # self.on_state = Signal()
         self.on_update = Signal()
         self.on_pend = Signal()
-        
+
         self.on_add = Signal()
         self.on_remove = Signal()
 
@@ -227,17 +227,20 @@ class Node(Scriptable):
         each = kwargs.pop("each", None)
         if each:
             each(node=self, n=self.num)
-        
+
         Scriptable.__init__(self)
 
         # register with partitioner on add/remove
         def add():
             if self.partitioner:
                 self.partitioner += self
+
         self.on_add += add
+
         def remove():
             if self.partitioner:
                 self.partitioner -= self
+
         self.on_remove += remove
 
     @property
@@ -1136,9 +1139,9 @@ class Node(Scriptable):
     #         self.deinited = True
 
     # def __del__(self):
-        # self.on_remove()
-        # if self.app and self.app.partitioner:
-        #     self.app.partitioner -= self
+    # self.on_remove()
+    # if self.app and self.app.partitioner:
+    #     self.app.partitioner -= self
 
     @property
     def filename(self):

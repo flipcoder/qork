@@ -20,8 +20,9 @@ def get_app_from_args(args):
 
     if app is None:
         app = MinimalCore()
-    
+
     return app
+
 
 class MinimalCore:
     """
@@ -38,9 +39,10 @@ class MinimalCore:
         self.controllers = IndexList()
         self._partitioner = None
         self.session = None
-        
+
         # create and enable default profile
         from .profile import Profile
+
         profile = Profile(self, default=True)
         profile.enable()
         self.default_profile = profile
@@ -77,7 +79,7 @@ class MinimalCore:
     def partitioner(self):
         return self._partitioner
 
+
 class StateBase:
     def update(self, dt):
         pass
-

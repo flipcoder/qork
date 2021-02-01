@@ -139,12 +139,12 @@ class ZeroMode(Core):
         self.terminal_called = False
         # camera = self.camera
         scene = self.scene
-        
+
         self._init()
         # removed canvas and backdrop from here (added to State)
         self.canvas = self.app.canvas
         self.backdrop = self.app.backdrop
-        
+
         # TODO: add signal on resize
 
         # inject qork types and methods into Q namespace?

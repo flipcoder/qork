@@ -3,7 +3,7 @@
 camera.mode = "3D"
 camera.z = 1.5
 
-backdrop.gradient("blue","lightblue","white","yellow","green","darkgreen")
+backdrop.gradient("blue", "lightblue", "white", "yellow", "green", "darkgreen")
 
 nodes = [None] * 2
 for i in range(len(nodes)):
@@ -22,4 +22,3 @@ def update(dt):
         n.rotate(s * 0.1 * dt, X)
         n.rotate(s * 0.2 * dt, Y)
         n.rotate(s * 0.3 * dt, Z)
-

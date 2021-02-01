@@ -17,7 +17,6 @@ def next_power_of_two_ge(x):
 
 
 class IndexList:
-
     @dataclass
     class Element:
         num: int = -1
@@ -27,7 +26,7 @@ class IndexList:
     def __init__(self):
         self.next_id = 0
         self.container = []  # (element, on_remove)
-        self.sz = 0 # not container len, but actual num of non-Nones
+        self.sz = 0  # not container len, but actual num of non-Nones
 
     def ensure_length(self, length):
         lenct = len(self.container)
@@ -115,4 +114,3 @@ class IndexList:
     def safe_iter(self):
         """Copy container and safely iterate it"""
         return iter(self.container[:])
-

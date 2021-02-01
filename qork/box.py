@@ -51,7 +51,7 @@ class Box:
         """
         Test if this box overlaps with a given box or vec3 point
         """
-        if isinstance(other, Box): # box
+        if isinstance(other, Box):  # box
             return not (
                 other[0].x > self[1].x
                 or other[1].x < self[0].x
@@ -60,8 +60,8 @@ class Box:
                 or other[0].z > self[1].z
                 or other[1].z < self[0].z
             )
-        else: #isinstance(other, glm.vec3): # point
-            p = glm.vec3(*other) # assume its a point
+        else:  # isinstance(other, glm.vec3): # point
+            p = glm.vec3(*other)  # assume its a point
             return not (
                 other.x > self[1].x
                 or other.x < self[0].x
@@ -70,7 +70,7 @@ class Box:
                 or other.z > self[1].z
                 or other.z < self[0].z
             )
-    
+
     def union(self, other):
         if not self.overlap(other):
             return Box()
@@ -78,17 +78,17 @@ class Box:
         r = Box()
         vals = [0] * 4
 
-        for c in range(3): # components x,y,z
+        for c in range(3):  # components x,y,z
             vals[0] = self[0][c]
             vals[1] = self[1][c]
             vals[2] = other[0][c]
             vals[3] = other[1][c]
             vals.sort()
-            r[0][c]= vals[0]
-            r[1][c]= vals[3]
-        
+            r[0][c] = vals[0]
+            r[1][c] = vals[3]
+
         return r
-        
+
     def intersect(self, other):
         if not self.overlap(other):
             return Box()
@@ -96,15 +96,15 @@ class Box:
         r = Box()
         vals = [0] * 4
 
-        for c in range(3): # components x,y,z
+        for c in range(3):  # components x,y,z
             vals[0] = self[0][c]
             vals[1] = self[1][c]
             vals[2] = other[0][c]
             vals[3] = other[1][c]
             vals.sort()
-            r[0][c]= vals[1]
-            r[1][c]= vals[2]
-        
+            r[0][c] = vals[1]
+            r[1][c] = vals[2]
+
         return r
 
     def classify(self, other):

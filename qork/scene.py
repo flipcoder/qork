@@ -11,7 +11,7 @@ class Scene(Node):
         self.app = get_app_from_args(args)
         self.backdrop = None
         self._partitioner = Partitioner(self)
+
     def update(self, dt):
         self._partitioner.update(dt)
         super().update(dt)
-

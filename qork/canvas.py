@@ -20,24 +20,24 @@ from qork import easy
 
 # @mixin(cairo.Context, 'ctx')
 class Canvas(Mesh):
-    
     class Batch:
         """
         A batch of draw calls associated with a canvas
         These are tagged so that they can be removed or changed independently
             of the entire canvas, much like a vector graphics object.
         """
+
         def __init__(self, canvas, tags):
             self.canvas = canvas
             self.tags = set(tags)
             self.connected = True
-        
+
         def __enter__(self):
             self.canvas._tag_stack += [self.tags]
-        
+
         def __exit__(self, a, b, c):
             self.canvas._tag_stack = self.canvas._tag_stack[:-1]
-        
+
         def block(self):
             self.canvas.block_batch(self.tags)
 
@@ -49,18 +49,18 @@ class Canvas(Mesh):
 
         def enable(self):
             self.canvas.enable_batch(self.tags)
-        
+
         def disconnect(self):
             if self.connected:
                 if self.tags:
                     self.canvas.clear_batch(self.tags)
                     self.connected = False
-        
+
         def __del__(self):
             if self.connected:
                 self.disconnect()
                 self.connected = False
-        
+
     # def __new__(cls, *args, **kwargs):
     #     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *isz)
     #     ctx = cairo.Context(self.surface)
@@ -71,7 +71,7 @@ class Canvas(Mesh):
         args, kwargs = remove_filename(args, kwargs)
         super().__init__(*args, **kwargs)
 
-        self._tag_stack = [] # current batch tag stack
+        self._tag_stack = []  # current batch tag stack
 
         # self.size = to_vec3(kwargs.get('size'))
 
@@ -129,7 +129,7 @@ class Canvas(Mesh):
 
         # on_render serves as the draw call list
         self.on_render = Signal()
-        
+
         self.refresh()
         # self.connections += self.on_resize.connect(lambda: self.set_dirty(True))
 
@@ -267,7 +267,7 @@ class Canvas(Mesh):
         slot = self.on_render.connect(
             (lambda col=col: self.cairo.set_source_rgba(*col)),
             weak=False,
-            tags=self._tags
+            tags=self._tags,
         )
         self.refresh()
         return slot
@@ -372,7 +372,7 @@ class Canvas(Mesh):
                 self.cairo.set_source_rgba(0, 0, 0, 0)
                 self.cairo.set_operator(cairo.OPERATOR_CLEAR)
                 self.cairo.paint()
-                self.cairo.set_operator(cairo.OPERATOR_OVER) # default op
+                self.cairo.set_operator(cairo.OPERATOR_OVER)  # default op
             else:
                 self.cairo.set_source_rgba(*col)
                 self.cairo.paint()
@@ -447,6 +447,7 @@ class Canvas(Mesh):
         #     self.texture.use(location=0)
         # self.quad_fs.render(self.shader)
 
+
 # Mix in cairo context members
 
 reserved_names = ["translate"]
@@ -471,7 +472,7 @@ for name, method in cairo.Context.__dict__.items():
         slot = self.on_render.connect(
             (lambda method=method: method(self.cairo, *args, **kwargs)),
             weak=False,
-            tags=self._tags
+            tags=self._tags,
         )
         if self.stack:
             self.stack[-1] += slot

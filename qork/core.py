@@ -187,7 +187,6 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         MinimalCore.__init__(self)
         Scriptable.__init__(self)
         mglw.WindowConfig.__init__(self, wnd=wnd, ctx=ctx, **kwargs)
-        
 
         self.script_path = None  # script path is using script
         self.cache = Cache(self.resolve_resource, self.transform_resource)
@@ -231,9 +230,9 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         # self.render_layer = RenderLayer(self, self.scene)
         # self.gui = None
         # self._view = None  # default gui camera
-        
+
         self._bg_color = vec4(0, 0, 0, 0)
-        self.renderfrom = None # the current camera in the render cycle
+        self.renderfrom = None  # the current camera in the render cycle
 
         # self.renderpass = RenderPass()
         # self.create = Factory(self.resolve_entity)
@@ -523,7 +522,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self.on_update(dt)
 
         Scriptable.update(self, dt)
-         
+
         if self.state:
             self.state.update(dt)
         else:

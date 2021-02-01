@@ -62,7 +62,7 @@ class Slot:
         self.once = False
         self.count = 0
         self.dead = False
-        self.blocked = 0 # 0 = enabled, >=1 = disabled
+        self.blocked = 0  # 0 = enabled, >=1 = disabled
         if tags is not None:
             if type(tags) is set:
                 self.tags = tags
@@ -74,7 +74,7 @@ class Slot:
 
     def block(self):
         self.blocked += 1
-    
+
     def unblock(self):
         self.blocked = max(0, self.blocked - 1)
 
@@ -453,7 +453,7 @@ class Container:
 
     def clear_tag(self, tag):
         self.clear_tags({tag})
-    
+
     def clear_tags(self, tags):
         self.filter_slot(lambda slot, tags=tags: bool((slot.tags or set()) & tags))
 
@@ -489,10 +489,13 @@ class Container:
 
     def block_tag(self, tag):
         return self.block_tags({tag})
+
     def unblock_tag(self, tag):
         return self.unblock_tags({tag})
+
     def enable_tag(self, tag):
         return self.enable_tags({tag})
+
     def disable_tag(self, tag):
         return self.disable_tags({tag})
 
@@ -523,6 +526,7 @@ class Container:
         for s in self._slots:
             if s.tags is not None and (s.tags & tags) == tags:
                 s.disable()
+
 
 class Signal(Container):
     def __init__(self, simple=False, T=Slot, *args, **kwargs):
@@ -606,7 +610,9 @@ class Signal(Container):
         else:
             return cb()
 
-    def connect(self, func, weak=True, once=False, cb=None, on_remove=None, name="", tags=None):
+    def connect(
+        self, func, weak=True, once=False, cb=None, on_remove=None, name="", tags=None
+    ):
 
         if isinstance(func, (list, tuple)):
             r = []
@@ -750,4 +756,3 @@ class Signal(Container):
                         self.safe_call(lambda: cb(i))
                     return True
             return False
-

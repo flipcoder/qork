@@ -37,7 +37,7 @@ class TileMap(Node):
             self.full_fn = None
             # Empty tilemap
             return
-        
+
         self.full_fn = self.app.resource_path(self.fn, throw=True)
         tmx = self.tmx = pytmx.TiledMap(self.full_fn, image_loader=self._load_img)
         rules = kwargs.get("rules", {})
