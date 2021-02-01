@@ -14,7 +14,8 @@ from .util import *
 from .easy import qork_app
 from itertools import chain
 import weakref
-from .script import Script, Scriptable
+from .script import Script
+from .scriptable import Scriptable
 from typing import Optional
 from collections import defaultdict
 from .states import StateMachine

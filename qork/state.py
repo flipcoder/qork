@@ -2,6 +2,7 @@
 from .minimal import get_app_from_args, StateBase
 from .camera import Camera, RenderLayer
 from glm import ivec2
+from .scriptable import Scriptable
 
 
 class State(StateBase):
@@ -10,6 +11,8 @@ class State(StateBase):
     """
 
     def __init__(self, name="", init=True, *args, **kwargs):
+        from .scriptable import Scriptable
+        Scriptable.__init__(self)
 
         # fix circular import
         from .scene import Scene
@@ -47,8 +50,18 @@ class State(StateBase):
             Canvas(self, res=ivec2(1920, 1080), scale=self.app.scale)
         )
 
+        if hasattr(self, 'script'):
+            self.add_script(self.script)
+
     def update(self, dt):
+        Scriptable.update(self, dt)
         self.scene.update(dt)
+
+    def add_script(self, s):
+        return Scriptable.add_script(self, s)
+
+    def remove_script(self, s):
+        return Scriptable.remove_script(self, s)
 
     def render(self):
         pass

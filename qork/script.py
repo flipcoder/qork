@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from .when import *
-from .signal import *
-from .reactive import *
+from .when import When
+from .signal import Signal, Container, Slot
+# from .reactive import *
 from glm import vec3, vec4, ivec4
 import math
 import importlib
@@ -269,20 +269,3 @@ class Script:
     def __call__(self, dt):
         self.update(dt)
 
-
-class Scriptable:
-    def __init__(self):
-        self.scripts = Signal()
-
-    def update(self, dt):
-        if self.scripts:
-            self.scripts.each(lambda x, dt: x.update(dt), dt)
-            self.scripts._slots = list(
-                filter(lambda x: not x.get().done(), self.scripts.slots)
-            )
-
-    def add_script(self, script, weak=False):
-        return self.scripts.connect(Script(script, self), weak=weak)
-
-    def remove_script(self, script):
-        self.scripts -= Script(script, self)
