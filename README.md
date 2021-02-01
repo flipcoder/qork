@@ -64,8 +64,10 @@ sudo pip install -r requirements.txt
 
 (Example images are not yet included! You can use your own images. I will fix this soon!)
 
-Make examples executable and run any example:
+*Warning: Examples that use the canvas currently flicker on Windows pretty bad due to a bug.  If you're sensitive
+to that sort of thing, you've been warned!  Sorry!*
 
+Make examples executable and run any example.
 ```
 chmod +x ./examples/*.py
 ./qork.py examples/script.py
