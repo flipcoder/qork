@@ -328,9 +328,20 @@ find(lambda obj: obj.name=='Player') # -> p
 
 You can also limit your search to a certain node:
 
-### States
+### Node States
 
-...
+Any node can have a state machine if you need it.
+
+```
+# set up a callback
+player.on_stage_change += lambda state, stance: print(state, "is now", stance)
+
+# trigger!
+player.state["stance"] = "attack"  # prints "stance is now attack"
+````
+
+These states can be used to automatically trigger an associated spritesheet animation.
+We'll get into that later!
 
 ### Events
 
