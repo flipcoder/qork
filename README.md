@@ -2,6 +2,9 @@
 
 Qork is a zero-boilerplate 3D+2D python OpenGL framework.
 
+**Warning: Some of the examples are flickering pretty bad on Windows due to a bug, and may happen on other OS's as well.
+If you're sensitive to that kind of thing, consider yourself warned before trying this out!  Sorry!  I'll try to fix soon!**
+
 This means an empty file is a valid blank window program.
 
 Getting an image on the screen and moving around requires only one line of code:
@@ -64,8 +67,7 @@ sudo pip install -r requirements.txt
 
 (Example images are not yet included! You can use your own images. I will fix this soon!)
 
-Make examples executable and run any example:
-
+Make examples executable and run any example.
 ```
 chmod +x ./examples/*.py
 ./qork.py examples/script.py
