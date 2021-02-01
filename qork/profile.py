@@ -8,7 +8,11 @@ class Profile:
     """
     def __init__(self, *args, **kwargs):
         self.app = get_app_from_args(args)
+        self.default = kwargs.get('default', False)
         self.num = None
+
+    # def update(self, dt):
+    #     pass
 
     def enable(self):
         if self.num is None:

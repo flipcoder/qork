@@ -214,7 +214,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self.connections = Connections()
         self.on_update = Signal()
         self.cameras = IndexList()  # index list of cameras (registered in camera ctor)
-        
+
         # self.on_quit = Signal()
         # self.on_render = Signal()
         # self.on_collision_enter = Signal()

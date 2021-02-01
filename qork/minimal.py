@@ -38,6 +38,13 @@ class MinimalCore:
         self.controllers = IndexList()
         self._partitioner = None
         self.session = None
+        
+        # create and enable default profile
+        from .profile import Profile
+        profile = Profile(self, default=True)
+        profile.enable()
+        self.default_profile = profile
+        self.default_profile_idx = 0
 
     # def plug(self, ctrl):
     #     self.controllers += ctrl
@@ -59,11 +66,11 @@ class MinimalCore:
 
     def update(self, dt):
         self.session.update(dt)
-        if self.profiles:
-            for prof in safe_iter(self.profiles):
-                prof.update(dt)
+        # if self.profiles:
+        #     for prof in self.profiles.safe_iter():
+        #         prof.update(dt)
         if self.controllers:
-            for ctrl in safe_iter(self.controllers):
+            for ctrl in self.controllers.safe_iter():
                 ctrl.update(dt)
 
     @property
