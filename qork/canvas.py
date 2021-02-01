@@ -293,13 +293,21 @@ class Canvas(Mesh):
         self.refresh()
         self._use_text = True
 
-    def text(self, s, color="white", pos=None, flags="c", shadow=None):
+    def text(self, s, color="white", pos=None, align="c", anchor="c", shadow=None):
         """
-        :param align: string: char flags
+        :param anchor: string: char flags
             l: relative to left
             r: relative to right
             t: relative to top
             b: relative to bottom
+
+            h: horizontal center
+            v: vertical center
+            c: both and v
+        :param align: alignment
+            l: align left
+            r: align right
+            c: align center (default)
         """
 
         if not self._use_text:
@@ -313,16 +321,16 @@ class Canvas(Mesh):
         else:
             pos = copy(pos)
 
-        if flags:
-            for ch in flags:
+        if anchor:
+            for ch in anchor:
                 if ch == "l":
-                    pos += ivec2(-self.res[0] // 2, 0)
+                    pos += vec2(-self.res[0], 0)
                 elif ch == "r":
-                    pos += ivec2(self.res[0] // 2, 0)
+                    pos += vec2(self.res[0], 0)
                 elif ch == "t":
-                    pos += ivec2(0, -self.res[1] // 2)
+                    pos += vec2(0, -self.res[1])
                 elif ch == "b":
-                    pos += ivec2(0, self.res[1] // 2)
+                    pos += vec2(0, self.res[1])
 
         if shadow is True:  # True, but not a vector
             shadow = vec2(-3, 3)
@@ -335,12 +343,18 @@ class Canvas(Mesh):
             # print(extents)
             origin = self.res / 2
             # pos -= ivec2(extents.width, extents.height)/2
-            pos.x -= extents.width / 2
+            if "c" in align:
+                pos.x -= extents.width / 2
+            elif "r" in align:
+                pos.x -= extents.width
             pos.y += extents.height / 4
+            # elif "r" in align:
+            #     pos.x -= extents.width / 2
+            #     pos.y += extents.height / 4
             # pos.y -= extents.height // 2
-            if "c" in flags or "h" in flags:
+            if "c" in anchor or "h" in anchor:
                 pos.x += origin.x
-            if "c" in flags or "v" in flags:
+            if "c" in anchor or "v" in anchor:
                 pos.y += origin.y
             # pos offsets
             # print(pos)
