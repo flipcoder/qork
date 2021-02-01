@@ -270,6 +270,8 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         self.golfing = True
 
+        self.bad_frame = False # ignore one bad timer frame
+
         self.viewport = Box()
 
         self.K = self.wnd.keys
@@ -594,9 +596,9 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         (update and render are separate everywhere else)
         But this does an entire game frame: both update(t) and render() here
         """
-        if dt <= 0:
-            # dt is a huge negative number at the beginning
-            # ignore it
+        if not self.bad_frame and dt < -EPSILON:
+            # dt is a huge negative number at the beginning (?)
+            self.bad_frame = True
             return
 
         self.dt = dt
