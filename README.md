@@ -1,6 +1,6 @@
 # qork
 
-Qork is a zero-boilerplate 3D+2D python OpenGL framework
+Qork is a zero-boilerplate 3D+2D python OpenGL framework.
 
 This means an empty file is a valid blank window program.
 
@@ -30,7 +30,7 @@ If you're familiar with gamedev, dive into the example folder or source!
 - Live-coding async console using ptpython (prompt-toolkit)
 - Resource Management
 - Object Events
-- State Machines
+- State Management
 - Sprite Animation
 - Time-based callback scheduling
 - Reactive Types (signals, reactive variables, observer-based lazy evaluation)
@@ -44,7 +44,6 @@ If you're familiar with gamedev, dive into the example folder or source!
 - pyTMX: tilemaps
 - OpenAL (pyOpenAL): 3d sound (SOON)
 - bullet (SOON): physics
-- pytweening (SOON): easing functions
 
 ## Running Locally (no installation)
 
@@ -643,11 +642,62 @@ default canvases.
 
 ### Batching
 
-...
+Certain operations on a canvas can be batched together and enabled, disabled,
+or disconnected entirely.
+
+Here is an example:
+
+```
+red_square = canvas.batch('red')
+with red_square:
+    canvas.source = 'red'
+    canvas.rectangle(*canvas.res/2, *canvas.res/2)
+    canvas.fill()
+```
+
+This puts a red square onto the canvas's draw queue.  It can then be removed
+from the canvas without effecting the rest of the canvas draw operations
+like this:
+
+```
+red_square.disconnect()
+```
+
+Since this is the only thing on the canvas, other than the default clear
+operation, the canvas will be blank after disconnecting this.  But if you
+had other canvas operations, the canvas would be redrawn in the order of
+your previous draw calls, but with the removal of the red square batch.
+
+You can also temporarily disable a batch and re-enable it when you wish:
+
+```
+red_square.disable()
+
+# later...
+
+red_square.enable()
+```
 
 ## Game States
 
-...
+Game states are used to keep your game separated into different parts.
+Your game might need a menu, a score screen, and the game itself.
+
+If you want a separate scene and camera for these states, create separate
+states by inheriting from the State base class:
+
+```
+class Game(State):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self)
+    def update(self, dt):
+        super().update(dt)
+
+Q.states.change(Game) # make GameState the current state
+```
+
+When you're using states, the global camera will no longer be used.
+Instead, use the state's camera (self.camera if you're inside the State class).
 
 ## Advanced (Reactive Classes)
 

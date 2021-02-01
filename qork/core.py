@@ -164,7 +164,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self._data_paths = []  # reset
         return self.data_path(p)
 
-    def resource_path(self, fn):
+    def resource_path(self, fn, throw=False):
         """
         Find full path to resource with filename `fn`
         """
@@ -175,13 +175,19 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
                 if os.path.exists(full_fn):
                     return full_fn
             except FileNotFoundError:
-                pass
+                if error:
+                    raise
         return None
+
+    @property
+    def scale(self):
+        return vec3(self.aspect_ratio, 1, 1)
 
     def __init__(self, wnd=None, ctx=None, **kwargs):
         MinimalCore.__init__(self)
         Scriptable.__init__(self)
         mglw.WindowConfig.__init__(self, wnd=wnd, ctx=ctx, **kwargs)
+        
 
         self.script_path = None  # script path is using script
         self.cache = Cache(self.resolve_resource, self.transform_resource)
@@ -209,7 +215,6 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self.on_update = Signal()
         self.cameras = IndexList()  # index list of cameras (registered in camera ctor)
         
-        self.scale = vec3(self.aspect_ratio, 1, 1)
         # self.on_quit = Signal()
         # self.on_render = Signal()
         # self.on_collision_enter = Signal()
@@ -220,7 +225,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         # (such as having a scene and camera), but it does not
         # count as a state since it is never pushed to the StateStack.
         # Instead, it contains and controls the StateStack
-        State.__init__(self)
+        State.__init__(self, init=False)
 
         # self.scene = Scene("Scene", root=True)
         # self.render_layer = RenderLayer(self, self.scene)

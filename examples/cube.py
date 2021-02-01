@@ -16,6 +16,7 @@ ground.rotate(-.25,X)
 
 cube = add(Mesh.cube('box.png'))
 cube.z -= 1.5
+cube.spin(0.4, -Y)
 
 def update(t):
     v = vec3(key(KEY.F) - key(KEY.S), key(KEY.SPACE) - key(KEY.A), key(KEY.D) - key(KEY.E))
@@ -23,6 +24,5 @@ def update(t):
     v = camera.orient_parent_to_local(v)
     camera.vel = v
     camera.rotate((key(KEY.LEFT) - key(KEY.RIGHT)) * t * 0.25, Y)
-    
-    cube.rotate(t * 0.4, -Y)
+    # camera.rotate((key(KEY.UP) - key(KEY.DOWN)) * t * 0.25, X)
 

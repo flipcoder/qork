@@ -1135,9 +1135,10 @@ class Node(Scriptable):
     #             ch.cleanup()
     #         self.deinited = True
 
-    def __del__(self):
-        if self.app and self.app.partitioner:
-            self.app.partitioner -= self
+    # def __del__(self):
+        # self.on_remove()
+        # if self.app and self.app.partitioner:
+        #     self.app.partitioner -= self
 
     @property
     def filename(self):

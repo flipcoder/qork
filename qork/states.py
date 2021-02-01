@@ -88,11 +88,11 @@ class StateStack:
         """
 
         if isinstance(state, StateBase):
-            print("1")
+            # print("1")
             # Pushing state directly
             self._push_state_direct(state)
         else:
-            print("2")
+            # print("2")
             # Factory function, create during refresh
             self.pending_states.append(StateStack.FactoryFunctionWrapper(state))
             # self.container.push(state)
@@ -121,9 +121,12 @@ class StateStack:
             self.container.push(state)
 
     def change(self, state):
+        # self.pending_pop = True
+        # def poptop():
         if self.container.top():
             self.container.pop()
-        self.container.push(state)
+        # self.pending_opertaions.append(poptop)
+        self.push(state)
 
     def update(self, dt):
         state = self.container.top()
@@ -137,6 +140,13 @@ class StateStack:
 
     def refresh(self):
         assert self.container._blocked == 1
+
+        # if self.pending_operations:
+        #     while self.pending_operations:
+        #         ops = self.pending_operations[:]
+        #         self.pending_operations = []
+        #         for op in ops:
+        #             op()
 
         # for each state factory fuction, call it here to create the state
         if self.pending_states:

@@ -1,14 +1,27 @@
 #!/usr/bin/env qork
 
-class GameState(State):
-    def __init__(self):
-        print("game started")
+class Game(State):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print('Game')
+        self.canvas.text('Mode=Game. Press M.')
     def update(self, dt):
-        print("update(dt)")
-    def render(self):
-        print("render()")
-    def deinit(self):
-        print("deinit")
+        super().update(dt)
+        if key_pressed(KEY.M):
+            Q.states.change(Menu)
 
-Q.states.push(GameState)
+class Menu(State):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print('Menu')
+        self.canvas.text('Mode=Menu. Press G.')
+    def update(self, dt):
+        super().update(dt)
+        if key_pressed(KEY.G):
+            Q.states.change(Game)
+
+def update(dt):
+    pass
+
+Q.states.change(Game)
 

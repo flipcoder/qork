@@ -33,7 +33,13 @@ class TileMap(Node):
         super().__init__(*args, **kwargs)
         # self.layers = Container()
         # TODO: do correct filename
-        tmx = self.tmx = pytmx.TiledMap("data/" + self.fn, image_loader=self._load_img)
+        if self.fn is None:
+            self.full_fn = None
+            # Empty tilemap
+            return
+        
+        self.full_fn = self.app.resource_path(self.fn, throw=True)
+        tmx = self.tmx = pytmx.TiledMap(self.full_fn, image_loader=self._load_img)
         rules = kwargs.get("rules", {})
         # print(tmx.layers)
         layer_ofs = 0.0
@@ -48,7 +54,7 @@ class TileMap(Node):
         # for i, layer in enumerate(tmx.layers):
         decal_layer_skip = 0
         popup = kwargs.get("popup", False)
-        decal_offset = kwargs.get("decal_offset", 0.01)
+        decal_offset = kwargs.get("decal_offset", 0.001)
         group_offset = kwargs.get("group_offset", 1.0)
 
         # let's page the map in pages

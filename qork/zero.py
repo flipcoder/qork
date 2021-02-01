@@ -137,24 +137,15 @@ class ZeroMode(Core):
 
         app = qork_app()
         self.terminal_called = False
-        camera = self.camera
+        # camera = self.camera
         scene = self.scene
-        self.canvas_layer = camera.add(RenderLayer)
-        self.canvas = self.canvas_layer.canvas = self.canvas_layer.add(
-            Canvas(self, res=ivec2(1920, 1080), scale=self.scale)
-        )
-
+        
+        self._init()
+        # removed canvas and backdrop from here (added to State)
+        self.canvas = self.app.canvas
+        self.backdrop = self.app.backdrop
+        
         # TODO: add signal on resize
-        # self.console_layer = camera.add(RenderLayer)
-        # self.console = self.console_layer.console = self.console_layer.add(Canvas(self, res=ivec2(1920,1080), scale=self.scale))
-
-        self.backdrop_layer = scene.backdrop = RenderLayer(self, camera=camera)
-        self.backdrop = self.backdrop_layer.canvas = self.backdrop_layer.add(
-            Canvas(self, res=ivec2(1920, 1080), scale=self.scale)
-        )
-        # TODO: add signal on resize
-
-        #
 
         # inject qork types and methods into Q namespace?
 
