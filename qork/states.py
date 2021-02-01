@@ -68,6 +68,7 @@ class StateStack:
 
         self.pre_refresh = Signal()
         self.post_refresh = Signal()
+        self.on_pending_state = Signal()
 
         self.pending_states = []  # the states currently being changed (if any)
 
@@ -155,6 +156,7 @@ class StateStack:
                 if type(state_func) is StateStack.FactoryFunctionWrapper:
                     # unwrap factory function and call it, replacing state
                     self._push_state_direct(state_func())
+                    self.on_pending_state(state_func)
             self.pending_states = []
 
         self.container._blocked -= 1

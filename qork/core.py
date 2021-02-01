@@ -198,6 +198,12 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         # self.states = Container(reactive=True)  # state stack
         self.states = StateStack()
+        
+        # this is used for getting add() funcs to work during State ctors
+        # State sets pending state explicitly, then this unsets it
+        def reset_pending_state(state):
+            self.states.pending_state = None
+        self.states.on_pending_state += reset_pending_state
 
         # self.timer = kwargs.get("timer")
 
@@ -288,9 +294,21 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
     @property
     def state_scene(self):
-        if self.state:
+        if self.pending_state is not None:
+            # should only be called only during State ctor
+            return self.pending_state.scene
+        if self.state is not None:
             return self.state.scene
         return self.scene
+
+    @property
+    def state_camera(self):
+        if self.pending_state is not None:
+            # should only be called only during State ctor
+            return self.pending_state.camera
+        if self.state is not None:
+            return self.state.camera
+        return self.camera
 
     def render_from(self, camera):
         if self.state:
@@ -590,26 +608,24 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
                 self.state.render()
 
         self.render_clear()
-        assert self.camera
+        camera = self.state_camera
+        assert camera
 
         # if the current state has a scene, use that instead
-        if self.state:
-            scene = self.state.scene
-        else:
-            scene = self.scene
+        scene = self.state_scene
 
         if scene and scene.backdrop:
             self.draw(scene.backdrop.camera, scene.backdrop)
             self.render_clear_depth()
 
-        if self.camera and self.scene:
-            self.draw(self.camera, self.scene)
+        if camera and scene:
+            self.draw(camera, scene)
         else:
-            assert self.camera
-            assert self.scene
+            assert camera
+            assert scene
 
-        if self.camera.hud:
-            hud = self.camera.hud
+        if camera.hud:
+            hud = camera.hud
             self.render_clear_depth()
             self.draw(hud.camera, hud)  # , hud.viewport)
 

@@ -18,6 +18,11 @@ class State(StateBase):
         from .scene import Scene
 
         self.app = get_app_from_args(args)
+        
+        # set this temporarily so add()s will work during ctors
+        # on_pending_state signal inside of StateStack registered by Core
+        # will unset this
+        self.app.pending_state = self
 
         self.name = name
 
