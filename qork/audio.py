@@ -28,7 +28,7 @@ class Sound(Node):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
-            self.full_fn = self.app.resource_path(self.fn)
+            self.full_fn = self.app.resource_path(self.fn, throw=True)
 
             if self.ext == ".wav":
                 # self.data = openal.oalOpen(self.fn)

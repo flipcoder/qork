@@ -44,7 +44,7 @@ def clear():
 
 
 def play(*args, **kwargs):
-    return APP.scene.play(*args, **kwargs)
+    return APP.play(*args, **kwargs)
 
 
 # def music(fn):
