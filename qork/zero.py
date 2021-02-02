@@ -61,7 +61,7 @@ class ZeroMode(Core):
 
         self.bg_color = (0, 0, 0)
         # self.shader = self.ctx.program(**SHADER_BASIC)
-        self.shader = self.cache("FOG_SHADER", lambda: Shader(self, defs={"fog": True}))
+        self.shader = self.cache("SHADER", lambda: Shader(self, defs={"fog": False}))
         self.mvp_uniform = self.shader.program["ModelViewProjection"]
         # self.gui = Canvas(size=Lazy(lambda: self.size, [self.on_resize]))
         # self._gui = Canvas()

@@ -38,8 +38,18 @@ class TileMap(Node):
             # Empty tilemap
             return
 
+        self.load(self.fn, **kwargs)
+
+    def load(self, fn=None, **kwargs):
+        """Load tilemap using filename"""
+
+        # use filename
+        if fn is not None:
+            self.fn = fn
+        
         self.full_fn = self.app.resource_path(self.fn, throw=True)
         tmx = self.tmx = pytmx.TiledMap(self.full_fn, image_loader=self._load_img)
+        
         rules = kwargs.get("rules", {})
         # print(tmx.layers)
         layer_ofs = 0.0

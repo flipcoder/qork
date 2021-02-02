@@ -13,7 +13,8 @@ scale = 0.125
 m = add("modern.tmx", pos=-Z, scale=scale)
 
 player = add("player.cson", scale=scale)
-player.pos = -Z * 0.895 * scale
+# player.pos = -Z * 0.895 * scale
+player.pos = -Z * 0.7494
 t = 0
 
 
@@ -30,6 +31,13 @@ def update(dt):
         player.state["direction"] = "right"
     elif v.x < -EPSILON:
         player.state["direction"] = "left"
+
+    if key(KEY.SPACE):
+        player.move(dt * Z * 0.0001)
+        print(player.z)
+    if key(KEY.A):
+        player.move(dt * -Z * 0.0001)
+        print(player.z)
 
     player.state["stance"] = "walk" if glm.length(v) > EPSILON else "stand"
 

@@ -172,7 +172,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         for dp in self._data_paths:
             try:
                 full_fn = path.join(dp, fn)
-                print(full_fn)
+                # print(full_fn)
                 if os.path.exists(full_fn):
                     return full_fn
             except FileNotFoundError:

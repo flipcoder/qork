@@ -112,6 +112,7 @@ class Node(Scriptable):
 
         self.freeze = False
         self.freeze_children = False
+        
         self._spin = kwargs.pop("spin", None)
         self.spin_axis = self.ROTATION_AXIS
         self.spin_space = PARENT
@@ -127,7 +128,7 @@ class Node(Scriptable):
         # if not hasattr(app,'ctx'):
         #     self.cache = app.ctx
 
-        self.visible = True
+        self.invisible = 0
         # self.self_visible = True
         self.children_visible = True
         self._parent = None
@@ -248,6 +249,14 @@ class Node(Scriptable):
     def partitioner(self):
         return self._partitioner
 
+    @property
+    def visible(self):
+        return self.invisible <= 0
+    
+    @visible.setter
+    def visible(self):
+        self.invisible = 0
+    
     @property
     def object(self):
         """
@@ -943,7 +952,7 @@ class Node(Scriptable):
         #     detach_me = self.detach_me
         #     self.children = list(filter(lambda x: x not in detach_me, self.children)) #     self.detach_me = []
         #     for node in detach_me:
-        #         node.on_detach(node)
+        #       e node.on_detach(node)
 
     def destroy(self):
         if not self.destroyed:

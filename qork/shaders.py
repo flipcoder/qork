@@ -47,9 +47,9 @@ SHADER_BASIC = {
         vec4 t = texture(Texture, v_text);
         
         #ifdef FOG
-            //vec3 t2 = t.xyz * (1 / v_vert.z) * 2.0;
-            // for(int i=0;i<3;++i)
-                // t[i] = min(t2[i], t[i], fog_color.a);
+            vec3 t2 = t.xyz * (1 / v_vert.z) * 2.0;
+            for(int i=0;i<3;++i)
+                t[i] = mix(t2[i], t[i], fog_color.a);
         #endif
         
         if(t.a < 0.95)
@@ -69,8 +69,9 @@ class Shader(Resource):
     cache = {}  # dict of programs with normalized ID
 
     # def __init__(self, app):#vp=None, fp=None, defs={}):
-    def __init__(self, app, name="", vp=None, fp=None, defs={}):
+    def __init__(self, app, name="", vp=None, fp=None, defs=None):
         super().__init__(app, name)
+        self.dirty = True
 
         if vp is None and fp is None:
             self.vp = SHADER_BASIC["vertex_shader"]
@@ -85,12 +86,14 @@ class Shader(Resource):
 
         self.props = {}
 
-        for k, v in defs.items():
-            self[k] = v
+        if defs:
+            for k, v in defs.items():
+                if v is not False and v is not None:
+                    self[k] = v
 
-        self.uniform = self.program = self.app.ctx.program(
-            vertex_shader=self.vp, fragment_shader=self.fp
-        )
+        # self.uniform = self.program = self.app.ctx.program(
+        #     vertex_shader=self.vp, fragment_shader=self.fp
+        # )
         self.compile()
 
     def instance(self, name, defs):
@@ -102,7 +105,7 @@ class Shader(Resource):
 
     def compile(self):
         if self.dirty:
-            self.program = self.app.ctx.program(
+            self.uniform = self.program = self.app.ctx.program(
                 vertex_shader=self.vp, fragment_shader=self.fp
             )
             self.dirty = False
@@ -110,6 +113,7 @@ class Shader(Resource):
 
     def __setitem__(self, prop, val):
         # TODO: add in values pre-compile instead of into source
+
         if val is None:
             del self.props[prop]
         else:
