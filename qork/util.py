@@ -135,6 +135,32 @@ def filename_from_args(args, kwargs=None):
     return fn
 
 
+def get_subpath(fn):
+    subpath = None
+    if fn is not None:
+        # cut off subpath
+        if ":" in fn:
+            idx = fn.rindex(":")
+            if idx > 1:  # ignore : for 'C:\', etc
+                fnparts = fn.split(":")
+                # fn = fnparts[0]
+                subpath = fnparts[1]
+    return subpath
+
+
+def remove_subpath(fn):
+    subpath = None
+    if fn is not None:
+        # cut off subpath
+        if ":" in fn:
+            idx = fn.rindex(":")
+            if idx > 1:  # ignore : for 'C:\', etc
+                fnparts = fn.split(":")
+                fn = fnparts[0]
+                # subpath = fnparts[1]
+    return fn
+
+
 def change_filename(fn, args, kwargs=None, keepname=False):
     """
     Given node ctor args, remove fn params and replace with single fn

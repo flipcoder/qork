@@ -25,7 +25,9 @@ score = [0] * 2
 
 def refresh_score():
     canvas.clear()
-    canvas.text(" - ".join(map(lambda s: str(s), score)), "white", vec2(0, 128), "h")
+    canvas.text(
+        " - ".join(map(lambda s: str(s), score)), "white", vec2(0, 128), anchor="h"
+    )
 
 
 refresh_score()

@@ -36,6 +36,10 @@ from .states import StateStack
 from .state import State
 from .session import Session
 from .indexlist import IndexList
+from .image import ImageResource
+from .font import Font
+from .util import get_subpath
+
 import cson
 import os
 from os import path
@@ -46,12 +50,6 @@ import openal
 # class RenderPass
 #     def __init__(self, camera):
 #         self.cam = camera
-
-
-class ImageResource(Resource):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.data = Image.open(self.fn)
 
 
 def cson_load(fn):
@@ -87,7 +85,12 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
     vsync = False
     # resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
 
-    Resource = {"mesh": Mesh.Resource, "sound": Sound.Resource, "sprite": Sprite}  # !
+    Resource = {
+        "mesh": Mesh.Resource,
+        "sound": Sound.Resource,
+        "sprite": Sprite,
+        "font": Font,
+    }  # !
 
     # Which cson type is handled by which class?
     Type = {"mesh": Mesh, "sound": Sound, "sprite": Mesh, "tilemap": TileMap}  # !
@@ -95,6 +98,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
     # Node types and their associated extensions
     extensions = {
         "sound": [".wav", ".mp3", ".ogg", ".flac"],
+        "font": [".ttf"],
         "mesh": [".obj"],
         "sprite": [".png", ".jpg"],
         "tilemap": [".tmx"],
@@ -199,11 +203,12 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         # self.states = Container(reactive=True)  # state stack
         self.states = StateStack()
-        
+
         # this is used for getting add() funcs to work during State ctors
         # State sets pending state explicitly, then this unsets it
         def reset_pending_state(state):
             self.states.pending_state = None
+
         self.states.on_pending_state += reset_pending_state
 
         # self.timer = kwargs.get("timer")
@@ -270,7 +275,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         self.golfing = True
 
-        self.bad_frame = False # ignore one bad timer frame
+        self.bad_frame = False  # ignore one bad timer frame
 
         self.viewport = Box()
 
@@ -563,7 +568,12 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
     def resolve_resource(self, *args, **kwargs):
         fn = filename_from_args(args, kwargs)
+
+        fn_wsub = fn
+        fn = remove_subpath(fn)
+
         assert fn
+
         ext = pathlib.Path(fn.lower()).suffix
         T = kwargs.pop("T", None)  # type
         if T:
@@ -588,6 +598,8 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
                 raise FileNotFoundError()
         elif ext in [".png", ".jpg"]:
             return ImageResource, args, kwargs
+        elif ext in [".ttf"]:
+            return Font, args, kwargs
         return None, None, None
 
     def render(self, time, dt):

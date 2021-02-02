@@ -5,26 +5,35 @@ import pathlib
 from .easy import qork_app
 from .util import *
 from .signal import Connections
+from .minimal import get_app_from_args
+from .util import get_subpath
 
 
 class Resource:
     def __init__(self, *args, **kwargs):
         self.fn = filename_from_args(args, kwargs)
+        self.app = get_app_from_args(args)
+        self.cache = self.app.cache
+
         try:
-            self.flags = self.fn.split(":")[0].split("+")[1:]
+            self.flags = os.path.basename(self.fn).split(":")[0].split("+")[1:]
         except:
             self.flags = []
+
+        # print(type(self).__name__)
+
+        self.subpath = get_subpath(self.fn)
+        self.fn = remove_subpath(self.fn)
+
         if self.fn:
             self.ext = pathlib.Path(self.fn).suffix
         else:
             self.ext = ""
-        if not args or not isinstance(args[0], mglw.WindowConfig):
-            self.app = qork_app()
-            self.cache = None
-            if self.app:
-                self.cache = self.app.cache
+        if self.fn:
+            self.full_fn = self.app.resource_path(self.fn)
         else:
-            self.app = args[0]
+            self.full_fn = None
+
         self.args = args
         self.kwargs = kwargs
         self.connections = Connections()

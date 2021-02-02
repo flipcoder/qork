@@ -3,6 +3,7 @@
 from .signal import Signal
 from .script import Script
 
+
 class Scriptable:
     def __init__(self):
         self.scripts = Signal()
@@ -19,4 +20,3 @@ class Scriptable:
 
     def remove_script(self, script):
         self.scripts -= Script(script, self)
-

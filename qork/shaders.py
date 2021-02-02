@@ -47,9 +47,9 @@ SHADER_BASIC = {
         vec4 t = texture(Texture, v_text);
         
         #ifdef FOG
-            vec3 t2 = t.xyz * (1 / v_vert.z) * 2.0;
+            vec3 t2 = t.xyz * (1 / v_vert.z) * 1.0;
             for(int i=0;i<3;++i)
-                t[i] = mix(t2[i], t[i], fog_color.a);
+                t[i] = mix(t[i], t2[i], fog_color.a);
         #endif
         
         if(t.a < 0.95)

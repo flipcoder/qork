@@ -2,6 +2,7 @@
 
 from .when import When
 from .signal import Signal, Container, Slot
+
 # from .reactive import *
 from glm import vec3, vec4, ivec4
 import math
@@ -268,4 +269,3 @@ class Script:
 
     def __call__(self, dt):
         self.update(dt)
-

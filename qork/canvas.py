@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 
 import cairo
+
+# import cairocffi as cairo
+# import pangocairocffi as pangocairo
 import math
 import copy
 import webcolors
 import array
 import numpy as np
+from dataclasses import dataclass
 
 from .mesh import *
 from .shaders import *
@@ -18,8 +22,38 @@ from moderngl_window import geometry
 from glm import vec2, ivec2
 from qork import easy
 
+from PIL import ImageFont, ImageDraw
+from .image import ImageResource
+from .font import Font
+
+# Source: https://pycairo.readthedocs.io/en/latest/integration.html
+def pil_to_cairo(im, alpha=1.0, format=cairo.FORMAT_ARGB32):
+    """
+    :param im: Pillow Image
+    :param alpha: 0..1 alpha to add to non-alpha images
+    :param format: Pixel format for output surface
+    """
+    assert format in (cairo.FORMAT_RGB24, cairo.FORMAT_ARGB32), (
+        "Unsupported pixel format: %s" % format
+    )
+    if "A" not in im.getbands():
+        im.putalpha(int(alpha * 256.0))
+    arr = bytearray(im.tobytes("raw", "BGRa"))
+    surface = cairo.ImageSurface.create_for_data(arr, format, im.width, im.height)
+    return surface
+
+
 # @mixin(cairo.Context, 'ctx')
 class Canvas(Mesh):
+    @dataclass
+    class Extents:
+        x_bearing: float = 0.0
+        y_bearing: float = 0.0
+        width: float = 0.0
+        height: float = 0.0
+        x_advance: float = 0.0
+        y_advance: float = 0.0
+
     class Batch:
         """
         A batch of draw calls associated with a canvas
@@ -130,11 +164,20 @@ class Canvas(Mesh):
         # on_render serves as the draw call list
         self.on_render = Signal()
 
-        self.refresh()
         # self.connections += self.on_resize.connect(lambda: self.set_dirty(True))
 
         self.texture = None
         self._use_text = False
+
+        class DummyFont(Font):
+            def __init__(self, *args, **kwargs):
+                pass
+
+        font = DummyFont()
+        font.font = ImageFont.load_default()
+        self.default_font = font
+
+        self.refresh()
 
         self.clear(kwargs.get("color"))
         text = kwargs.pop("text", None)
@@ -145,6 +188,33 @@ class Canvas(Mesh):
         if grad:
             self.gradient(grad)
         # self.shadow = False
+
+    def blit(self, img, pos=None, crop=None, paint=True):
+        if isinstance(img, str):
+            # load from filename
+            fn = self.app.resource_path(img)
+            img = self.app.cache(fn)
+            pil_image = img.image()
+        elif isinstance(img, ImageResource):
+            pil_image = img.image()  # PIL.Image
+            pass
+        else:
+            pil_image = img
+
+        if pos is None:
+            pos = ivec2(0, 0)
+        else:
+            pos = ivec2(*pos)
+
+        csurf = img.cairo_surface = pil_to_cairo(pil_image)
+
+        def f():
+            self.cairo.set_source_surface(csurf, *pos)
+            if paint:
+                self.cairo.paint()
+
+        self.on_render += f
+        self.refresh()
 
     def batch(self, *tags):
         return Canvas.Batch(self, set(tags))
@@ -273,27 +343,38 @@ class Canvas(Mesh):
         return slot
 
     def font(self, *args):
-        name = ""
         sz = None
+        fn = ""
         if args:
             for a in args:
                 ta = type(a)
                 if ta in (int, float):
                     sz = a
                 elif ta is str:
-                    name = a
+                    fn = self.app.resource_path(a, throw=True)
         if sz is None:
             sz = self.app.size[0] // 15
         # print(sz)
         def f():
-            self.cairo.set_font_face(cairo.ToyFontFace(name))
+            self.cairo.set_font_face(cairo.ToyFontFace(fn))
             self.cairo.set_font_size(sz)
 
         self.on_render.connect(f, weak=False, tags=self._tags)
         self.refresh()
         self._use_text = True
 
-    def text(self, s, color="white", pos=None, align="c", anchor="c", shadow=None):
+    def text(
+        self,
+        txt,
+        color="white",
+        pos=None,
+        font=None,
+        align="c",
+        anchor="c",
+        shadow=False,
+        shadow_color=None,
+        shadow_pos=None,
+    ):
         """
         :param anchor: string: char flags
             l: relative to left
@@ -310,16 +391,30 @@ class Canvas(Mesh):
             c: align center (default)
         """
 
-        if not self._use_text:
-            self.font()
-            self._use_text = True
-
         color = Color(color)
 
         if pos is None:
             pos = vec2(0)
         else:
             pos = copy(pos)
+
+        if font is None:
+            font = self.default_font
+        else:
+            # if isinstance(font, Font): # font resource
+            if isinstance(font, str):
+                font = self.cache(font)
+            elif isinstance(font, Font):
+                pass  # already loaded
+            else:
+                raise TypeError()
+
+        image = Image.new("RGBA", (0, 0), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        width, height = draw.textsize(txt, font=font.font)
+        # image = Image.new("RGBA", (width,height), (0,0,0,0))
+        image = Image.new("RGBA", tuple(self.res), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
 
         if anchor:
             for ch in anchor:
@@ -332,45 +427,118 @@ class Canvas(Mesh):
                 elif ch == "b":
                     pos += vec2(0, self.res[1])
 
-        if shadow is True:  # True, but not a vector
-            shadow = vec2(-3, 3)
+        origin = self.res / 2
 
-        def f(s=s, pos=pos):
-
-            # this has to be called in f, since the order of this func matters
-            extents = self.cairo.text_extents(s)
-
-            # print(extents)
-            origin = self.res / 2
-            # pos -= ivec2(extents.width, extents.height)/2
+        if align:
             if "c" in align:
-                pos.x -= extents.width / 2
+                pos.x -= width / 2
             elif "r" in align:
-                pos.x -= extents.width
-            pos.y += extents.height / 4
-            # elif "r" in align:
-            #     pos.x -= extents.width / 2
-            #     pos.y += extents.height / 4
-            # pos.y -= extents.height // 2
+                pos.x -= width
+        pos.y += height / 4
+
+        if anchor:
             if "c" in anchor or "h" in anchor:
                 pos.x += origin.x
             if "c" in anchor or "v" in anchor:
                 pos.y += origin.y
-            # pos offsets
-            # print(pos)
-            # print(x, y)
 
-            if shadow:
-                self.cairo.set_source_rgba(0, 0, 0, 1)
-                self.cairo.move_to(*(pos + shadow))
-                self.cairo.show_text(s)
+        if shadow or shadow_pos is not None or shadow_color is not None:
+            shadow = True
+            shadow_pos = shadow_pos or vec2(-3, 3)
+            shadow_color = Color(0)  # black
 
-            self.cairo.set_source_rgba(*color)
-            self.cairo.move_to(*pos)
-            self.cairo.show_text(s)
+        draw.text(
+            # tuple(int(p) for p in pos),
+            (0, 0),
+            txt,
+            tuple(int(255.0 * c) for c in color),
+            font=font.font,
+        )
+        if shadow:
+            self.text(txt, shadow_color, shadow_pos, font, align, anchor, None)
 
-        self.on_render.connect(f, weak=False, tags=self._tags)
-        self.refresh()
+        self.blit(image, pos)
+
+    # def text(self, s, color="white", pos=None, align="c", anchor="c", shadow=None):
+    #     """
+    #     :param anchor: string: char flags
+    #         l: relative to left
+    #         r: relative to right
+    #         t: relative to top
+    #         b: relative to bottom
+
+    #         h: horizontal center
+    #         v: vertical center
+    #         c: both and v
+    #     :param align: alignment
+    #         l: align left
+    #         r: align right
+    #         c: align center (default)
+    #     """
+
+    #     if not self._use_text:
+    #         self.font()
+    #         self._use_text = True
+
+    #     color = Color(color)
+
+    #     if pos is None:
+    #         pos = vec2(0)
+    #     else:
+    #         pos = copy(pos)
+
+    #     if anchor:
+    #         for ch in anchor:
+    #             if ch == "l":
+    #                 pos += vec2(-self.res[0], 0)
+    #             elif ch == "r":
+    #                 pos += vec2(self.res[0], 0)
+    #             elif ch == "t":
+    #                 pos += vec2(0, -self.res[1])
+    #             elif ch == "b":
+    #                 pos += vec2(0, self.res[1])
+
+    #     if shadow is True:  # True, but not a vector
+    #         shadow = vec2(-3, 3)
+
+    #     def f(s=s, pos=pos):
+
+    #         # this has to be called in f, since the order of this func matters
+    #         extents = self.cairo.text_extents(s)
+    #         if type(extents) is tuple: # pycairo and cairocffi compatibility
+    #             extents = Canvas.Extents(*extents)
+
+    #         # print(extents)
+    #         origin = self.res / 2
+    #         # pos -= ivec2(extents.width, extents.height)/2
+    #         if "c" in align:
+    #             pos.x -= extents.width / 2
+    #         elif "r" in align:
+    #             pos.x -= extents.width
+    #         pos.y += extents.height / 4
+    #         # elif "r" in align:
+    #         #     pos.x -= extents.width / 2
+    #         #     pos.y += extents.height / 4
+    #         # pos.y -= extents.height // 2
+    #         if "c" in anchor or "h" in anchor:
+    #             pos.x += origin.x
+    #         if "c" in anchor or "v" in anchor:
+    #             pos.y += origin.y
+    #         # pos offsets
+    #         # print(pos)
+    #         # print(x, y)
+
+    #         if shadow:
+    #             self.cairo.set_source_rgba(0, 0, 0, 1)
+    #             self.cairo.move_to(*(pos + shadow))
+    #             self.cairo.show_text(s)
+
+    #         self.cairo.set_source_rgba(*color)
+    #         self.cairo.move_to(*pos)
+    #         self.cairo.show_text(s)
+
+    #     self.on_render.connect(f, weak=False, tags=self._tags)
+    #     self.refresh()
 
     def clear(self, col=None):
         if col is not None:

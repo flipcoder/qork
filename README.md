@@ -40,8 +40,8 @@ If you're familiar with gamedev, dive into the example folder or source!
 ## Integration
 
 - pyGLM: matrix and vector math
-- Cairo (pyCairo): canvas drawing
-- pyTMX: tilemaps
+- pyCairo: canvas drawing
+- pyTMX: tilemap loading
 - OpenAL (pyOpenAL): 3d sound (SOON)
 - bullet (SOON): physics
 
@@ -516,7 +516,7 @@ The default qork boilerplate contains two canvases: The background (called "back
 and the foreground canvas, simply called "canvas".  The background canvas always
 draws below objects, while the main foreground canvas draws on top.
 
-The qork canvas works similar to vector graphics and relies on pycairo.
+The qork canvas works similar to vector graphics and relies on cairo.
 Qork's canvas saves all the operations you do to a canvas and redraws them
 whenever something changed since the last render.
 
@@ -536,6 +536,52 @@ It is used like this:
 ```
 canvas.text('Hello world!', 'green')
 ```
+
+The text function has many different options.  Here is the prototype:
+
+```
+def text(
+    self,
+    txt,
+    color='white',
+    pos=None,
+    font=None,
+    align="c",
+    anchor="c",
+    shadow=False,
+    shadow_color=None,
+    shadow_pos=None,
+):
+```
+
+The anchor parameter is where on the canvas in is situated:
+
+    - l: relative to left
+    - r: relative to right
+    - t: relative to top
+    - b: relative to bottom
+    - h: horizontal center
+    - v: vertical center
+    - c: both and v
+
+You can combine these liks this: `align='rb'`
+
+The align parameter is the alignment:
+
+    - l: align left
+    - r: align right
+    - c: align center (default)
+
+You can also pass shadow=True to turn on a default shadow underneath the text,
+which is configurable with shadow_pos and shadow_color.
+
+You can also blit images to the canvas if you like:
+
+```
+canvas.blit('image.png', (x,y))
+```
+
+If you wish to use images in your game, consider adding them as nodes instead.
 
 ...
 
@@ -599,7 +645,7 @@ backdrop.gradient('red', 'green', region=[0,0,0,100])
 ```
 
 To do a radial gradient, provide a tuple of the (x,y,rad) of the 
-2 circles, as you would in pycairo.
+2 circles, as you would in cairo.
 
 We'll use half the screen size and a radius of 10 to 1000:
 
@@ -611,11 +657,11 @@ r = (
 backdrop.gradient('white', 'black', radial=r)
 ```
 
-### Shapes (and pycairo access)
+### Shapes (and cairo access)
 
 Each cairo operation inserts a draw step that only gets called
 when the canvas needs to be redrawn.  You can remove these draw steps
-by disconnecting the connection that is returned by the pycairo function
+by disconnecting the connection that is returned by the cairo function
 that is called, or you may clear the entire canvas to remove everything.
 
 This will draw a centered red rectangle of half the screen size
@@ -626,8 +672,8 @@ canvas.source = 'red'
 canvas.fill()
 ```
 
-Qork's canvas methods contain mostly mirrors of pycairo methods, so you
-can use pycairo's api, with the exception of methods with the same name
+Qork's canvas methods contain mostly mirrors of pycairo/cairocffi methods, so you
+can use that api, with the exception of methods with the same name
 as Node methods, in which case the cairo method will be prefixed with "canvas_"
 to distinguish it from operations on the Canvas node itself.  An example
 of this is `translate`, which has been renamed to `canvas_translate` as not

@@ -12,13 +12,14 @@ class State(StateBase):
 
     def __init__(self, name="", init=True, *args, **kwargs):
         from .scriptable import Scriptable
+
         Scriptable.__init__(self)
 
         # fix circular import
         from .scene import Scene
 
         self.app = get_app_from_args(args)
-        
+
         # set this temporarily so add()s will work during ctors
         # on_pending_state signal inside of StateStack registered by Core
         # will unset this
@@ -55,7 +56,7 @@ class State(StateBase):
             Canvas(self, res=ivec2(1920, 1080), scale=self.app.scale)
         )
 
-        if hasattr(self, 'script'):
+        if hasattr(self, "script"):
             self.add_script(self.script)
 
     def update(self, dt):

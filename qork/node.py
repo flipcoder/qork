@@ -112,7 +112,7 @@ class Node(Scriptable):
 
         self.freeze = False
         self.freeze_children = False
-        
+
         self._spin = kwargs.pop("spin", None)
         self.spin_axis = self.ROTATION_AXIS
         self.spin_space = PARENT
@@ -252,11 +252,11 @@ class Node(Scriptable):
     @property
     def visible(self):
         return self.invisible <= 0
-    
+
     @visible.setter
     def visible(self):
         self.invisible = 0
-    
+
     @property
     def object(self):
         """
