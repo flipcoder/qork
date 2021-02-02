@@ -29,6 +29,8 @@ from .mesh import *
 
 
 class TileMap(Node):
+    collision_handler = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # self.layers = Container()
@@ -49,6 +51,9 @@ class TileMap(Node):
 
         self.full_fn = self.app.resource_path(self.fn, throw=True)
         tmx = self.tmx = pytmx.TiledMap(self.full_fn, image_loader=self._load_img)
+        self.local_box = Box((0, 0, -100), (tmx.width, tmx.height, 100))  # tmp
+        # print('lb', self.local_box)
+        # print('wb', self.world_box)
 
         rules = kwargs.get("rules", {})
         # print(tmx.layers)
@@ -238,8 +243,8 @@ class TileMap(Node):
                         m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
                         m.material.texture.repeat_x = False
                         m.material.texture.repeat_y = False
-                page_node.freeze = True
-                page_node.freeze_children = True
+                page_node.frozen = True
+                page_node.frozen_children = True
                 layer_ofs += decal_offset
 
             # if last_group is not None and last_group != group:
@@ -318,3 +323,6 @@ class TileMap(Node):
 
         return loader
         # return self.cache(path)
+
+    def handle_collision(self, other):
+        return True

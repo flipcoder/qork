@@ -6,6 +6,7 @@ sys.path.append("..")
 from qork.minimal import MinimalCore
 from qork.profile import Profile
 
+
 def test_profile():
     profile = Profile()
     app = profile.app
@@ -13,4 +14,3 @@ def test_profile():
     profile.enable()
     assert profile.num == 0
     assert len(app.profiles) == 1
-

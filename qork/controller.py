@@ -35,28 +35,28 @@ class Controller:
         self.unplug()
 
 
-class FPSController(Controller)
+class FPSController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)
     def update(self, dt):
         pass
 
-class SpectatorController(Controller)
+class SpectatorController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)
     def update(self, dt):
         pass
 
-class PlatformerController(Controller)
+class PlatformerController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)
     def update(self, dt):
         pass
 
-class TopDownController(Controller)
+class TopDownController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)

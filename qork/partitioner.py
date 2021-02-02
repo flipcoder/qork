@@ -81,19 +81,12 @@ class Partitioner:
         scene = self.scene
         with scene:
 
-            for a in scene.walk():
-                # only check if a is solid
-                # if not a.solid:
-                #     continue
-
+            for a in scene.walk_fast():
                 if a.world_box is None:
                     continue
 
                 # for each slot, loop through each slot
-                for b in scene.walk():
-                    # only check if b is solid
-                    # if not b.solid:
-                    #     continue
+                for b in scene.walk_fast():
                     if a is not b:
                         if b.world_box is None:
                             continue
@@ -108,37 +101,37 @@ class Partitioner:
 
                             # instance
                             if self.overlap[a][b](a, b, dt):
-                                break
+                                continue
                             if self.overlap[b][a](b, a, dt):
-                                break
+                                continue
 
                             # names
                             if an or bn:
                                 if self.overlap[a][bn](a, b, dt):
-                                    break
+                                    continue
                                 if self.overlap[b][an](b, a, dt):
-                                    break
+                                    continue
                                 if self.overlap[an][b](a, b, dt):
-                                    break
+                                    continue
                                 if self.overlap[bn][a](b, a, dt):
-                                    break
+                                    continue
                                 if self.overlap[an][bn](a, b, dt):
-                                    break
+                                    continue
                                 if an != bn:
                                     if self.overlap[bn][an](b, a, dt):
-                                        break
+                                        continue
 
                             # types
                             if self.overlap[a][tb](a, b, dt):
-                                break
+                                continue
                             if self.overlap[b][ta](b, a, dt):
-                                break
+                                continue
                             if self.overlap[ta][b](a, b, dt):
-                                break
+                                continue
                             if self.overlap[tb][a](b, a, dt):
                                 brea
                             if self.overlap[ta][tb](a, b, dt):
-                                break
+                                continue
                             if ta is not tb:
                                 if self.overlap[tb][ta](b, a, dt):
-                                    break
+                                    continue

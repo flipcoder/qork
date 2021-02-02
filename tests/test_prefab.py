@@ -7,6 +7,8 @@ from qork.defs import *
 from qork.prefab import *
 from qork.box import *
 
+# fmt: off
+
 def test_quad():
     assert prefab_quad() == [
         0.0, 0.0, 0.0,
@@ -37,3 +39,4 @@ def test_textured_quad():
          0.5,  0.5, 3.0, 1.0, 0.0,
     ]
 
+# fmt: on

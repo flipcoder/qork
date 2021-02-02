@@ -83,6 +83,7 @@ def test_node_find():
     assert list(a.find("baz")) == []
     assert list(a.find("#baz")) == [b]
 
+
 def test_node_detach():
     # given a tree like this:
     #   root
@@ -91,14 +92,14 @@ def test_node_detach():
     #       c
     # a.detach() does this:
     #   root
-    
-    root = Node('root')
-    a = root.add(Node('a'))
-    b = a.add(Node('b'))
-    c = a.add(Node('c'))
-    
-    assert tuple(map(lambda x: x.name, root.children)) == ('a',)
-    
+
+    root = Node("root")
+    a = root.add(Node("a"))
+    b = a.add(Node("b"))
+    c = a.add(Node("c"))
+
+    assert tuple(map(lambda x: x.name, root.children)) == ("a",)
+
     a.detach()
 
     # a is gone
@@ -106,7 +107,8 @@ def test_node_detach():
     assert tuple(map(lambda x: x.name, root.children)) == tuple()
 
     # b and c are still on detached a
-    assert tuple(map(lambda x: x.name, a.children)) == ('b','c')
+    assert tuple(map(lambda x: x.name, a.children)) == ("b", "c")
+
 
 def test_node_detach_collapse():
     # given a tree like this:
@@ -118,20 +120,19 @@ def test_node_detach_collapse():
     #   root
     #     b
     #     c
-    
-    root = Node('root')
-    a = root.add(Node('a'))
-    b = a.add(Node('b'))
-    c = a.add(Node('c'))
-    
-    assert tuple(map(lambda x: x.name, root.children)) == ('a',)
-    
+
+    root = Node("root")
+    a = root.add(Node("a"))
+    b = a.add(Node("b"))
+    c = a.add(Node("c"))
+
+    assert tuple(map(lambda x: x.name, root.children)) == ("a",)
+
     # detach and reattach collapse b and c to root
     a.detach(collapse=True)
 
     # b and c moved to root?
-    assert tuple(map(lambda x: x.name, root.children)) == ('b','c')
+    assert tuple(map(lambda x: x.name, root.children)) == ("b", "c")
 
     # children were removed from a?
     assert tuple(map(lambda x: x.name, a.children)) == tuple()
-

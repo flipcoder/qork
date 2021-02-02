@@ -14,6 +14,7 @@ class Prefab:
 
 
 # fmt: off
+
 QUAD_TS = Prefab('QUAD_TS', [
 #     x    y    z
    0.0, 0.0, 0.0,

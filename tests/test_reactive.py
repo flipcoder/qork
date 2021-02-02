@@ -47,6 +47,7 @@ def test_lazy_capture():
     y(2)
     assert z() == 3
 
+
 def test_weaklambda():
     x = Wrapper(5)
     getx = WeakLambda([x], lambda x: x() + 5)
@@ -54,6 +55,7 @@ def test_weaklambda():
     assert not getx.dead()
     del x
     assert getx.dead()
+
 
 def test_reactive():
     x = Counter()

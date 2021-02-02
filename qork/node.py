@@ -31,6 +31,7 @@ class Events(defaultdict):
 
 class Node(Scriptable):
     ROTATION_AXIS = -Z
+    collision_handler = False
 
     def __init__(self, *args, **kwargs):
         if args:
@@ -110,8 +111,8 @@ class Node(Scriptable):
 
         self.tags = set()
 
-        self.freeze = False
-        self.freeze_children = False
+        self.frozen = False
+        self.frozen_children = False
 
         self._spin = kwargs.pop("spin", None)
         self.spin_axis = self.ROTATION_AXIS
@@ -254,8 +255,11 @@ class Node(Scriptable):
         return self.invisible <= 0
 
     @visible.setter
-    def visible(self):
-        self.invisible = 0
+    def visible(self, b):
+        if b:
+            self.invisible = 0
+        else:
+            self.invisible = 1
 
     @property
     def object(self):
@@ -317,18 +321,32 @@ class Node(Scriptable):
             return self._size()
         return self._size
 
+    def walk_fast(self):
+        if not self.frozen:
+            yield self
+        if not self.frozen_children:
+            for ch in self.children:
+                yield from ch.walk_fast()
+
     def __iter__(
-        self, recursive=False, depth=None, include_self=False, only_self=False
+        self,
+        recursive=False,
+        depth=None,
+        include_self=False,
+        only_self=False,
+        ignore_frozen=False,
     ):
         if include_self:
-            yield self
+            if not self.ignore_frozen or not self.frozen:
+                yield self
         if not only_self:
             if depth is not None:
                 depth -= 1
                 if depth <= 0:
                     return
-            for ch in self.children:
-                yield from ch.__iter__(recursive, depth, True, not recursive)
+            if not self.ignore_frozen or not self.frozen_children:
+                for ch in self.children:
+                    yield from ch.__iter__(recursive, depth, True, not recursive)
 
     def walk(self):
         return self.__iter__(recursive=True)
@@ -338,7 +356,7 @@ class Node(Scriptable):
             func(n)
 
     def _calculate_world_box(self):
-        lbox = self._local_box
+        lbox = self._local_box()
         if not lbox:
             return None
         r = Box()
@@ -423,15 +441,15 @@ class Node(Scriptable):
         assert False  # not yet impl
 
     @property
-    def local_box(self, b):
+    def local_box(self):
         return self._local_box()
 
     @local_box.setter
     def local_box(self, b):
-        self._local_box = b  # !
+        self._local_box(b)
 
     def set_local_box(self, b):
-        self._local_box = b  # !
+        self._local_box(b)
 
     # @box.setter
     # def box(self, b):
@@ -923,7 +941,7 @@ class Node(Scriptable):
     #     pass
 
     def update(self, dt):
-        if self.freeze:
+        if self.frozen:
             return
 
         if self._spin is not None:
@@ -944,7 +962,7 @@ class Node(Scriptable):
         Scriptable.update(self, dt)
 
         assert self.children._blocked == 0
-        if not self.freeze_children:
+        if not self.frozen_children:
             for ch in self.children:
                 ch.update(dt)
 
@@ -1170,6 +1188,9 @@ class Node(Scriptable):
                 self,
             ],
         )
+
+    def handle_collision(self, other):
+        assert False
 
 
 # class UserObject:

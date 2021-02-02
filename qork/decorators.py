@@ -26,7 +26,26 @@ def overlap(a, b=None):
                 overlap(a, bb)(func)
             return func
 
-        easy.qork_app().partitioner.overlap[a][b] += func
+        # does a or b have a specific handler?
+        ac = a.collision_handler
+        bc = b.collision_handler
+        if ac or bc:
+            assert not (ac and bc)  # both objects are collsion handlers?
+            if ac:
+
+                def collision_handler(*args, **kwargs):
+                    if a.handle_collision(b):
+                        func(a, b)
+
+            else:  # bc
+
+                def collision_handler(*args, **kwargs):
+                    if b.handle_collision(a):
+                        func(b, a)
+
+            easy.qork_app().partitioner.overlap[a][b] += collision_handler
+        else:
+            easy.qork_app().partitioner.overlap[a][b] += func
         return func
 
     return overlap_decorator

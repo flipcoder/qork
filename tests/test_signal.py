@@ -8,6 +8,7 @@ sys.path.append("..")
 from qork.signal import *
 from test_helpers import *
 
+
 def test_container():
     c = Container()
     assert len(c) == 0
@@ -16,6 +17,7 @@ def test_container():
     assert len(c) == 1
     c -= s
     assert len(c) == 0
+
 
 def test_signal():
 
@@ -115,15 +117,17 @@ def test_signal_once():
     s()
     # assert len(s.slots) == 0
 
+
 def test_signal_tags():
 
     s = Signal()
     assert len(s) == 0
-    s.connect((lambda: 1), weak=False, tags=['foo'])
+    s.connect((lambda: 1), weak=False, tags=["foo"])
     assert len(s) == 1
-    assert(s._slots[0].tags == {'foo'})
-    s.clear_tag('foo')
+    assert s._slots[0].tags == {"foo"}
+    s.clear_tag("foo")
     assert len(s) == 0
+
 
 def test_signal_disabled():
     c = Counter()
@@ -132,10 +136,9 @@ def test_signal_disabled():
     assert c() == 0
     s()
     assert c() == 1
-    slot.enabled = False
+    slot.disable()
     s()
     assert c() == 1
-    slot.enabled = True
+    slot.enable()
     s()
     assert c() == 2
-

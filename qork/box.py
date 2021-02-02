@@ -2,7 +2,7 @@
 
 from .signal import Signal
 from glm import vec3
-from .util import BIT, to_vec3
+from .util import BIT, to_vec3, EPSILON
 
 
 class Box:
@@ -12,6 +12,13 @@ class Box:
         self.region = [low, high]
         self.on_pend = Signal()
         self.on_change = Signal()
+
+    def normalize(self):
+        """fixed reversed boxes (where high is lower than low, etc.)"""
+        r = self.region
+        for c in range(3):  # xyz
+            if r[0][c] > r[1][c]:
+                r[0][c], r[1][c] = r[1][c], r[0][c]
 
     def __getitem__(self, i):
         return self.region[i]
@@ -142,7 +149,8 @@ class Box:
         return r
 
     def __bool__(self):
+        print(self.size())
         for c in self.size():
-            if c < EPSILON:
+            if c < -EPSILON:
                 return False
         return True

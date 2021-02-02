@@ -6,6 +6,7 @@ sys.path.append("..")
 from qork.minimal import MinimalCore
 from qork.controller import Controller
 
+
 def test_controller():
     controller = Controller()
     app = controller.app
@@ -13,4 +14,3 @@ def test_controller():
     controller.plug()
     assert controller.num == 0
     assert len(app.controllers) == 1
-

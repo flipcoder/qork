@@ -168,3 +168,9 @@ class Camera(Listener):
 
     def remove_hud(self):
         self._hud = None
+
+    def calculate_frustum(self):
+        pass
+
+    def in_frustum(box):
+        pass

@@ -342,26 +342,39 @@ class Canvas(Mesh):
         self.refresh()
         return slot
 
-    def font(self, *args):
-        sz = None
-        fn = ""
-        if args:
-            for a in args:
-                ta = type(a)
-                if ta in (int, float):
-                    sz = a
-                elif ta is str:
-                    fn = self.app.resource_path(a, throw=True)
-        if sz is None:
-            sz = self.app.size[0] // 15
-        # print(sz)
-        def f():
-            self.cairo.set_font_face(cairo.ToyFontFace(fn))
-            self.cairo.set_font_size(sz)
+    def font(self, font):
+        if font is None:
+            font = self.default_font
+        else:
+            # if isinstance(font, Font): # font resource
+            if isinstance(font, str):
+                font = self.cache(font)
+            elif isinstance(font, Font):
+                pass  # already loaded
+            else:
+                raise TypeError()
+        self.default_font = font
 
-        self.on_render.connect(f, weak=False, tags=self._tags)
-        self.refresh()
-        self._use_text = True
+    # def font(self, *args):
+    #     sz = None
+    #     fn = ""
+    #     if args:
+    #         for a in args:
+    #             ta = type(a)
+    #             if ta in (int, float):
+    #                 sz = a
+    #             elif ta is str:
+    #                 fn = self.app.resource_path(a, throw=True)
+    #     if sz is None:
+    #         sz = self.app.size[0] // 15
+    #     # print(sz)
+    #     def f():
+    #         self.cairo.set_font_face(cairo.ToyFontFace(fn))
+    #         self.cairo.set_font_size(sz)
+
+    #     self.on_render.connect(f, weak=False, tags=self._tags)
+    #     self.refresh()
+    #     self._use_text = True
 
     def text(
         self,
@@ -434,7 +447,7 @@ class Canvas(Mesh):
                 pos.x -= width / 2
             elif "r" in align:
                 pos.x -= width
-        pos.y += height / 4
+        # pos.y += height / 4
 
         if anchor:
             if "c" in anchor or "h" in anchor:
@@ -539,6 +552,57 @@ class Canvas(Mesh):
 
     #     self.on_render.connect(f, weak=False, tags=self._tags)
     #     self.refresh()
+
+    def rectangle(
+        self, pos=None, size=None, radius=None, color=None, outline=None, fill=True
+    ):
+        pos = vec2(*pos)
+        size = vec2(*size)
+        color = Color(color)
+        x, y = pos
+        w, h = size
+        r = radius if radius is not None else 10
+        deg = math.tau / 360
+        if radius:
+            radius = size.y / radius
+
+            def f():
+                self.cairo.new_sub_path()
+                self.cairo.arc(x + w - r, y + r, r, -90 * deg, 0)
+                self.cairo.arc(x + w - r, y + h - r, r, 0, 90 * deg)
+                self.cairo.arc(x + r, y + h - r, r, 90 * deg, 180 * deg)
+                self.cairo.arc(x + r, y + r, r, 180 * deg, 270 * deg)
+                self.cairo.close_path()
+
+                self.cairo.set_source_rgba(*color)
+                if outline:
+                    self.cairo.set_line_width(outline)
+                    self.cairo.stroke()
+                else:
+                    self.cairo.fill()
+
+            self.on_render += f
+            self.refresh()
+        else:
+            # TODO: normal rectangle
+            pass
+
+    def text_size(self, txt, font=None):
+        if font is None:
+            font = self.default_font
+        else:
+            # if isinstance(font, Font): # font resource
+            if isinstance(font, str):
+                font = self.cache(font)
+            elif isinstance(font, Font):
+                pass  # already loaded
+            else:
+                raise TypeError()
+
+        image = Image.new("RGBA", (0, 0), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        width, height = draw.textsize(txt, font=font.font)
+        return ivec2(width, height)
 
     def clear(self, col=None):
         if col is not None:
