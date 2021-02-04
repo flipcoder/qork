@@ -351,7 +351,7 @@ class Mesh(Node):
                     self.image = self.image.convert("RGBA")
                     self.material = Material(
                         self.ctx.texture(self.image.size, 4, self.image.tobytes()),
-                        image
+                        self.image
                     )
 
         for layer in self.layers:
