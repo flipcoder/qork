@@ -8,11 +8,11 @@ backdrop.gradient("blue", "lightblue", "white", "yellow", "green", "darkgreen")
 nodes = [None] * 2
 for i in range(len(nodes)):
     n = nodes[i] = add(Canvas())
-    n.font(n.res[0] / 5)
+    n.cfont(n.res[0] / 5)
 
-nodes[0].text("Hello", "gray", shadow=True)
+nodes[0].ctext("Hello", "gray", shadow=True)
 nodes[0].x = -0.3
-nodes[1].text("World", "brown", shadow=True)
+nodes[1].ctext("World", "brown", shadow=True)
 nodes[1].x = 0.3
 
 

@@ -37,16 +37,25 @@ class Camera(Listener):
         self.hud = None
         self.backdrop = None
         self._ortho = Reactive(True)
-        self.projection = kwargs.get(
-            "projection",
-            Lazy(
-                self.calculate_projection,
-                [self._ortho, self.app._size],
-                # [self.view_projection],
-            ),
+
+        self._use_ratio = Reactive(True)
+        # left right botto top znear zfar
+        self.ortho_bounds = Reactive([0.0, 1.0, -0.5, 0.5, -1.0, 1000.0])
+        
+        assert kwargs.get('projection', None) is None
+        self.projection =  Lazy(
+            self.calculate_projection,
+            [
+                # dependencies
+                self._ortho,
+                self.ortho_bounds,
+                self._use_ratio,
+                self.app._size
+            ],
         )
         # self.connections += self.app.size.connect(self.projection)
         # FOV is specified in TURNS (use fov(deg(degrees)) for degrees)
+        
         self._fov = Reactive(kwargs.get("fov", 0.1), [self.projection])
         self.view = Lazy(self.calculate_view, [self.on_pend])
         self.view_projection = Lazy(
@@ -87,8 +96,12 @@ class Camera(Listener):
             if min(self.app.size) < 1:
                 return glm.mat4(1)
             # ratio = self.app.size[0] / self.app.size[1]
-            ratio = self.app.aspect_ratio / 2
-            return glm.ortho(-ratio, ratio, -0.5, 0.5, -1.0, 1000.0)
+            use_ratio = self._use_ratio()
+            if use_ratio:
+                ratio = self.app.aspect_ratio / 2
+                return glm.ortho(-ratio, ratio, *self.ortho_bounds()[2:])
+            else:
+                return glm.ortho(*self.ortho_bounds())
         else:
             # ratio = self.app.size[0] / self.app.size[1]
             return glm.perspectiveFov(

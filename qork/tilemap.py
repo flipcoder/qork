@@ -325,4 +325,8 @@ class TileMap(Node):
         # return self.cache(path)
 
     def handle_collision(self, other):
+        wb = other.world_box
+        # TODO: get the range of tiles that are inside wb
+        # TODO: check collision against their collision masks
         return True
+

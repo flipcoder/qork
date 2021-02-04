@@ -10,6 +10,7 @@ import moderngl as gl
 
 # import moderngl_window
 import moderngl_window as mglw
+from moderngl_window import geometry
 import pathlib
 
 # from moderngl_window.intergrations import imgui as ImguiWindow
@@ -74,6 +75,35 @@ def _try_load(fn, paths, func, *args, **kwargs):
         raise FileNotFoundError
     return r
 
+class VirtualResolution:
+    def __init__(self, app, size):
+        self.app = app
+        self.size = size
+        self.scene = Scene()
+        self.camera = self.scene.add(Camera())
+        # self.camera = Wrapper()
+        self.camera.mode = '2D'
+        # self.camera.ortho_bounds([
+        #     0,1, # use ratio
+        #     -0.5,0.5,
+        #     -1.0,
+        #     1.0
+        # ])
+        # print(self.camera.view_projection())
+        mat = Material()
+        tex = mat.texture = app.ctx.renderbuffer(size)
+        dtex = mat.depth_texture = app.ctx.depth_renderbuffer(size)
+        # self.mesh = Mesh(data=prefab_quad()) # TEMP
+        # self.mesh = self.scene.add('player.png')
+        self.mesh = self.scene.add(Mesh(data=prefab_quad()))
+        self.mesh.material = mat
+        self.material = mat
+        self.framebuffer = app.ctx.framebuffer(color_attachments=[tex])
+        self.scope = app.ctx.scope(self.framebuffer)
+        
+        self.quad_fs = geometry.quad_fs()
+        self.quad = geometry.quad_2d(size=(9 / self.size[0], 9 / self.size[1]))
+        # self.shader = ...
 
 class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
     gl_version = (3, 3)
@@ -200,7 +230,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         self.wnd = wnd
         self.ctx = ctx
-
+        
         # self.states = Container(reactive=True)  # state stack
         self.states = StateStack()
 
@@ -225,6 +255,8 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self.connections = Connections()
         self.on_update = Signal()
         self.cameras = IndexList()  # index list of cameras (registered in camera ctor)
+
+        self.vres = None # virtual resolution
 
         # self.on_quit = Signal()
         # self.on_render = Signal()
@@ -299,6 +331,12 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         # self.renderpass = RenderPass()
         # self.renderpass.app = self
+
+    def virtual_resolution(self, width, height):
+        vres = self.vres
+        if vres:
+            vres.framebuffer.release()
+        vres = self.vres = VirtualResolution(self, (width,height))
 
     @property
     def state_scene(self):
@@ -619,11 +657,39 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self.update(dt)
         self.post_update(dt)
 
+        vres = self.vres
+        if vres:
+            fb = vres.framebuffer
+            # scope = self.ctx.scope(fb)
+            # self.ctx.fbo.use()
+            # fb.use()
+            with vres.scope:
+                self.render_render()
+            
+            self.ctx.fbo.use()
+            
+            # buf = fb.read()
+            # if not vres.mesh.material:
+            #     vres.mesh.material = Material()
+                # vres.mesh.material.texture = self.ctx.texture(vres.size, 3, buf)
+            # else:
+                # vres.mesh.material.texture.write(buf)
+            
+            self.render_clear()
+            self.draw(vres.camera, vres.scene)
+        else:
+            self.render_render()
+
+        # Do state changes now, before the next update()
+        self.states.refresh()
+
+    def render_render(self, fb=None):
+        """The actual render method, since mglw's render is both update and render"""
         if self.state:
             if hasattr(self.state, "render"):
                 self.state.render()
 
-        self.render_clear()
+        self.render_clear(fb=fb)
         camera = self.state_camera
         assert camera
 
@@ -632,7 +698,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         if scene and scene.backdrop:
             self.draw(scene.backdrop.camera, scene.backdrop)
-            self.render_clear_depth()
+            self.render_clear_depth(fb=fb)
 
         if camera and scene:
             self.draw(camera, scene)
@@ -642,24 +708,22 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         if camera.hud:
             hud = camera.hud
-            self.render_clear_depth()
+            self.render_clear_depth(fb=fb)
             self.draw(hud.camera, hud)  # , hud.viewport)
 
         # if self._view_camera and self.view_hud:
         #     self.draw(self._view_camera, self.view_hud)
 
-        # Do state changes now, before the next update()
-        self.states.refresh()
+    def render_color_mask(self, b, fb=None):
+        fb = fb or self.ctx.fbo
+        # fb = self.ctx.fbo
+        fb.color_mask = b, b, b, b
 
-    def render_color_mask(self, b):
-        self.ctx.fbo.color_mask = b, b, b, b
-
-    def render_clear_depth(self):
-        ctx = self.ctx
-        fbo = ctx.fbo
-        self.render_color_mask(False)
-        ctx.clear()
-        self.render_color_mask(True)
+    def render_clear_depth(self, fb=None):
+        fb = fb or self.ctx.fbo
+        self.render_color_mask(False, fb=fb)
+        self.ctx.clear()
+        self.render_color_mask(True, fb=fb)
 
     def clear(self):
         if self.state():
@@ -673,12 +737,19 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self._bg_color = Color(col)
         return col
 
-    def render_clear(self, col=None):
+    def render_clear(self, col=None, viewport=None, fb=None):
         if col is None:
             col = self._bg_color
         else:
             col = Color(col)
-        self.ctx.clear(col[0], col[1], col[2])
+        # fb = self.vres.framebuffer if self.vres else NOne
+        # if fb:
+        #     fb.clear(1,1,1,1)
+        # else:
+        if viewport:
+            self.ctx.clear(col[0], col[1], col[2], viewport)
+        else:
+            self.ctx.clear(col[0], col[1], col[2])
         self.ctx.enable(gl.DEPTH_TEST | gl.CULL_FACE)
 
     def draw(self, camera, root=None, viewport=None):
@@ -687,8 +758,9 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             root = camera.root
             if not root:
                 return
-        if viewport is None:
-            viewport = self.viewport
+        
+        # if viewport is None:
+        #     viewport = self.viewport
 
         self.renderfrom = camera
         # TODO: partitioner.render(camera) instead

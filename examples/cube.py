@@ -1,12 +1,15 @@
 #!/usr/bin/env qork
 
+# Q.virtual_resolution(100,100)
+# canvas.clear('red')
+
 camera.mode = "3D"
 camera.z += 2
 camera.fov = 0.12
 sz = 0.5
 
 Q.backdrop.add("sky.png", scale=Q.scale)
-canvas.text("Cube", shadow=True)
+canvas.ctext("Cube", shadow=True)
 
 ground = add(Canvas(color="green", scale=Q.scale))
 ground.scale(25)

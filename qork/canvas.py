@@ -260,7 +260,7 @@ class Canvas(Mesh):
         # return None for empty sets
         return r if r else None
 
-    def gradient(self, *colors, region=None, clear=True, radial=None):
+    def gradient(self, *colors, region=None, clear=True, radial=None, paint=True, source=True):
         if not colors:
             return None
 
@@ -304,8 +304,10 @@ class Canvas(Mesh):
 
         def f():
             self.cairo.rectangle(0, 0, *self.res)
-            self.cairo.set_source(grad)
-            self.cairo.fill()
+            if source:
+                self.cairo.set_source(grad)
+                if paint:
+                    self.cairo.fill()
 
         # self.on_render += f
         if clear:
@@ -355,26 +357,26 @@ class Canvas(Mesh):
                 raise TypeError()
         self.default_font = font
 
-    # def font(self, *args):
-    #     sz = None
-    #     fn = ""
-    #     if args:
-    #         for a in args:
-    #             ta = type(a)
-    #             if ta in (int, float):
-    #                 sz = a
-    #             elif ta is str:
-    #                 fn = self.app.resource_path(a, throw=True)
-    #     if sz is None:
-    #         sz = self.app.size[0] // 15
-    #     # print(sz)
-    #     def f():
-    #         self.cairo.set_font_face(cairo.ToyFontFace(fn))
-    #         self.cairo.set_font_size(sz)
+    def cfont(self, *args):
+        sz = None
+        fn = ""
+        if args:
+            for a in args:
+                ta = type(a)
+                if ta in (int, float):
+                    sz = a
+                elif ta is str:
+                    fn = self.app.resource_path(a, throw=True)
+        if sz is None:
+            sz = self.app.size[0] // 15
+        # print(sz)
+        def f():
+            self.cairo.set_font_face(cairo.ToyFontFace(fn))
+            self.cairo.set_font_size(sz)
 
-    #     self.on_render.connect(f, weak=False, tags=self._tags)
-    #     self.refresh()
-    #     self._use_text = True
+        self.on_render.connect(f, weak=False, tags=self._tags)
+        self.refresh()
+        self._use_text = True
 
     def text(
         self,
@@ -472,86 +474,86 @@ class Canvas(Mesh):
 
         self.blit(image, pos)
 
-    # def text(self, s, color="white", pos=None, align="c", anchor="c", shadow=None):
-    #     """
-    #     :param anchor: string: char flags
-    #         l: relative to left
-    #         r: relative to right
-    #         t: relative to top
-    #         b: relative to bottom
+    def ctext(self, s, color="white", pos=None, align="c", anchor="c", shadow=None):
+        """
+        :param anchor: string: char flags
+            l: relative to left
+            r: relative to right
+            t: relative to top
+            b: relative to bottom
 
-    #         h: horizontal center
-    #         v: vertical center
-    #         c: both and v
-    #     :param align: alignment
-    #         l: align left
-    #         r: align right
-    #         c: align center (default)
-    #     """
+            h: horizontal center
+            v: vertical center
+            c: both and v
+        :param align: alignment
+            l: align left
+            r: align right
+            c: align center (default)
+        """
 
-    #     if not self._use_text:
-    #         self.font()
-    #         self._use_text = True
+        if not self._use_text:
+            self.cfont()
+            self._use_text = True
 
-    #     color = Color(color)
+        color = Color(color)
 
-    #     if pos is None:
-    #         pos = vec2(0)
-    #     else:
-    #         pos = copy(pos)
+        if pos is None:
+            pos = vec2(0)
+        else:
+            pos = copy(pos)
 
-    #     if anchor:
-    #         for ch in anchor:
-    #             if ch == "l":
-    #                 pos += vec2(-self.res[0], 0)
-    #             elif ch == "r":
-    #                 pos += vec2(self.res[0], 0)
-    #             elif ch == "t":
-    #                 pos += vec2(0, -self.res[1])
-    #             elif ch == "b":
-    #                 pos += vec2(0, self.res[1])
+        if anchor:
+            for ch in anchor:
+                if ch == "l":
+                    pos += vec2(-self.res[0], 0)
+                elif ch == "r":
+                    pos += vec2(self.res[0], 0)
+                elif ch == "t":
+                    pos += vec2(0, -self.res[1])
+                elif ch == "b":
+                    pos += vec2(0, self.res[1])
 
-    #     if shadow is True:  # True, but not a vector
-    #         shadow = vec2(-3, 3)
+        if shadow is True:  # True, but not a vector
+            shadow = vec2(-3, 3)
 
-    #     def f(s=s, pos=pos):
+        def f(s=s, pos=pos):
 
-    #         # this has to be called in f, since the order of this func matters
-    #         extents = self.cairo.text_extents(s)
-    #         if type(extents) is tuple: # pycairo and cairocffi compatibility
-    #             extents = Canvas.Extents(*extents)
+            # this has to be called in f, since the order of this func matters
+            extents = self.cairo.text_extents(s)
+            if type(extents) is tuple: # pycairo and cairocffi compatibility
+                extents = Canvas.Extents(*extents)
 
-    #         # print(extents)
-    #         origin = self.res / 2
-    #         # pos -= ivec2(extents.width, extents.height)/2
-    #         if "c" in align:
-    #             pos.x -= extents.width / 2
-    #         elif "r" in align:
-    #             pos.x -= extents.width
-    #         pos.y += extents.height / 4
-    #         # elif "r" in align:
-    #         #     pos.x -= extents.width / 2
-    #         #     pos.y += extents.height / 4
-    #         # pos.y -= extents.height // 2
-    #         if "c" in anchor or "h" in anchor:
-    #             pos.x += origin.x
-    #         if "c" in anchor or "v" in anchor:
-    #             pos.y += origin.y
-    #         # pos offsets
-    #         # print(pos)
-    #         # print(x, y)
+            # print(extents)
+            origin = self.res / 2
+            # pos -= ivec2(extents.width, extents.height)/2
+            if "c" in align:
+                pos.x -= extents.width / 2
+            elif "r" in align:
+                pos.x -= extents.width
+            pos.y += extents.height / 4
+            # elif "r" in align:
+            #     pos.x -= extents.width / 2
+            #     pos.y += extents.height / 4
+            # pos.y -= extents.height // 2
+            if "c" in anchor or "h" in anchor:
+                pos.x += origin.x
+            if "c" in anchor or "v" in anchor:
+                pos.y += origin.y
+            # pos offsets
+            # print(pos)
+            # print(x, y)
 
-    #         if shadow:
-    #             self.cairo.set_source_rgba(0, 0, 0, 1)
-    #             self.cairo.move_to(*(pos + shadow))
-    #             self.cairo.show_text(s)
+            if shadow:
+                self.cairo.set_source_rgba(0, 0, 0, 1)
+                self.cairo.move_to(*(pos + shadow))
+                self.cairo.show_text(s)
 
-    #         self.cairo.set_source_rgba(*color)
-    #         self.cairo.move_to(*pos)
-    #         self.cairo.show_text(s)
+            self.cairo.set_source_rgba(*color)
+            self.cairo.move_to(*pos)
+            self.cairo.show_text(s)
 
-    #     self.on_render.connect(f, weak=False, tags=self._tags)
-    #     self.refresh()
+        self.on_render.connect(f, weak=False, tags=self._tags)
+        self.refresh()
 
     def rectangle(
         self, pos=None, size=None, radius=None, color=None, outline=None, fill=True
