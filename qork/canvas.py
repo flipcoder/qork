@@ -188,7 +188,7 @@ class Canvas(Mesh):
         if grad:
             self.gradient(grad)
         # self.shadow = False
-
+    
     def blit(self, img, pos=None, crop=None, paint=True):
         if isinstance(img, str):
             # load from filename
@@ -555,19 +555,22 @@ class Canvas(Mesh):
         self.on_render.connect(f, weak=False, tags=self._tags)
         self.refresh()
 
+    def pixel(self, pos, color=Color(1), scale=1):
+        self.rectangle(pos, (scale,scale), color)
+    
     def rectangle(
-        self, pos=None, size=None, radius=None, color=None, outline=None, fill=True
+        self, pos=None, size=None, color=None, radius=None, outline=None, fill=True
     ):
         pos = vec2(*pos)
         size = vec2(*size)
         color = Color(color)
         x, y = pos
         w, h = size
-        r = radius if radius is not None else 10
+        # r = radius if radius is not None else 10
         deg = math.tau / 360
         if radius:
-            radius = size.y / radius
-
+            r = radius = size.y / radius
+            
             def f():
                 self.cairo.new_sub_path()
                 self.cairo.arc(x + w - r, y + r, r, -90 * deg, 0)
@@ -586,8 +589,16 @@ class Canvas(Mesh):
             self.on_render += f
             self.refresh()
         else:
-            # TODO: normal rectangle
-            pass
+            def f():
+                self.cairo.rectangle(pos[0], pos[1], size[0], size[1])
+                self.cairo.set_source_rgba(*color)
+                if outline:
+                    self.cairo.set_line_width(outline)
+                    self.cairo.stroke()
+                else:
+                    self.cairo.fill()
+            self.on_render += f
+            self.refresh()
 
     def text_size(self, txt, font=None):
         if font is None:
