@@ -108,6 +108,25 @@ class MeshResource(Resource):
 
         return [mini, maxi]
 
+    def refresh(self):
+        self.generated = False
+
+    def scale_texture(self, scale):
+        if type(scale) is float or type(scale) is int:
+            scale = vec2(scale)
+
+        # for i in range(len(self.data.data))
+        
+        for i in range(len(self.data)):
+            if i%5 == 3: # u
+                self.data[i] *= scale[0]
+            elif i%5 == 4: # v
+                self.data[i] *= scale[1]
+        
+        print(self.data)
+        
+        self.refresh()
+
     def generate(self):
         # if self.generated:
         # if self.vao:
@@ -321,7 +340,8 @@ class Mesh(Node):
                     self.image = img = img.convert("RGBA")
                     self.layers[0][0].append(self.image)
                     self.material = Material(
-                        self.ctx.texture(img.size, 4, img.tobytes())
+                        self.ctx.texture(img.size, 4, img.tobytes()),
+                        img
                     )
             else:
                 # image preloaded
@@ -330,7 +350,8 @@ class Mesh(Node):
                     #     data = self.image.data  # unpack image resource
                     self.image = self.image.convert("RGBA")
                     self.material = Material(
-                        self.ctx.texture(self.image.size, 4, self.image.tobytes())
+                        self.ctx.texture(self.image.size, 4, self.image.tobytes()),
+                        image
                     )
 
         for layer in self.layers:
@@ -385,6 +406,26 @@ class Mesh(Node):
 
             # TODO: combine resoure boxes
             self.set_local_box(rc.box)
+
+    def fork(self, geometry=False, material=False):
+        assert geometry or material
+        if geometry:
+            res = self.resources
+            self.resources = []
+            for rc in res:
+                resource = MeshResource(
+                    self.app,
+                    rc.data[:],
+                    rc.shader,
+                )
+                self.resources.append(resource)
+        if material:
+            img = self.material.image
+            self.material = Material(
+                self.ctx.texture(img.size, 4, img.tobytes()),
+                img
+            )
+        print(self.resources)
 
     def update(self, dt):
         super().update(dt)
