@@ -40,10 +40,16 @@ class Sprite(Resource):
 
         self.skins = data["skins"]
         # self.skin = 0
-        self.tile_size = ivec2(data["tile_size"])
-        self.size = ivec2(data["size"])
-        self.origin = vec2(data["origin"])
-        self.mask = vec2(data["mask"])
+        size = data.get("size",None)
+        self.size = ivec2(size) if size else None
+        tile_size = data.get("size",None)
+        self.tile_size = ivec2(tile_size) if tile_size else None
+        origin = data.get("origin",None)
+        self.origin = vec2(origin) if origin else None
+        
+        mask = data.get('mask', None)
+        if mask:
+            self.mask = vec2(mask)
 
         self.animation_meta = data["animation"]
         self.frames = self.animation_meta["frames"]
@@ -68,6 +74,16 @@ class Sprite(Resource):
                     sheet = Image.open(path.join(dp, skin))
                 except FileNotFoundError:
                     continue
+                size = min(*sheet.size)
+
+                # if size was not provided, approximate it
+                if self.size is None:
+                    self.size = ivec2(size)
+                if self.tile_size is None:
+                    self.tile_size = ivec2(size)
+                if self.origin is None:
+                    self.origin = size/2
+                
                 sheet = sheet.convert("RGBA")
             assert sheet
             if sheet_sz is None:
@@ -97,6 +113,8 @@ class Sprite(Resource):
         flipped_images = {}
         tile_id = Wrapper(tile_count)
 
+        self.defaults = None
+
         def visit(seq, path):
             global frame_id
             i = 0
@@ -116,6 +134,7 @@ class Sprite(Resource):
                     if not name in self.flags:
                         self.flags[name] = SpriteFlags()
                     self.flags[name].default = True
+                    data["default"] = path
                 elif tile == "once":
                     name = path[-1]
                     if not name in self.flags:
@@ -136,6 +155,8 @@ class Sprite(Resource):
                 i += 1
             # remove flags from sequence
             seq = filter(lambda x: not isinstance(x, str), seq)
+
+        # if a certain sequence is marked default, then fill it in
 
         recursive_each(list, self.frames, visit)
 
@@ -173,7 +194,11 @@ class SpriteAnimation(Material):
         self.category_name_to_id = {}
         for i, category in enumerate(self.categories):
             self.category_name_to_id[category] = i
+
         self.defaults_name = list(data["default"])
+        # print(self.defaults_name)
+
+        # this will be replaced with the IDs when we get those
         self.defaults = list(data["default"])
 
         self.default_frames = {}
@@ -196,8 +221,6 @@ class SpriteAnimation(Material):
         # Recursive animation tree visitor function (called below)
         # Walks the sprite animation tree, creating stateful animation sequences
         def walk_anim_tree(frames, name, frame, depth=-1):
-            # print(depth, name, type(frame), frame)
-            # print(state_stack())
 
             if depth >= 0:
                 # allow conversion between state names and ids

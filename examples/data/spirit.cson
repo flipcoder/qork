@@ -1,0 +1,15 @@
+type: 'sprite'
+states: ['direction', 'stance']
+animation:
+    speed: 20.0
+    frames:
+        right:
+            stand: ['default',0]
+            walk: [0,1,2,3,4,5,6,7,8,9]
+        left:
+            stand: ['hflip',0]
+            walk: ['hflip',0,1,2,3,4,5,6,7,8,9]
+skins: [
+    'spirit.png'
+]
+

@@ -3,5 +3,4 @@ dist/
 build/
 *.pyc
 *.egg-info/
-examples/data/*.png
 prof.pyprof
