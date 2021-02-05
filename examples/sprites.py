@@ -8,8 +8,8 @@
 player = add('spirit.cson', scale=1/8)
 player.state["stance"] = "walk"
 
-scale = 100
-rocks = add('rocks.png', scale=100)
+scale = 4
+rocks = add('rocks.png', scale=scale)
 rocks.fork(geometry=True)
 rocks.material.filter(False)
 rocks.material.repeat(True)
@@ -34,4 +34,7 @@ def update(dt):
 
     camera.vel = player.vel = v
     # player.vel = v
+
+    # infinite rocks xy
+    rocks.xy = (player.pos.xy // 1).xy
 
