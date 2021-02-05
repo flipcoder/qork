@@ -9,10 +9,10 @@ player = add('spirit.cson', scale=1/8)
 player.state["stance"] = "walk"
 
 scale = 100
-rocks = add('rocks.png',scale=100)
+rocks = add('rocks.png', scale=100)
 rocks.fork(geometry=True)
-rocks.material.texture.repeat_x = rocks.material.texture.repeat_y = True
-rocks.material.texture.filter = (gl.NEAREST, gl.NEAREST)
+rocks.material.filter(False)
+rocks.material.repeat(True)
 rocks.resources[0].scale_texture(8 * scale)
 
 for i in range(5):

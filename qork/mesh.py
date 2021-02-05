@@ -115,15 +115,11 @@ class MeshResource(Resource):
         if type(scale) is float or type(scale) is int:
             scale = vec2(scale)
 
-        # for i in range(len(self.data.data))
-        
         for i in range(len(self.data)):
             if i%5 == 3: # u
                 self.data[i] *= scale[0]
             elif i%5 == 4: # v
                 self.data[i] *= scale[1]
-        
-        print(self.data)
         
         self.refresh()
 
@@ -425,7 +421,7 @@ class Mesh(Node):
                 self.ctx.texture(img.size, 4, img.tobytes()),
                 img
             )
-        print(self.resources)
+        # print(self.resources)
 
     def update(self, dt):
         super().update(dt)

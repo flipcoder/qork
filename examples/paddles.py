@@ -25,7 +25,7 @@ score = [0] * 2
 
 def refresh_score():
     canvas.clear()
-    canvas.text(
+    canvas.ctext(
         " - ".join(map(lambda s: str(s), score)), "white", vec2(0, 128), anchor="h"
     )
 
@@ -48,7 +48,7 @@ def update(t):
         score[ball.x > 0] += 1
         refresh_score()
         # hud.clear()
-        # hud.text(str(score[0]) + ' - ' + str(score[1]), hud.res/2, 'white', 'hv')
+        # hud.ctext(str(score[0]) + ' - ' + str(score[1]), hud.res/2, 'white', 'hv')
         init()
 
     paddle[0].vy = (key(KEY.W) - key(KEY.S)) * paddle_speed

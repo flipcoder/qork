@@ -556,6 +556,8 @@ class Canvas(Mesh):
         self.refresh()
 
     def pixel(self, pos, color=Color(1), scale=1):
+        scale = vec2(scale, scale)
+        pos = vec2(pos[0], pos[1]) * scale
         self.rectangle(pos, (scale,scale), color)
     
     def rectangle(

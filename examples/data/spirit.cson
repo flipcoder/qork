@@ -1,7 +1,7 @@
 type: 'sprite'
 states: ['direction', 'stance']
 animation:
-    speed: 20.0
+    speed: 50.0
     frames:
         right:
             stand: ['default',0]
