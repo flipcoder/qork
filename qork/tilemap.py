@@ -31,6 +31,10 @@ from .mesh import *
 class TileMap(Node):
     collision_handler = True
 
+    class Layer:
+        def __init__(self):
+            self.pages = []
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # self.layers = Container()
@@ -41,6 +45,8 @@ class TileMap(Node):
             return
 
         self.load(self.fn, **kwargs)
+
+        self.layers = []
 
     def load(self, fn=None, **kwargs):
         """Load tilemap using filename"""
@@ -72,7 +78,7 @@ class TileMap(Node):
         decal_offset = kwargs.get("decal_offset", 0.001)
         group_offset = kwargs.get("group_offset", 1.0)
 
-        # let's page the map in pages
+        # let's break the map into pages
         page = ivec2(8)  # page size
 
         last_group = None
@@ -137,7 +143,7 @@ class TileMap(Node):
                     # The check to determine if tile layer is static
                     # In popup mode, tiles with 'depth' need to pop out
                     if not depth:
-                        # FLAT STATIC: combine all layer tiles into giant imago
+                        # FLAT STATIC: combine all layer tiles into giant image page
                         sz = ivec2(
                             tmx.width * tmx.tilewidth, tmx.height * tmx.tileheight
                         )
@@ -169,14 +175,13 @@ class TileMap(Node):
                                 scale=vec3(tmx.width, tmx.height, 1),
                             )
                         )
-                        m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                        m.material.texture.repeat_x = False
-                        m.material.texture.repeat_y = False
+                        m.material.filter(False)
+                        m.material.repeat(False)
                         # else:
                         #     # DEPTH: depth buffered against objects, generate one combined layer mesh
                         #     pass
                     else:
-                        # DYNAMIC: generate dynamic tiles (slow rendering!)
+                        # DYNAMIC: generate depth tiles (slow rendering!)
                         # for x, y, tile in layer.tiles():
                         for y in range(tmx.height):
                             for x in range(tmx.width):
@@ -218,9 +223,8 @@ class TileMap(Node):
                                         m.rotate(0.25, X)
                                         m.z += 1 / 2
                                         m.y -= 1 / 2
-                                    m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                                    m.material.texture.repeat_x = False
-                                    m.material.texture.repeat_y = False
+                                    m.material.filter(False)
+                                    m.material.repeat(False)
 
                                 del image
                 else:
@@ -240,12 +244,13 @@ class TileMap(Node):
                             m.rotate(0.25, X)
                             m.z += 1 / 2
                             m.y -= 1 / 2
-                        m.material.texture.filter = (gl.NEAREST, gl.NEAREST)
-                        m.material.texture.repeat_x = False
-                        m.material.texture.repeat_y = False
+                        m.material.filter(False)
+                        m.material.repeat(False)
                 page_node.frozen = True
                 page_node.frozen_children = True
                 layer_ofs += decal_offset
+
+            # TODO: combine all dynamic kobjects of similar texture
 
             # if last_group is not None and last_group != group:
             #     print(group)

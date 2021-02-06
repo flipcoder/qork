@@ -16,7 +16,14 @@ class WhenSlot(Slot):
         self.ease = None
         self.speed = 1.0
         self.range = None
+        self.paused = False
 
+    def pause(self, b=True):
+        self.paused = b
+
+    def unpause(self):
+        self.paused = False
+    
     def set_speed(self, s):
         self.speed = s
 
@@ -105,6 +112,9 @@ class When(Signal):
                 self.sig.disconnect(wref)
                 return
 
+        if slot.paused:
+            return
+
         if slot.duration != 0:  # not infinite timer
             slot.remaining -= dt * slot.speed
 
@@ -141,10 +151,11 @@ class When(Signal):
         self.time += dt
         for slot in self.conditions:
             if slot.value[0]():
-                self.value[1]()
-        for slot in self.slots:
-            self.update_slot(slot, dt)
-        self.refresh()
+                slot.value[1]()
+        with self:
+            for slot in self.slots:
+                self.update_slot(slot, dt)
+        # self.refresh()
 
     # def __call__(self, dt):
     #     return self.update(self, dt)

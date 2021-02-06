@@ -412,6 +412,16 @@ newCamera = add(Camera(default=True))
 This will assoiate the camera with the current game state or, if you have no states,
 the app itself.
 
+### Tilemaps
+
+Tilemaps in the TMX format can be loaded in with `add` as well:
+
+```
+add('map.tmx')
+```
+
+These are only partially supported at the moment.
+
 ## Input
 
 - KEY: array containing all the keys (use autocomplete in the qork console to see them all)
@@ -657,7 +667,43 @@ r = (
 backdrop.gradient('white', 'black', radial=r)
 ```
 
-### Shapes (and cairo access)
+### Drawing Shapes (the easy way)
+
+You can draw a shape using any canvas object.
+Here is the rectangle function:
+
+```
+def rectangle(
+    self,
+    pos=None,
+    size=None,
+    color=None,
+    radius=None,
+    outline=None,
+    fill=True
+)
+
+# example:
+backdrop.rectangle((100,100), (50,50), 'yellow', 10, 10)
+```
+
+Here is the circle function:
+
+```
+def circle(
+    self,
+    pos=None,
+    radius=None,
+    color=None,
+    outline=None,
+    fill=True
+)
+
+# example:
+backdrop.circle((100,100), 50, 'blue', 10)
+```
+
+### Cairo Access
 
 Each cairo operation inserts a draw step that only gets called
 when the canvas needs to be redrawn.  You can remove these draw steps
@@ -798,9 +844,23 @@ del world
 
 ```
 
+### Node Signals
+
+Here are the signals associated with each node:
+
+- on_add: when the node is added to the scene
+- on_remove: when the node is removed from the scene
+- on_update: when the node updates
+- on_pend: when a node's transform changes
+- event(name): signal when the user event with the specific name happens
+
+### State Signals
+
+...
+
 ### Reactive
 
-Reactive variables are paired with an on_change signal.
+Reactive variables are variables that are paired with an on_change signal.
 
 ```
 x = Reactive(1)
@@ -841,6 +901,62 @@ x(1) # invalidates the equation
 equation() # 4 (recomputes since it was invalidated)
 ```
 
+## The "When" Timer system
+
+### Scheduling a callback
+
+```
+when.once(1, lambda: print('call after 1 second'))
+```
+
+### Callback every N seconds
+
+```
+when(1, lambda: print('call every second'))
+```
+
+### Pausing a callback
+
+```
+slot = when(1, print('pause me'))
+
+...
+
+slot.pause()
+
+...
+
+slot.unpause()
+```
+
+### Stopping a callback
+
+```
+slot = when(1, print('pause me'))
+
+...
+
+slot.disconnect()
+```
+
+Or, a slot can be disconnected automatically when it is no longer held, if it
+is stored as a weakref (weak=True).  This relies on garbage collection, so it
+is not as reliable as explicitly disconnecting:
+
+```
+slot = when(1, print('pause me'), weak=True)
+
+...
+
+# slot goes out of scope
+```
+
+In most cases, you probably want to use weakrefs, and have the object you want
+hold the specific slot.
+
+object = Node()
+object.connections += when.once(1, lambda: print('call every second'), weak=True)
+
 ## Scripting
 
 Qork includes an async scripting system using generators:
@@ -854,7 +970,6 @@ def script(ctx):
 
 Delay a script for a specific length of time in seconds:
 
-
 ```
 yield 1.0
 ```
@@ -865,13 +980,61 @@ Delay a script until a condition is true
 yield lambda: ctx.key(KEY.SPACE)
 ```
 
-(Advanced) You can also yield event slots:
-
-```
-yield when.once(1, script.resume)
-```
-
 Calling a function 'script' in a qorkscript starts it with the program.
+You can also use the `@coro()` decorator to start other functions as scripts:
+
+```
+@coro()
+def script_func(ctx):
+    pass
+```
+
+Or you can add them manually:
+
+```
+def script_func(ctx):
+    pass
+Q.scripts += script_func # app-level script
+```
+
+### Typing Text
+
+You can combine the scripting and timer systems to type text slowing on the
+screen asyncronously:
+
+```
+def script(ctx):
+    msg = "Hello there!"
+    for x in range(len(msg) + 1):
+        canvas.clear()
+        canvas.text(msg[0:x])
+        yield 0.1
+```
+
+### Timed Fades
+
+Another usage of scripting and timers is to do timed async color fades:
+
+```
+def script(ctx):
+    while True:
+
+        # fade black to white gradient
+        yield when.fade(
+            2,  # seconds
+            ["black", "white"],  # range
+            lambda col: backdrop.gradient(col, Color(1) - col),
+            ctx.resume,
+        )
+
+        # fade white to black gradient
+        yield when.fade(
+            2,  # seconds
+            ["white", "black"],  # range
+            lambda col: backdrop.gradient(col, Color(1) - col),
+            ctx.resume,
+        )
+```
 
 ### Node Scripting
 
@@ -886,10 +1049,39 @@ def my_script(ctx):
     
 node = Node()
 node += my_script
+
+# or:
+
+node.add_script(my_script)
 ```
 
 The script will start when attached and continue until it reaches the end
 or is detached.
+
+## Collision
+
+The easiest way to do collision is through the collision decorators:
+
+```
+@overlap(player, door)
+def player_door_collision(player, door, dt):
+    # collision response
+    pass
+```
+
+In the above decorator, player and door can be either types or objects.  For example,
+if door was Door (class), the player object would be checked against all doors instead
+of a specific door.
+
+Collision is still being developed so it is not yet fully documented.
+
+...
+
+## Decorators
+
+- `@delay(duration, [context], [lifespan])`
+- `@call_every(duration, [context], [lifespan])`
+- `@call_when(duration, [context], [lifespan])`
 
 ## LICENSE
 

@@ -156,7 +156,7 @@ class Node(Scriptable):
         self.on_add = Signal()
         self.on_remove = Signal()
 
-        self.overlap = Signal()
+        # self.overlap = Signal()
         self.old_pos = vec3(0)
 
         self._vel = None
