@@ -109,10 +109,9 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
     gl_version = (3, 3)
     # window_size = (1920, 1080)
     # aspect_ratio = 16 / 9
-    resizable = True
-    samples = 2
-    title = "qork"
-    vsync = False
+    # resizable = True
+    # title = "qork"
+    # vsync = False
     # resource_dir = os.path.normpath(os.path.join(__file__, '../../data/'))
 
     Resource = {
@@ -165,7 +164,8 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         cls.aspect_ratio = max(1.0, res[0] / res[1])
         cls.resizable = True
         cls.title = title
-        cls.samples = 2
+        cls.vsync = False
+        cls.samples = 4
         mglw.run_window_config(cls)
 
     # def data_path(self, p=None):

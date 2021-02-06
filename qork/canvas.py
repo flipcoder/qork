@@ -42,7 +42,6 @@ def pil_to_cairo(im, alpha=1.0, format=cairo.FORMAT_ARGB32):
     surface = cairo.ImageSurface.create_for_data(arr, format, im.width, im.height)
     return surface
 
-
 # @mixin(cairo.Context, 'ctx')
 class Canvas(Mesh):
     @dataclass
@@ -559,6 +558,23 @@ class Canvas(Mesh):
         scale = vec2(scale, scale)
         pos = vec2(pos[0], pos[1]) * scale
         self.rectangle(pos, (scale,scale), color)
+
+    def circle(
+        self, pos=None, radius=None, color=None, outline=None, fill=True
+    ):
+        pos = vec2(*pos)
+        color = Color(color)
+        def f():
+            self.cairo.set_source_rgba(*color)
+            self.cairo.translate(*pos)
+            self.cairo.arc(0, 0, radius, 0, math.tau)
+            if outline:
+                self.cairo.set_line_width(outline)
+                self.cairo.stroke()
+            else:
+                self.cairo.fill()
+        self.on_render += f
+        self.refresh()
     
     def rectangle(
         self, pos=None, size=None, color=None, radius=None, outline=None, fill=True
@@ -670,12 +686,19 @@ class Canvas(Mesh):
 
         if self.dirty:
 
+            self.cairo.set_antialias(cairo.ANTIALIAS_BEST)
             self.on_render()
 
             buf = self.surface.get_data()
 
             if self.texture:
                 self.texture.release()
+
+            # if self.antialias:
+            # img = Image.frombuffer("RGBA", tuple(self.res), buf, "raw", 0, 1)
+            # img = Image.resize(self.res, resample=PIL.Image.ANTIALIAS)
+            # buf = img.tobytes()
+            
             self.texture = self.app.ctx.texture(self.res, 4, buf)
             self.texture.swizzle = "BGRA"
 
