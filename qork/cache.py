@@ -16,6 +16,8 @@ from qork.reactive import *
 
 
 class Cache(Factory):
+    WARNINGS = False
+    
     def __init__(self, resolver=None, transformer=None):
         super().__init__(resolver, transformer)
         self.resources = {}
@@ -39,6 +41,7 @@ class Cache(Factory):
         assert fn
         if fn in self.resources:
             r = self.resources[fn]
+            r.ref()
             # r._count += 1
             return r
         if not func:
@@ -48,6 +51,7 @@ class Cache(Factory):
         else:
             r = super().__call__(*args, **kwargs)
         r._cache = self
+        r.ref(2)
         # r._count = 1
         # assert not hasattr(r, "deref")
         # r.deref = deref
@@ -69,7 +73,7 @@ class Cache(Factory):
     def has(self, fn):
         return fn in self.resources
 
-    def ensure(self, fn, data):
+    def ensure(self, fn, data, ref=True):
         res = self.resources.get(fn, None)
         if res is not None:
             return res
@@ -78,12 +82,14 @@ class Cache(Factory):
             data = data()
 
         data._cache = self
+        if ref:
+            data.ref(2) # one for us, one for caller
         # data._count = 1
         if fn:  # empty filenames are temp, don't cache
             self.resources[fn] = data
         return data
 
-    def overwrite(self, fn, data):
+    def overwrite(self, fn, data, ref=True):
         if fn in self.resources:
             res = self.resources[fn]
             # if hasattr(res, "cleanup") and callable(res.cleanup):
@@ -91,6 +97,8 @@ class Cache(Factory):
             del self.resources[fn]
         # data.deref = lambda data=data: deref(data)
         data._cache = self
+        if ref:
+            data.ref(2) # one for us, one for caller
         # data._count = 1
         if fn:
             self.resources[fn] = data
@@ -108,11 +116,11 @@ class Cache(Factory):
             return 0  # temp resources (empty name) bypass cache
         # fn is resource
         if isinstance(fn, Resource):
-            return sys.getrefcount(fn) - 2
+            return max(0, fn.refs - 1)
+            # return sys.getrefcount(fn) - 2
         # fn is filename
         try:
-            c = sys.getrefcount(self.resources[fn]) - 2
-            return c
+            return max(0, self.resources[fn].refs - 1)
         except KeyError:
             return 0
 
@@ -133,11 +141,11 @@ class Cache(Factory):
         remove = []
         remaining = 0
         for fn, res in self.resources.items():
-            c = self.count(res) - 1  # loop
+            c = res.refs
             assert c >= 0
-            if c == 0:
-                # if hasattr(res, "cleanup") and callable(res.cleanup):
-                #     res.cleanup()
+            if c == 1: # we're the only ref
+                res.deref()
+                res.cleanup()
                 remove.append(fn)
             else:
                 remaining += 1
@@ -149,15 +157,19 @@ class Cache(Factory):
         return obj in self.resources
 
     def flush(self):
+        for fn, res in copy(self.resources).items():
+            res.deref()
+            if Cache.WARNINGS:
+                assert res.refs == 0
+            res.cleanup()
         self.resources = {}
-        gc.collect()
 
     def finish(self):
         """
         Sanity-check function to make sure all resources were cleared
         """
         total = 0
-
+        
         while True:
             count, remaining = self.clean()
             total += count
@@ -165,4 +177,6 @@ class Cache(Factory):
                 break
             if count == 0:
                 break
+
         return total
+

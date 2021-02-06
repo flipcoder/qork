@@ -145,16 +145,18 @@ class Node(Scriptable):
         # self.deinited = False
 
         self.when = When()
-        # self.on_deinit = Signal()
         # self.on_detach_child = Signal()  # child arg
         # self.on_detach_self = Signal()  # parent arg
-        self.event = Events()
+        
+        # Signals will be created when they're accessed
+        self._on_deinit = None
+        self._event = None
+        self._on_update = None
+        self._on_add = None
+        self._on_remove = None
+        
         # self.on_state = Signal()
-        self.on_update = Signal()
         self.on_pend = Signal()
-
-        self.on_add = Signal()
-        self.on_remove = Signal()
 
         # self.overlap = Signal()
         self.old_pos = vec3(0)
@@ -234,17 +236,50 @@ class Node(Scriptable):
         Scriptable.__init__(self)
 
         # register with partitioner on add/remove
-        def add():
-            if self.partitioner:
-                self.partitioner += self
+        # def add():
+        #     if self.partitioner:
+        #         self.partitioner += self
 
-        self.on_add += add
+        # self.on_add += add
 
-        def remove():
-            if self.partitioner:
-                self.partitioner -= self
+        # def remove():
+        #     if self.partitioner:
+        #         self.partitioner -= self
 
-        self.on_remove += remove
+        # self.on_remove += remove
+
+    @property
+    def on_deinit(self):
+        if self._on_deinit is None:
+            self._on_deinit = Signal()
+        return self._on_deinit
+    @property
+    def on_update(self):
+        if self._on_update is None:
+            self._on_update = Signal()
+        return self._on_update
+    @property
+    def event(self):
+        if self._event is None:
+            self._event = Events()
+        return self._event
+    
+    # @property
+    # def on_pend(self):
+    #     if self._on_pend is None:
+    #         self._on_pend = Signal()
+    #     return self._on_pend
+    
+    @property
+    def on_add(self):
+        if self._on_add is None:
+            self._on_add = Signal()
+        return self._on_add
+    @property
+    def on_remove(self):
+        if self._on_remove is None:
+            self._on_remove = Signal()
+        return self._on_remove
 
     @property
     def partitioner(self):
@@ -1159,12 +1194,12 @@ class Node(Scriptable):
             ch.clear()
         self.children = Container()
 
-    # def cleanup(self):  # called by Core as an explicit destructor
-    #     if not self.deinited:
-    #         self.on_deinit()
-    #         for ch in self.children:
-    #             ch.cleanup()
-    #         self.deinited = True
+    def cleanup(self):  # called by Core as an explicit destructor
+        if not self.deinited:
+            self.on_deinit()
+            for ch in self.children:
+                ch.cleanup()
+            self.deinited = True
 
     # def __del__(self):
     # self.on_remove()
