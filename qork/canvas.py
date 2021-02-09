@@ -170,8 +170,8 @@ class Canvas(Mesh):
 
         class DummyFont(Font):
             def __init__(self, *args, **kwargs):
-                pass
-
+                Resource.__init__(self, *args, **kwargs)
+        
         font = DummyFont()
         font.font = ImageFont.load_default()
         self.default_font = font

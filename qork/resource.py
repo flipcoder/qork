@@ -11,6 +11,10 @@ from .util import get_subpath
 
 class Resource:
     def __init__(self, *args, **kwargs):
+        self.dead = False
+        self.use_refs = False
+        self.refs = 0
+        
         self.fn = filename_from_args(args, kwargs)
         self.app = get_app_from_args(args)
         self.cache = self.app.cache
@@ -37,10 +41,6 @@ class Resource:
         self.args = args
         self.kwargs = kwargs
         self.connections = Connections()
-        
-        self.use_refs = False
-        self.refs = 0
-        self.dead = False
 
     # @property
     # def count(self):
