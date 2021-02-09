@@ -17,7 +17,7 @@ from qork.reactive import *
 
 class Cache(Factory):
     WARNINGS = False
-    
+
     def __init__(self, resolver=None, transformer=None):
         super().__init__(resolver, transformer)
         self.resources = {}
@@ -83,7 +83,7 @@ class Cache(Factory):
 
         data._cache = self
         if ref:
-            data.ref(2) # one for us, one for caller
+            data.ref(2)  # one for us, one for caller
         # data._count = 1
         if fn:  # empty filenames are temp, don't cache
             self.resources[fn] = data
@@ -98,7 +98,7 @@ class Cache(Factory):
         # data.deref = lambda data=data: deref(data)
         data._cache = self
         if ref:
-            data.ref(2) # one for us, one for caller
+            data.ref(2)  # one for us, one for caller
         # data._count = 1
         if fn:
             self.resources[fn] = data
@@ -143,7 +143,7 @@ class Cache(Factory):
         for fn, res in self.resources.items():
             c = res.refs
             assert c >= 0
-            if c == 1: # we're the only ref
+            if c == 1:  # we're the only ref
                 res.deref()
                 res.cleanup()
                 remove.append(fn)
@@ -169,7 +169,7 @@ class Cache(Factory):
         Sanity-check function to make sure all resources were cleared
         """
         total = 0
-        
+
         while True:
             count, remaining = self.clean()
             total += count
@@ -179,4 +179,3 @@ class Cache(Factory):
                 break
 
         return total
-

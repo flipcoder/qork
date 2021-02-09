@@ -5,11 +5,11 @@
 # def script(ctx):
 #     canvas.text('Welcome.', anchor='', align='l')
 
-player = add('spirit.cson', scale=1/8)
+player = add("spirit.cson", scale=1 / 8)
 player.state["stance"] = "walk"
 
 scale = 4
-rocks = add('rocks.png', scale=scale)
+rocks = add("rocks.png", scale=scale)
 rocks.fork(geometry=True)
 rocks.material.filter(False)
 rocks.material.repeat(True)
@@ -17,8 +17,9 @@ rocks.resources[0].scale_texture(8 * scale)
 
 for i in range(5):
     for j in range(5):
-        tile = Canvas(res=(1,1))
-        tile.clear('white')
+        tile = Canvas(res=(1, 1))
+        tile.clear("white")
+
 
 def update(dt):
     speed = 0.5
@@ -37,4 +38,3 @@ def update(dt):
 
     # infinite rocks xy
     rocks.xy = (player.pos.xy // 1).xy
-

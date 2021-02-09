@@ -147,14 +147,14 @@ class Node(Scriptable):
         self.when = When()
         # self.on_detach_child = Signal()  # child arg
         # self.on_detach_self = Signal()  # parent arg
-        
+
         # Signals will be created when they're accessed
         self._on_deinit = None
         self._event = None
         self._on_update = None
         self._on_add = None
         self._on_remove = None
-        
+
         # self.on_state = Signal()
         self.on_pend = Signal()
 
@@ -253,28 +253,31 @@ class Node(Scriptable):
         if self._on_deinit is None:
             self._on_deinit = Signal()
         return self._on_deinit
+
     @property
     def on_update(self):
         if self._on_update is None:
             self._on_update = Signal()
         return self._on_update
+
     @property
     def event(self):
         if self._event is None:
             self._event = Events()
         return self._event
-    
+
     # @property
     # def on_pend(self):
     #     if self._on_pend is None:
     #         self._on_pend = Signal()
     #     return self._on_pend
-    
+
     @property
     def on_add(self):
         if self._on_add is None:
             self._on_add = Signal()
         return self._on_add
+
     @property
     def on_remove(self):
         if self._on_remove is None:

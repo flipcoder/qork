@@ -110,7 +110,7 @@ def test_cache_clean():
 #     assert "test.png" in cache
 #     cache.finish()
 #     assert len(cache) == 0
-    # assert cleans() == 0
+# assert cleans() == 0
 
 
 # def test_cache_finish():

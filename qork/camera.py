@@ -41,21 +41,21 @@ class Camera(Listener):
         self._use_ratio = Reactive(True)
         # left right botto top znear zfar
         self.ortho_bounds = Reactive([0.0, 1.0, -0.5, 0.5, -1.0, 1000.0])
-        
-        assert kwargs.get('projection', None) is None
-        self.projection =  Lazy(
+
+        assert kwargs.get("projection", None) is None
+        self.projection = Lazy(
             self.calculate_projection,
             [
                 # dependencies
                 self._ortho,
                 self.ortho_bounds,
                 self._use_ratio,
-                self.app._size
+                self.app._size,
             ],
         )
         # self.connections += self.app.size.connect(self.projection)
         # FOV is specified in TURNS (use fov(deg(degrees)) for degrees)
-        
+
         self._fov = Reactive(kwargs.get("fov", 0.1), [self.projection])
         self.view = Lazy(self.calculate_view, [self.on_pend])
         self.view_projection = Lazy(

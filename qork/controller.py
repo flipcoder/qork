@@ -12,10 +12,10 @@ class Controller:
 
     def enable(self):
         self.enabled = True
-    
+
     def disable(self):
         self.enabled = False
-    
+
     def plug(self):
         """Register controller with engine"""
         if self.num is None:
@@ -39,27 +39,33 @@ class FPSController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)
+
     def update(self, dt):
         pass
+
 
 class SpectatorController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)
+
     def update(self, dt):
         pass
+
 
 class PlatformerController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)
+
     def update(self, dt):
         pass
+
 
 class TopDownController(Controller):
     def __init__(self, node, camera, *args, **kwargs):
         self.node = weakref.ref(node)
         self.camera = weakref.ref(camera)
+
     def update(self, dt):
         pass
-

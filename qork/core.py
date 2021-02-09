@@ -75,6 +75,7 @@ def _try_load(fn, paths, func, *args, **kwargs):
         raise FileNotFoundError
     return r
 
+
 class VirtualResolution:
     def __init__(self, app, size):
         self.app = app
@@ -82,7 +83,7 @@ class VirtualResolution:
         self.scene = Scene()
         self.camera = self.scene.add(Camera())
         # self.camera = Wrapper()
-        self.camera.mode = '2D'
+        self.camera.mode = "2D"
         # self.camera.ortho_bounds([
         #     0,1, # use ratio
         #     -0.5,0.5,
@@ -100,10 +101,11 @@ class VirtualResolution:
         self.material = mat
         self.framebuffer = app.ctx.framebuffer(color_attachments=[tex])
         self.scope = app.ctx.scope(self.framebuffer)
-        
+
         self.quad_fs = geometry.quad_fs()
         self.quad = geometry.quad_2d(size=(9 / self.size[0], 9 / self.size[1]))
         # self.shader = ...
+
 
 class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
     gl_version = (3, 3)
@@ -230,7 +232,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         self.wnd = wnd
         self.ctx = ctx
-        
+
         # self.states = Container(reactive=True)  # state stack
         self.states = StateStack()
 
@@ -256,7 +258,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         self.on_update = Signal()
         self.cameras = IndexList()  # index list of cameras (registered in camera ctor)
 
-        self.vres = None # virtual resolution
+        self.vres = None  # virtual resolution
 
         # self.on_quit = Signal()
         # self.on_render = Signal()
@@ -336,7 +338,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         vres = self.vres
         if vres:
             vres.framebuffer.release()
-        vres = self.vres = VirtualResolution(self, (width,height))
+        vres = self.vres = VirtualResolution(self, (width, height))
 
     @property
     def state_scene(self):
@@ -665,16 +667,16 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             # fb.use()
             with vres.scope:
                 self.render_render()
-            
+
             self.ctx.fbo.use()
-            
+
             # buf = fb.read()
             # if not vres.mesh.material:
             #     vres.mesh.material = Material()
-                # vres.mesh.material.texture = self.ctx.texture(vres.size, 3, buf)
+            # vres.mesh.material.texture = self.ctx.texture(vres.size, 3, buf)
             # else:
-                # vres.mesh.material.texture.write(buf)
-            
+            # vres.mesh.material.texture.write(buf)
+
             self.render_clear()
             self.draw(vres.camera, vres.scene)
         else:
@@ -758,7 +760,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             root = camera.root
             if not root:
                 return
-        
+
         # if viewport is None:
         #     viewport = self.viewport
 

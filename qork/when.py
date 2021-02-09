@@ -23,7 +23,7 @@ class WhenSlot(Slot):
 
     def unpause(self):
         self.paused = False
-    
+
     def set_speed(self, s):
         self.speed = s
 

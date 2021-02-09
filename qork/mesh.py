@@ -116,11 +116,11 @@ class MeshResource(Resource):
             scale = vec2(scale)
 
         for i in range(len(self.data)):
-            if i%5 == 3: # u
+            if i % 5 == 3:  # u
                 self.data[i] *= scale[0]
-            elif i%5 == 4: # v
+            elif i % 5 == 4:  # v
                 self.data[i] *= scale[1]
-        
+
         self.refresh()
 
     def generate(self):
@@ -336,8 +336,7 @@ class Mesh(Node):
                     self.image = img = img.convert("RGBA")
                     self.layers[0][0].append(self.image)
                     self.material = Material(
-                        self.ctx.texture(img.size, 4, img.tobytes()),
-                        img
+                        self.ctx.texture(img.size, 4, img.tobytes()), img
                     )
             else:
                 # image preloaded
@@ -347,7 +346,7 @@ class Mesh(Node):
                     self.image = self.image.convert("RGBA")
                     self.material = Material(
                         self.ctx.texture(self.image.size, 4, self.image.tobytes()),
-                        self.image
+                        self.image,
                     )
 
         for layer in self.layers:
@@ -417,10 +416,7 @@ class Mesh(Node):
                 self.resources.append(resource)
         if material:
             img = self.material.image
-            self.material = Material(
-                self.ctx.texture(img.size, 4, img.tobytes()),
-                img
-            )
+            self.material = Material(self.ctx.texture(img.size, 4, img.tobytes()), img)
         # print(self.resources)
 
     def update(self, dt):

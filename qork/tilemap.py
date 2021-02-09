@@ -334,4 +334,3 @@ class TileMap(Node):
         # TODO: get the range of tiles that are inside wb
         # TODO: check collision against their collision masks
         return True
-

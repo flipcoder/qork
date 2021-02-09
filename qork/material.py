@@ -3,6 +3,7 @@
 from .resource import Resource
 import moderngl as gl
 
+
 class Material(Resource):
     def __init__(self, tex=None, image=None):
         super().__init__()
@@ -27,4 +28,3 @@ class Material(Resource):
     def use(self, i=0):
         if self.texture:
             self.texture.use(i)
-

@@ -14,7 +14,7 @@ class Resource:
         self.dead = False
         self.use_refs = False
         self.refs = 0
-        
+
         self.fn = filename_from_args(args, kwargs)
         self.app = get_app_from_args(args)
         self.cache = self.app.cache
@@ -56,7 +56,7 @@ class Resource:
         r = self.refs
         self.refs += count
         return r
-    
+
     def deref(self, count=1):
         self.refs -= count
         refs = self.refs
@@ -83,6 +83,7 @@ class Resource:
 
     def __del__(self):
         self.cleanup()
+
 
 # example: a textured quad model which shares the underlying resource?
 # is this even used anymore?

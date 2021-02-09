@@ -42,6 +42,7 @@ def pil_to_cairo(im, alpha=1.0, format=cairo.FORMAT_ARGB32):
     surface = cairo.ImageSurface.create_for_data(arr, format, im.width, im.height)
     return surface
 
+
 # @mixin(cairo.Context, 'ctx')
 class Canvas(Mesh):
     @dataclass
@@ -171,7 +172,7 @@ class Canvas(Mesh):
         class DummyFont(Font):
             def __init__(self, *args, **kwargs):
                 Resource.__init__(self, *args, **kwargs)
-        
+
         font = DummyFont()
         font.font = ImageFont.load_default()
         self.default_font = font
@@ -187,7 +188,7 @@ class Canvas(Mesh):
         if grad:
             self.gradient(grad)
         # self.shadow = False
-    
+
     def blit(self, img, pos=None, crop=None, paint=True):
         if isinstance(img, str):
             # load from filename
@@ -259,7 +260,9 @@ class Canvas(Mesh):
         # return None for empty sets
         return r if r else None
 
-    def gradient(self, *colors, region=None, clear=True, radial=None, paint=True, source=True):
+    def gradient(
+        self, *colors, region=None, clear=True, radial=None, paint=True, source=True
+    ):
         if not colors:
             return None
 
@@ -519,7 +522,7 @@ class Canvas(Mesh):
 
             # this has to be called in f, since the order of this func matters
             extents = self.cairo.text_extents(s)
-            if type(extents) is tuple: # pycairo and cairocffi compatibility
+            if type(extents) is tuple:  # pycairo and cairocffi compatibility
                 extents = Canvas.Extents(*extents)
 
             # print(extents)
@@ -557,13 +560,12 @@ class Canvas(Mesh):
     def pixel(self, pos, color=Color(1), scale=1):
         scale = vec2(scale, scale)
         pos = vec2(pos[0], pos[1]) * scale
-        self.rectangle(pos, (scale,scale), color)
+        self.rectangle(pos, (scale, scale), color)
 
-    def circle(
-        self, pos=None, radius=None, color=None, outline=None, fill=True
-    ):
+    def circle(self, pos=None, radius=None, color=None, outline=None, fill=True):
         pos = vec2(*pos)
         color = Color(color)
+
         def f():
             self.cairo.set_source_rgba(*color)
             self.cairo.translate(*pos)
@@ -573,9 +575,10 @@ class Canvas(Mesh):
                 self.cairo.stroke()
             else:
                 self.cairo.fill()
+
         self.on_render += f
         self.refresh()
-    
+
     def rectangle(
         self, pos=None, size=None, color=None, radius=None, outline=None, fill=True
     ):
@@ -588,7 +591,7 @@ class Canvas(Mesh):
         deg = math.tau / 360
         if radius:
             r = radius = size.y / radius
-            
+
             def f():
                 self.cairo.new_sub_path()
                 self.cairo.arc(x + w - r, y + r, r, -90 * deg, 0)
@@ -607,6 +610,7 @@ class Canvas(Mesh):
             self.on_render += f
             self.refresh()
         else:
+
             def f():
                 self.cairo.rectangle(pos[0], pos[1], size[0], size[1])
                 self.cairo.set_source_rgba(*color)
@@ -615,6 +619,7 @@ class Canvas(Mesh):
                     self.cairo.stroke()
                 else:
                     self.cairo.fill()
+
             self.on_render += f
             self.refresh()
 
@@ -698,7 +703,7 @@ class Canvas(Mesh):
             # img = Image.frombuffer("RGBA", tuple(self.res), buf, "raw", 0, 1)
             # img = Image.resize(self.res, resample=PIL.Image.ANTIALIAS)
             # buf = img.tobytes()
-            
+
             self.texture = self.app.ctx.texture(self.res, 4, buf)
             self.texture.swizzle = "BGRA"
 

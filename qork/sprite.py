@@ -40,14 +40,14 @@ class Sprite(Resource):
 
         self.skins = data["skins"]
         # self.skin = 0
-        size = data.get("size",None)
+        size = data.get("size", None)
         self.size = ivec2(size) if size else None
-        tile_size = data.get("size",None)
+        tile_size = data.get("size", None)
         self.tile_size = ivec2(tile_size) if tile_size else None
-        origin = data.get("origin",None)
+        origin = data.get("origin", None)
         self.origin = vec2(origin) if origin else None
-        
-        mask = data.get('mask', None)
+
+        mask = data.get("mask", None)
         if mask:
             self.mask = vec2(mask)
 
@@ -82,8 +82,8 @@ class Sprite(Resource):
                 if self.tile_size is None:
                     self.tile_size = ivec2(size)
                 if self.origin is None:
-                    self.origin = size/2
-                
+                    self.origin = size / 2
+
                 sheet = sheet.convert("RGBA")
             assert sheet
             if sheet_sz is None:
