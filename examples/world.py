@@ -60,3 +60,7 @@ def update(dt):
     # infinite rocks xy
     rocks.xy = (player.pos.xy // 1).xy
 
+@overlap(player, 'box.png')
+def player_cube(player, cube, dt):
+    pass
+

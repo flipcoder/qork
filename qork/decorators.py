@@ -27,8 +27,15 @@ def overlap(a, b=None):
             return func
 
         # does a or b have a specific handler?
-        ac = a.collision_handler
-        bc = b.collision_handler
+        ac, bc = None, None
+        try:
+            ac = a.collision_handler
+        except AttributeError:
+            pass
+        try:
+            bc = b.collision_handler
+        except AttributeError:
+            pass
         if ac or bc:
             assert not (ac and bc)  # both objects are collsion handlers?
             if ac:
