@@ -375,14 +375,14 @@ class Node(Scriptable):
         ignore_frozen=False,
     ):
         if include_self:
-            if not self.ignore_frozen or not self.frozen:
+            if not ignore_frozen or not self.frozen:
                 yield self
         if not only_self:
             if depth is not None:
                 depth -= 1
                 if depth <= 0:
                     return
-            if not self.ignore_frozen or not self.frozen_children:
+            if not ignore_frozen or not self.frozen_children:
                 for ch in self.children:
                     yield from ch.__iter__(recursive, depth, True, not recursive)
 
