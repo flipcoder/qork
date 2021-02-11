@@ -33,6 +33,7 @@ class TileMap(Node):
 
     class Layer:
         def __init__(self):
+            self.node = None
             self.pages = []
 
     def __init__(self, *args, **kwargs):
@@ -48,6 +49,15 @@ class TileMap(Node):
 
         self.layers = []
 
+    class Page:
+        def __init__(self):
+            self.node = None
+            self.size = None
+            self.compiled = False
+            self.meshes = []
+            self.zmeshes = [] # meshes with depth attribute
+            self.objects = []
+
     def load(self, fn=None, **kwargs):
         """Load tilemap using filename"""
 
@@ -62,6 +72,7 @@ class TileMap(Node):
         # print('wb', self.world_box)
 
         rules = kwargs.get("rules", {})
+        use_depth = kwargs.get('use_depth', False)
         # print(tmx.layers)
         layer_ofs = 0.0
         # tmx.layers = sorted(tmx.layers)
@@ -71,6 +82,7 @@ class TileMap(Node):
             except AttributeError:
                 return 0
 
+        # TMX format layers
         layers = sorted(tmx.layers, key=get_id)
         # for i, layer in enumerate(tmx.layers):
         decal_layer_skip = 0
@@ -79,11 +91,18 @@ class TileMap(Node):
         group_offset = kwargs.get("group_offset", 1.0)
 
         # let's break the map into pages
-        page = ivec2(8)  # page size
+        page_sz = ivec2(8)  # page size
+
+        # our own layers (not TMX)
+        self.layers = []
 
         last_group = None
         group = None
         for i, layer in enumerate(layers):
+            mylayer = TileMap.Layer()
+            self.layers.append(mylayer)
+            mylayer.pages = []
+            
             # print(layer.id)
             if isinstance(layer, pytmx.TiledImageLayer):
                 pass
@@ -102,8 +121,16 @@ class TileMap(Node):
                 if group != last_group:
                     layer_ofs += group_offset
                     last_group = group
-                layer_node = self.add(Node(layer.name))
+                layer.node = layer_node = self.add(Node(layer.name))
                 page_node = layer_node.add(Node("page"))
+                
+                page = TileMap.Page()
+                page.node = page_node
+                page.layer_node = layer_node
+                page.group = group
+                page.props = layer_props
+                # p.size = page_size
+                mylayer.pages.append(page)
 
                 # calculate which layers can be combined (decals)
                 j = i + 1
@@ -140,9 +167,11 @@ class TileMap(Node):
                     except KeyError:
                         depth = False
 
+                    page.depth = depth
+
                     # The check to determine if tile layer is static
-                    # In popup mode, tiles with 'depth' need to pop out
-                    if not depth:
+                    # depth tiles "stick up" so need to be zbuffered
+                    if not use_depth or not depth:
                         # FLAT STATIC: combine all layer tiles into giant image page
                         sz = ivec2(
                             tmx.width * tmx.tilewidth, tmx.height * tmx.tileheight
@@ -177,6 +206,7 @@ class TileMap(Node):
                         )
                         m.material.filter(False)
                         m.material.repeat(False)
+                        page.meshes.append(m)
                         # else:
                         #     # DEPTH: depth buffered against objects, generate one combined layer mesh
                         #     pass
@@ -223,8 +253,12 @@ class TileMap(Node):
                                         m.rotate(0.25, X)
                                         m.z += 1 / 2
                                         m.y -= 1 / 2
+                                    elif use_depth:
+                                        m.z += 1 / 2
+                                        m.y -= 1 / 2
                                     m.material.filter(False)
                                     m.material.repeat(False)
+                                    page.zmeshes.append(m)
 
                                 del image
                 else:
@@ -240,23 +274,54 @@ class TileMap(Node):
                         m = page_node.add(
                             Mesh(obj.name or "", image=obj.image, pos=pos)
                         )
-                        if popup and "depth" in layer.properties:
-                            m.rotate(0.25, X)
-                            m.z += 1 / 2
-                            m.y -= 1 / 2
+                        depth = "depth" in layer.properties
+                        if depth and use_depth:
+                            if popup:
+                                m.rotate(0.25, X)
+                                m.z += 1 / 2
+                                m.y -= 1 / 2
+                            else:
+                                pass
                         m.material.filter(False)
                         m.material.repeat(False)
+                        page.objects.append(m)
                 page_node.frozen = True
                 page_node.frozen_children = True
                 layer_ofs += decal_offset
 
-            # TODO: combine all dynamic kobjects of similar texture
+            # TODO: combine all dynamic objects of similar texture
+            # but allow them to be reactivated as dynamic
+
+            # TODO: generate collision regions
 
             # if last_group is not None and last_group != group:
             #     print(group)
             #     layer_ofs += 1.0
             # elif type(layer) is tuple:
             #     print(layer)
+
+    #     for layer in self.layers:
+    #         for page in layer.pages:
+    #             if page.depth:
+    #                 self._bake_page(layer, page)
+
+    # def _bake_page(self, layer, page):
+    #     """Bakes the mesh data associated with layer page into per-material batches"""
+    #     zmeshes = {} # Material -> ZMesh
+    #     for m in page.zmeshes:
+    #         zmeshes[m.material] = m
+
+    #     for mat, zmesh in zmeshes.items():
+    #         matrix = page.layer_node.matrix * zmesh.matrix
+    #         verts = zmesh.calculate_vertices(space=matrix)
+    #         m = page.layer_node.add(Mesh("page", material=mat))
+    #         m.data = copy(zmesh.data)
+    #         m.name = ""
+    #         m.data.data = flatten(verts)
+    #         print(m.data.data)
+    #         m.data.generated = False
+    #         m.z = zmesh.z
+    #         zmesh.remove()
 
     def _load_img(self, fn, colorkey, tileset=None):
 
@@ -334,3 +399,4 @@ class TileMap(Node):
         # TODO: get the range of tiles that are inside wb
         # TODO: check collision against their collision masks
         return True
+

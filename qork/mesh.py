@@ -236,7 +236,7 @@ class Mesh(Node):
         self.layers = []  # layers -> skins -> images
         self.skin = 0
         self.sprite = None  # frame data here if mesh is a sprite
-        self.material = None
+        self.material = kwargs.pop("material", None)
         self.frame = 0
         self.loaded = False
         self.resources = []
@@ -318,7 +318,9 @@ class Mesh(Node):
         else:  # not sprite
             if isinstance(fn, str):
                 fns = [fn]
-            if not self.image:  # mesh image not preloaded?
+            if self.material is not None: # material already preloaded
+                pass # mat already provided
+            elif not self.image:  # mesh image not preloaded?
                 self.layers = self.layers or [[[]]]  # layers -> skins -> images
                 for img_fn in fns:
                     # [0][0] = default layer and skin (image list)
@@ -447,8 +449,11 @@ class Mesh(Node):
 
         super().render()
 
-    def calculate_vertices(self, recursive=False):
-        rc = self.resource
+    def calculate_vertices(self, recursive=False, space=WORLD, pack=True):
+        try:
+            rc = self.resource
+        except AttributeError:
+            rc = self.data
         data = rc.data
         sz = len(data) // rc.width
         r = [None] * sz
@@ -456,8 +461,18 @@ class Mesh(Node):
             j = i * rc.width
             vert = vec3(*data[j : j + 3])
             uv = vec2(*data[j + 3 : j + 5])
-            vert = (self.world_matrix * vec4(vert, 1.0)).xyz
-            r[i] = [*vert, *uv]
+            if type(space) is mat4:
+                vert = (space * vec4(vert, 1.0)).xyz
+            elif space == WORLD:
+                vert = (self.world_matrix * vec4(vert, 1.0)).xyz
+            elif space == PARENT:
+                vert = (self.matrix * vec4(vert, 1.0)).xyz
+            else:
+                assert False
+            if pack:
+                r[i] = [*vert, *uv]
+            else:
+                r[i] = [vert, uv]
         if recursive:
             for ch in self.children:
                 r += ch.calculate_vertices(recursive=recursive)

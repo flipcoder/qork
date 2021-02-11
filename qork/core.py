@@ -224,6 +224,9 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         MinimalCore.__init__(self)
         Scriptable.__init__(self)
         mglw.WindowConfig.__init__(self, wnd=wnd, ctx=ctx, **kwargs)
+        
+        # when task queue is done, uncomment this
+        # Container.TASK_QUEUE = self.tasks = TaskQueue()
 
         self.script_path = None  # script path is using script
         self.cache = Cache(self.resolve_resource, self.transform_resource)
@@ -594,6 +597,8 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             self.state.update(dt)
         else:
             State.update(self, dt)
+
+        # self.tasks() # run task queue
 
     def post_update(self, t):
 
