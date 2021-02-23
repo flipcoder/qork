@@ -29,23 +29,20 @@ from asyncio import sleep, create_task
 from ptpython.repl import embed
 import openal
 
-use_terminal = False
-
 
 class ZeroMode(Core):
     def preload(self):
         pass
 
     @classmethod
-    def run(cls, title, script_path):
-        return Core.run(cls, title, script_path)
+    def run(cls, title, script, script_path, use_terminal):
+        return Core.run(cls, title, script, script_path, use_terminal)
 
     def __init__(self, **kwargs):
-        global _script_path
-
         super().__init__(**kwargs)
+        _script = self._script
+        
         qork_app(self)
-        self.script_path = _script_path
         self.terminal_stopped = False
         self._terminal = None
 
@@ -240,8 +237,7 @@ class ZeroMode(Core):
         self.script_hook = self.globe.get("script", None)
 
         if not self.terminal_called:
-            global use_terminal
-            self.terminal(use_terminal)
+            self.terminal(self._use_terminal)
 
         # self.connections += self.states.on_change.connect(self.state_change)
 
@@ -324,12 +320,11 @@ class ZeroMode(Core):
 
 
 def main():
-    global _script
-    global _script_path
-    global use_terminal
     use_terminal = True
     args = sys.argv
     cut_args = []
+    script = None
+    script_path = None
     while True:
 
         good = 0
@@ -354,16 +349,17 @@ def main():
         if good >= 2:
             break
 
-    _script = args[-1]
-    if len(args) == 1 or _script == __file__:
-        _script = None
-        _script_path = None
+    script = args[-1]
+    if len(args) == 1 or script == __file__:
+        script = None
+        script_path = None
+        use_terminal = True
     else:
-        _script_path = _script
+        script_path = script
         use_terminal = False
         sys.argv = args[:-1] + cut_args
 
-    ZeroMode.run("qork", _script_path)
+    ZeroMode.run("qork", script, script_path, use_terminal=use_terminal)
 
 
 if __name__ == "__main__":

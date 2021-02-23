@@ -14,7 +14,7 @@ class Script:
     class Interleave:
         def __init__(self, *scripts, ctx):
             self.ctx = ctx
-            print(scripts)
+            # print(scripts)
             self.scripts = scripts
 
         def __enter__(self):

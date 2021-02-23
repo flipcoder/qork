@@ -428,8 +428,9 @@ class Container:
                 if func is value:
                     del self._slots[i]
                     return True, cb, i
-                else:
-                    print(func, value)
+                # else:
+                #     pass
+                    # print(func, value)
 
         return False, None, None
 

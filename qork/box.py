@@ -149,7 +149,6 @@ class Box:
         return r
 
     def __bool__(self):
-        print(self.size())
         for c in self.size():
             if c < -EPSILON:
                 return False

@@ -4,26 +4,28 @@ from qork import Node
 from qork import easy
 
 # Decorators
-def overlap(a, b=None):
+def collision(event, a, b=None):
     """
-    Overlap continuous collision callback
+    Continuous collision callback
     Function shold be in the form (a, b, t)
     where a and b are objects, classes, or node names
+    `event` is string representation of the Partitioner.CollisionEvent
+        (overlap, apart, enter or leave)
     """
 
     if b is None:
         b = a  # same name or type
 
-    def overlap_decorator(func):
+    def collision_decorator(func):
 
         if type(a) in (tuple, list):
             for aa in a:
-                overlap(aa, b)(func)
+                collision(event, aa, b)(func)
             return func
 
         if type(b) in (tuple, list):
             for bb in b:
-                overlap(a, bb)(func)
+                collision(event, a, bb)(func)
             return func
 
         # does a or b have a specific handler?
@@ -50,18 +52,22 @@ def overlap(a, b=None):
                     if b.handle_collision(a):
                         func(b, a)
 
-            easy.qork_app().partitioner.overlap[a][b] += collision_handler
+            easy.qork_app().state_scene.partitioner.register_callback(event, a, b, collision_handler)
         else:
-            easy.qork_app().partitioner.overlap[a][b] += func
+            easy.qork_app().state_scene.partitioner.register_callback(event, a, b, func)
         return func
 
-    return overlap_decorator
+    return collision_decorator
 
 
-def callnow(func):
-    func()
-    return func
-
+def collision_overlap(self, a, b=None):
+    return collision('overlap', a, b)
+# def collision_apart(self, a, b=None):
+#     return collision('apart', a, b)
+def collision_enter(self, a, b=None):
+    return collision('enter', a, b)
+def collision_leave(self, a, b=None):
+    return collision('leave', a, b)
 
 # def on_update(func, context=None):
 #     context = context or easy.qork_app()

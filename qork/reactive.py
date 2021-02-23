@@ -265,11 +265,11 @@ class Reactive:
 
 class ReactiveProperty(Reactive):
     def __get__(self, inst, owner):
-        print("get")
+        # print("get")
         return self() if inst else self
 
     def __set__(self, inst, val):
-        print("set")
+        # print("set")
         return self(val)
 
 

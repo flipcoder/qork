@@ -121,6 +121,8 @@ class Node(Scriptable):
         self._size = kwargs.pop("size", None)
         self.is_root = kwargs.pop("root", False)
 
+        self.lifetime = kwargs.pop("lifetime", None)
+
         self.children = Container()
         # self.components = Container()
 
@@ -981,6 +983,12 @@ class Node(Scriptable):
     def update(self, dt):
         if self.frozen:
             return
+
+        if self.lifetime is not None:
+            self.lifetime -= dt
+            if self.lifetime < 0:
+                self.detach()
+                return
 
         if self._spin is not None:
             # TODO: convert spin from spin space

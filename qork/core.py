@@ -145,7 +145,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         openal.oalQuit()
 
     # @classmethod
-    def run(cls, title, script_path):
+    def run(cls, title, script=None, script_path=None, use_terminal=False):
         # load settings file
         if script_path is None:
             script_path = os.getcwd()
@@ -168,6 +168,9 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         cls.title = title
         cls.vsync = False
         cls.samples = 4
+        cls._script = script
+        cls._script_path = script_path
+        cls._use_terminal = use_terminal
         mglw.run_window_config(cls)
 
     # def data_path(self, p=None):

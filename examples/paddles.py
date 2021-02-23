@@ -55,8 +55,9 @@ def update(t):
     paddle[1].vy = (key(KEY.UP) - key(KEY.DOWN)) * paddle_speed
 
 
-@overlap(ball, paddle)
+@collision_overlap(ball, paddle)
 def hit(ball, paddle, dt):
+    print('touch')
     global speed
     ball.x = ball.old_pos.x
     speed += 0.2

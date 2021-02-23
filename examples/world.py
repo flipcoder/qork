@@ -42,6 +42,8 @@ for i in range(5):
         tile = Canvas(res=(1, 1))
         tile.clear("white")
 
+player.dir = vec3(1,0,0)
+
 def update(dt):
     speed = 0.5
     v = vec3(key(KEY.RIGHT) - key(KEY.LEFT), key(KEY.UP) - key(KEY.DOWN), 0)
@@ -54,13 +56,20 @@ def update(dt):
 
     player.state["stance"] = "walk" if glm.length(v) > EPSILON else "stand"
 
+    if key_pressed(KEY.SPACE):
+        bullet = add('spirit.png', pos=player.pos, scale=0.02, lifetime=1)
+        bullet.material.filter(False)
+        bullet.vel = copy(player.dir) * 2
+
+    if glm.length(player.vel) > EPSILON:
+        player.dir = glm.normalize(player.vel)
     camera.vel = player.vel = v
     # player.vel = v
 
     # infinite rocks xy
     rocks.xy = (player.pos.xy // 1).xy
 
-@overlap(player, 'box.png')
-def player_cube(player, cube, dt):
-    pass
+# @overlap(player, 'box.png')
+# def player_cube(player, cube, dt):
+#     pass
 

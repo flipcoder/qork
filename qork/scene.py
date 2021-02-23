@@ -15,3 +15,4 @@ class Scene(Node):
     def update(self, dt):
         self._partitioner.update(dt)
         super().update(dt)
+
