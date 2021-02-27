@@ -44,8 +44,8 @@ class Partitioner:
         # self.watched_types_count = {}
         # self.watched_names_count = {}
 
-        self.touched_this_frame = set()
-        self.touched_last_frame = set()
+        self.touching_this_frame = set()
+        self.touching_last_frame = set()
         self.collision_pairs = {}
 
         self.id_to_noderef = {}
@@ -162,8 +162,8 @@ class Partitioner:
 
         if sigfunc(sig, a_id, b_id, a, b, dt):
             return
-        if sigfunc(sig, b_id, a_id, b, a, dt):
-            return
+        # if sigfunc(sig, b_id, a_id, b, a, dt):
+        #     return
         
         ta = type(a)
         tb = type(b)
@@ -231,10 +231,10 @@ class Partitioner:
 
         # reset all pair touch states
         # for pair in self.touching:
-        #     pair.touched = False
+        #     pair.touching = False
         # self.touching.clear()
         
-        self.touched_this_frame = set()
+        self.touching_this_frame = set()
 
         scene = self.scene
         with scene:
@@ -257,21 +257,25 @@ class Partitioner:
                             bn = a.name
 
                             # collision pair enters a collision
-                            if id(a) < id(b):
-                                abkey = [a,b]
-                                abkey = tuple(map(lambda x: id(x), abkey))
+                            a_id, b_id = id(a), id(b)
+                            if a_id < b_id:
+                                abkey = (a_id, b_id)
                                 pair = self.collision_pairs.get(abkey, None)
                                 if not pair:
                                     pair = self.collision_pairs[abkey] = Partitioner.CollisionPair(a,b,False)
+                                self.touching_this_frame.add(pair) # reset touch state next frame
                                 if not pair.touching:
                                     pair.touching = True
-                                    self.touched_this_frame.add(pair) # reset touch state next frame
-                                    self._run_callbacks(self.enter, a, b, dt)
-                                
+                                    if not self._run_callbacks(self.enter, a, b, dt): # a b
+                                        self._run_callbacks(self.enter, b, a, dt)     # b a
+                            
                             self._run_callbacks(self.overlap, a, b, dt)
 
+        # if self.collision_pairs:
+        #     import pdb; pdb.set_trace()
+
         # objects that just stopped touching
-        stopped_touching = self.touched_last_frame.difference(self.touched_this_frame)
+        stopped_touching = self.touching_last_frame.difference(self.touching_this_frame)
 
         for pair in stopped_touching:
             a = pair.objs[0]
@@ -285,7 +289,7 @@ class Partitioner:
             
             del self.collision_pairs[pair.ids]
         
-        # cycle
-        self.touched_last_frame = self.touched_this_frame.difference(stopped_touching)
-        self.touched_this_frame = None
+        # cycle this frame / last frame
+        self.touching_last_frame = self.touching_this_frame
+        self.touching_this_frame = None
 
