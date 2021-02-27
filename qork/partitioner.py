@@ -23,6 +23,7 @@ class Partitioner:
                 weakref.ref(a),
                 weakref.ref(b)
             ]
+            self.ids = (id(a), id(b))
             self.touching = touching
     
     def __init__(self, scene):
@@ -232,6 +233,8 @@ class Partitioner:
         # for pair in self.touching:
         #     pair.touched = False
         # self.touching.clear()
+        
+        self.touched_this_frame = set()
 
         scene = self.scene
         with scene:
@@ -268,7 +271,7 @@ class Partitioner:
                             self._run_callbacks(self.overlap, a, b, dt)
 
         # objects that just stopped touching
-        stopped_touching = self.touched_this_frame | self.touched_last_frame
+        stopped_touching = self.touched_last_frame.difference(self.touched_this_frame)
 
         for pair in stopped_touching:
             a = pair.objs[0]
@@ -277,10 +280,12 @@ class Partitioner:
                 b = pair.objs[1]
                 b = b() # unwrap weak
                 if b:
-                    if not self.leave[a][b](a, b, dt):
-                        self.leave[b][a](b, a, dt)
+                    if not self._run_callbacks(self.leave, a, b, dt): # a b
+                        self._run_callbacks(self.leave, b, a, dt)     # b a
+            
+            del self.collision_pairs[pair.ids]
         
         # cycle
-        self.touched_last_frame = self.touched_this_frame
-        self.touched_this_frame = set()
+        self.touched_last_frame = self.touched_this_frame.difference(stopped_touching)
+        self.touched_this_frame = None
 
