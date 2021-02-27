@@ -6,7 +6,7 @@ from qork import easy
 # Decorators
 def collision(event, a, b=None):
     """
-    Continuous collision callback
+    Collision callback
     Function shold be in the form (a, b, t)
     where a and b are objects, classes, or node names
     `event` is string representation of the Partitioner.CollisionEvent
@@ -60,13 +60,13 @@ def collision(event, a, b=None):
     return collision_decorator
 
 
-def collision_overlap(self, a, b=None):
+def collision_overlap(a, b=None):
     return collision('overlap', a, b)
 # def collision_apart(self, a, b=None):
 #     return collision('apart', a, b)
-def collision_enter(self, a, b=None):
+def collision_enter(a, b=None):
     return collision('enter', a, b)
-def collision_leave(self, a, b=None):
+def collision_leave(a, b=None):
     return collision('leave', a, b)
 
 # def on_update(func, context=None):

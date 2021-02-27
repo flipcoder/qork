@@ -57,7 +57,6 @@ def update(t):
 
 @collision_overlap(ball, paddle)
 def hit(ball, paddle, dt):
-    print('touch')
     global speed
     ball.x = ball.old_pos.x
     speed += 0.2

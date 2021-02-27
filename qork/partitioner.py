@@ -147,7 +147,6 @@ class Partitioner:
     def _sig(self, sig, a_in, b_in, a_out, b_out, dt):
         """Call a signal table with the params"""
         cb = sig[a_in][b_in]
-        assert sig == self.overlap
         if cb:
             return cb(a_out, b_out, dt)
 
@@ -158,8 +157,7 @@ class Partitioner:
 
         sigfunc = self._sig
 
-        a_id = id(a)
-        b_id = id(b)
+        a_id, b_id = id(a), id(b)
 
         if sigfunc(sig, a_id, b_id, a, b, dt):
             return
