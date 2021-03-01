@@ -458,32 +458,32 @@ def frange(start, stop=None, step=1.0):
         count += 1
 
 
-def to_deg(self, turns):
+def to_deg(turns):
     """
     Converts turns to degrees
     """
     return turns * 360.0
 
 
-def deg(self, deg):
+def deg(d):
     """
     Converts degrees to turns
     """
     return d / 360.0
 
 
-def to_rad(self, turns):
+def to_rad(turns):
     """
     Converts turns to radians
     """
     return turns * math.tau
 
 
-def rad(self, rad):
+def rad(r):
     """
     Converts radians to turns
     """
-    return rad / math.tau
+    return r / math.tau
 
 
 def weakmethod(func):

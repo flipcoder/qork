@@ -235,6 +235,8 @@ class Node(Scriptable):
         if each:
             each(node=self, n=self.num)
 
+        self.local_box = kwargs.pop("box", None)
+
         Scriptable.__init__(self)
 
         # register with partitioner on add/remove
