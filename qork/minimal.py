@@ -6,6 +6,9 @@ from glm import ivec2
 from .easy import qork_app
 
 
+class CoreBase:
+    pass
+
 def get_app_from_args(args):
     app = None
     if args:
@@ -24,7 +27,22 @@ def get_app_from_args(args):
     return app
 
 
-class MinimalCore:
+def get_function_from_args(args, kwargs=None):
+    func = None
+    if not args:
+        return None
+    for arg in args:  # check first non-app arg for func
+        if callable(arg):
+            func = arg
+            break
+        if not isinstance(arg, CoreBase):
+            break
+    if not func and kwargs:  # if no func, look it up in kwargs
+        func = kwargs.get("func", None)
+    return func
+
+
+class MinimalCore(CoreBase):
     """
     Core base class that does the minimal amount for testing purposes.
     Used both as a base and a mock app.

@@ -256,11 +256,21 @@ class Node(Scriptable):
             self._on_deinit = Signal()
         return self._on_deinit
 
+    @on_deinit.setter
+    def on_deinit(self, func):
+        # this is mainly for the +=
+        self._on_deinit = func
+
     @property
     def on_update(self):
         if self._on_update is None:
             self._on_update = Signal()
         return self._on_update
+
+    @on_update.setter
+    def on_update(self, func):
+        # this is mainly for the +=
+        self._on_update = func
 
     @property
     def event(self):
@@ -279,12 +289,22 @@ class Node(Scriptable):
         if self._on_add is None:
             self._on_add = Signal()
         return self._on_add
+    
+    @on_add.setter
+    def on_add(self, sig):
+        # this is mainly for the +=
+        self._on_add = sig
 
     @property
     def on_remove(self):
         if self._on_remove is None:
             self._on_remove = Signal()
         return self._on_remove
+
+    @on_remove.setter
+    def on_remove(self, sig):
+        # this is mainly for the +=
+        self._on_remove = sig
 
     @property
     def partitioner(self):
@@ -727,7 +747,7 @@ class Node(Scriptable):
             assert False  #
         tv = type(v)
         if tv in (list, tuple):
-            v = to_vec3(*v)
+            v = to_vec3_scale(*v)
         elif tv in (int, float):
             v = vec3(float(v))
         if space == LOCAL:

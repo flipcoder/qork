@@ -231,7 +231,10 @@ def recursive_each(types, e, func, path=[]):
             recursive_each(types, e[i], func, path + [i])
 
 
-def to_vec3(*args):
+def to_vec3_scale(*args):
+    return to_vec3(*args, z=1.0)
+
+def to_vec3(*args, z=0.0):
     if args is None:
         return None
     if type(args[0]) in (tuple, list):
@@ -245,14 +248,14 @@ def to_vec3(*args):
     if ta == glm.vec3:
         return args
     elif ta == glm.vec2:
-        return glm.vec3(args, 0.0)
+        return glm.vec3(args, z)
     elif ta == glm.vec4:
         return args.xyz
     else:
         if lenargs == 3:
             return glm.vec3(*args)
         elif lenargs == 2:
-            return glm.vec3(*args, 0)
+            return glm.vec3(*args, z)
         elif lenargs == 1:
             return glm.vec3(args[0])
         elif lenargs == 4:

@@ -180,6 +180,10 @@ class Canvas(Mesh):
         self.refresh()
 
         self.clear(kwargs.get("color"))
+
+        font_fn = kwargs.pop("font", None)
+        if font_fn:
+            self.font(font_fn)
         text = kwargs.pop("text", None)
         if text:
             self.text(text)

@@ -45,7 +45,7 @@ import cson
 import os
 from os import path
 from collections import defaultdict
-from watchdog.observers import Observer as Watchdog
+# from watchdog.observers import Observer as Watchdog
 import openal
 
 # class RenderPass
@@ -325,7 +325,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
         # self.next_camera_id = 0
 
-        self.watch = Watchdog()
+        # self.watch = Watchdog()
 
         # Modules are components that persist across game state changes
         class Modules:
@@ -463,7 +463,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         if args:
             a = args[0]
             atype = type(args[0])
-            if atype is int:
+            if atype is int: # count
                 count = a
                 each = kwargs.pop("each", None)
                 # load a count of objects
@@ -473,9 +473,14 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
                 for c in range(count):
                     if each:
                         kwargs["each"] = lambda node=node, each=each: each(node, count)
-                    r.append(self.create(str(count), *args, **kwargs))
+                    if callable(fn):
+                        # fn is function
+                        r.append(fn(str(count), *args, **kwargs))
+                    else:
+                        # fn is filename
+                        r.append(self.create(str(count), *args, **kwargs))
                 return r
-            elif atype in (tuple, list):
+            elif atype in (tuple, list): # list of functions or filenames
                 filenames = a
                 each = kwargs.pop("each", None)
                 # load a list of filenames
@@ -487,11 +492,23 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
                         # func, aa, kw = each(count, *copy(args), **copy(kwargs))
                         if each:
                             kwargs["each"] = lambda node=node, each=each: each(node)
-                        r.append(self.create(fn, *args, **kwargs))
+                        if callable(fn):
+                            # fn is function
+                            r.append(fn(*args, **kwargs))
+                        else:
+                            # fn is filename
+                            r.append(self.create(fn, *args, **kwargs))
                 else:
                     for fn in filenames:
-                        r.append(self.create(fn, *args, **kwargs))
+                        if callable(fn):
+                            # fn is function
+                            r.append(fn(*args, **kwargs))
+                        else:
+                            # fn is filename
+                            r.append(self.create(fn, *args, **kwargs))
                 return r
+
+        # No count or list provided. Load one node.
         if not args:
             return Node(*args, **kwargs)
         if isinstance(args[0], Node):
@@ -501,12 +518,22 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             ext = pathlib.Path(fn).suffix
         except TypeError:
             ext = ""
+
+        # Type function provided
+        Type = get_function_from_args(args, kwargs)
+        if args and callable(args[0]):
+            Type = args[0]
+        else:
+            Type = Mesh if fn else Node
+        
         if ext:
+            # load Node on filename extension
             for typename, typelist in self.extensions.items():
                 if ext in typelist:
                     return self.Type[typename](*args, **kwargs)
-        else:
-            return Node(*args, **kwargs)
+        # else:
+        #     # load Node w/o filename
+        #     return Type(*args, **kwargs)
             # if self.golfing:  # codegolf?: try to find filename
             #     found = False
             #     for dp in self._data_paths:
@@ -526,10 +553,11 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             #     if found:
             #         args, kwargs = change_filename(fn, args, kwargs)
 
-        if fn:
-            return Mesh(*args, **kwargs)
-        else:
-            return Node(*args, **kwargs)
+        return Type(*args, **kwargs)
+        # if fn:
+        #     return Mesh(*args, **kwargs) # Mesh
+        # else:
+        #     return Node(*args, **kwargs)
 
         # if ext in ('.wav', '.mp3', '.ogg'):
         #     return Sound(*args, **kwargs)
