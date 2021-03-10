@@ -918,7 +918,7 @@ when(1, lambda: print('call every second'))
 ### Pausing a callback
 
 ```
-slot = when(1, print('pause me'))
+slot = when(1, lambda: print('pause me'))
 
 ...
 
@@ -932,7 +932,7 @@ slot.unpause()
 ### Stopping a callback
 
 ```
-slot = when(1, print('pause me'))
+slot = when(1, lambda: print('pause me'))
 
 ...
 
