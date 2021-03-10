@@ -116,11 +116,6 @@ Let's load a player image and display it on the screen:
 player = add('player.png')
 ```
 
-Let's set the camera position:
-camera.pos = (1,2,3)
-
-Provide an x,y,z coordinate as a 2d or 3d tuple, or a vec2/vec3 object.
-
 A camera is automatically placed in the scene so that any spawned elements
 will be visible by default.
 
