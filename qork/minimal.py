@@ -9,6 +9,7 @@ from .easy import qork_app
 class CoreBase:
     pass
 
+
 def get_app_from_args(args):
     app = None
     if args:

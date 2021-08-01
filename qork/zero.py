@@ -41,7 +41,7 @@ class ZeroMode(Core):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         _script = self._script
-        
+
         qork_app(self)
         self.terminal_stopped = False
         self._terminal = None

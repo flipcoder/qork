@@ -291,7 +291,7 @@ class Node(Scriptable):
         if self._on_add is None:
             self._on_add = Signal()
         return self._on_add
-    
+
     @on_add.setter
     def on_add(self, sig):
         # this is mainly for the +=

@@ -45,6 +45,7 @@ import cson
 import os
 from os import path
 from collections import defaultdict
+
 # from watchdog.observers import Observer as Watchdog
 import openal
 
@@ -227,7 +228,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         MinimalCore.__init__(self)
         Scriptable.__init__(self)
         mglw.WindowConfig.__init__(self, wnd=wnd, ctx=ctx, **kwargs)
-        
+
         # when task queue is done, uncomment this
         # Container.TASK_QUEUE = self.tasks = TaskQueue()
 
@@ -463,7 +464,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         if args:
             a = args[0]
             atype = type(args[0])
-            if atype is int: # count
+            if atype is int:  # count
                 count = a
                 each = kwargs.pop("each", None)
                 # load a count of objects
@@ -480,7 +481,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
                         # fn is filename
                         r.append(self.create(str(count), *args, **kwargs))
                 return r
-            elif atype in (tuple, list): # list of functions or filenames
+            elif atype in (tuple, list):  # list of functions or filenames
                 filenames = a
                 each = kwargs.pop("each", None)
                 # load a list of filenames
@@ -525,7 +526,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             Type = args[0]
         else:
             Type = Mesh if fn else Node
-        
+
         if ext:
             # load Node on filename extension
             for typename, typelist in self.extensions.items():
@@ -534,24 +535,24 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
         # else:
         #     # load Node w/o filename
         #     return Type(*args, **kwargs)
-            # if self.golfing:  # codegolf?: try to find filename
-            #     found = False
-            #     for dp in self._data_paths:
-            #         # TODO: prioritize .cson?
-            #         if path.exists(fn + ".cson"):
-            #             fn += ".cson"
-            #             found = True
-            #             break
-            #         for pth in os.listdir(dp):
-            #             pext = path.splitext(pth)
-            #             if pext[0] == fn:
-            #                 fn += pext[1]
-            #                 found = True
-            #                 break
-            #         if found:
-            #             break
-            #     if found:
-            #         args, kwargs = change_filename(fn, args, kwargs)
+        # if self.golfing:  # codegolf?: try to find filename
+        #     found = False
+        #     for dp in self._data_paths:
+        #         # TODO: prioritize .cson?
+        #         if path.exists(fn + ".cson"):
+        #             fn += ".cson"
+        #             found = True
+        #             break
+        #         for pth in os.listdir(dp):
+        #             pext = path.splitext(pth)
+        #             if pext[0] == fn:
+        #                 fn += pext[1]
+        #                 found = True
+        #                 break
+        #         if found:
+        #             break
+        #     if found:
+        #         args, kwargs = change_filename(fn, args, kwargs)
 
         return Type(*args, **kwargs)
         # if fn:

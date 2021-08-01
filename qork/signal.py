@@ -130,19 +130,25 @@ class Slot:
 # class Queued:
 #     pass
 
+
 class TaskQueue:
     def __init__(self):
-        self._queued = [[], []] # ping-pong queues
-        self._current_queue = False # bool index for ping-pong task queue
+        self._queued = [[], []]  # ping-pong queues
+        self._current_queue = False  # bool index for ping-pong task queue
+
     def __iadd__(self, cb):
         self.add(cb)
         return self
+
     def add(self, cb):
         self._queued[self._current_queue].append(cb)
+
     def clear(self):
-        self._queued = [[], []] # ping-pong queues
+        self._queued = [[], []]  # ping-pong queues
+
     def __len__(self):
         return len(self._queued[0]) + len(self._queued[1])
+
     def __call__(self):
         i = False
         count = 0
@@ -162,9 +168,11 @@ class TaskQueue:
         self._current_queue = False
         return count
 
+
 def queued(func):
     """Returns a decorator that wraps a container function
     for iteration safety."""
+
     def queued_decorator(self, *args, **kwargs):
         if self._blocked:
             self.queue(lambda a=args, kw=kwargs: func(self, *a, **kw))
@@ -188,9 +196,16 @@ def queued(func):
 
 class Container:
     TASK_QUEUE = None
-    
+
     def __init__(
-        self, adapter=None, Storage=list, Element=None, reactive=False, taskqueue=None, *args, **kwargs
+        self,
+        adapter=None,
+        Storage=list,
+        Element=None,
+        reactive=False,
+        taskqueue=None,
+        *args,
+        **kwargs
     ):
         """
         A safely-iterable container where all operations during iterations
@@ -207,9 +222,11 @@ class Container:
         self._queued = [[], []]  # two ping-pong queues
         self.adapter = adapter
         if Container.TASK_QUEUE is not None:
-            self.taskqueue = Container.TASK_QUEUE # another "global" task queue to use instead
+            self.taskqueue = (
+                Container.TASK_QUEUE
+            )  # another "global" task queue to use instead
         else:
-            self.taskqueue = taskqueue # another "global" task queue to use instead
+            self.taskqueue = taskqueue  # another "global" task queue to use instead
 
         if reactive:
             self.on_change = self.on_pend = Signal()
@@ -430,7 +447,7 @@ class Container:
                     return True, cb, i
                 # else:
                 #     pass
-                    # print(func, value)
+                # print(func, value)
 
         return False, None, None
 
@@ -592,7 +609,7 @@ class Signal(Container):
     @staticmethod
     def _passthrough(*args):
         return args[0] if args else None
-    
+
     def __init__(self, simple=False, T=Slot, *args, **kwargs):
         super().__init__(*args, Element=T, **kwargs)
         self.on_connect = Signal._passthrough if simple else Signal(simple=True)
@@ -695,7 +712,9 @@ class Signal(Container):
                 slot = self.Element(self, self._adapt(func))
             slot.once = once
             # wslot = weakref.ref(slot) if weak else slot
-            self.queue(lambda slot=slot: self.connect(slot, weak, cb, on_remove, name, tags))
+            self.queue(
+                lambda slot=slot: self.connect(slot, weak, cb, on_remove, name, tags)
+            )
             # self._queued[self._current_queue].append(
             #     lambda slot=slot: self.connect(slot, weak, cb, on_remove, name, tags)
             # )

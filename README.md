@@ -939,7 +939,7 @@ is stored as a weakref (weak=True).  This relies on garbage collection, so it
 is not as reliable as explicitly disconnecting:
 
 ```
-slot = when(1, print('pause me'), weak=True)
+slot = when(1, lambda: print('pause me'), weak=True)
 
 ...
 

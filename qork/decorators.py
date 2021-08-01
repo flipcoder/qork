@@ -52,7 +52,9 @@ def collision(event, a, b=None):
                     if b.handle_collision(a):
                         func(b, a)
 
-            easy.qork_app().state_scene.partitioner.register_callback(event, a, b, collision_handler)
+            easy.qork_app().state_scene.partitioner.register_callback(
+                event, a, b, collision_handler
+            )
         else:
             easy.qork_app().state_scene.partitioner.register_callback(event, a, b, func)
         return func
@@ -61,13 +63,18 @@ def collision(event, a, b=None):
 
 
 def collision_overlap(a, b=None):
-    return collision('overlap', a, b)
+    return collision("overlap", a, b)
+
+
 # def collision_apart(self, a, b=None):
 #     return collision('apart', a, b)
 def collision_enter(a, b=None):
-    return collision('enter', a, b)
+    return collision("enter", a, b)
+
+
 def collision_leave(a, b=None):
-    return collision('leave', a, b)
+    return collision("leave", a, b)
+
 
 # def on_update(func, context=None):
 #     context = context or easy.qork_app()

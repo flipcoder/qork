@@ -234,6 +234,7 @@ def recursive_each(types, e, func, path=[]):
 def to_vec3_scale(*args):
     return to_vec3(*args, z=1.0)
 
+
 def to_vec3(*args, z=0.0):
     if args is None:
         return None

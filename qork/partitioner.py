@@ -19,13 +19,10 @@ class Partitioner:
 
     class CollisionPair:
         def __init__(self, a, b, touching):
-            self.objs = [
-                weakref.ref(a),
-                weakref.ref(b)
-            ]
+            self.objs = [weakref.ref(a), weakref.ref(b)]
             self.ids = (id(a), id(b))
             self.touching = touching
-    
+
     def __init__(self, scene):
 
         # self.app = app
@@ -52,10 +49,10 @@ class Partitioner:
 
         # name -> signal dictionary
         self.sig_by_name = {
-            'overlap': self.overlap,
+            "overlap": self.overlap,
             # 'apart': self.apart,
-            'enter': self.enter,
-            'leave': self.leave,
+            "enter": self.enter,
+            "leave": self.leave,
         }
 
     def sig(self, name):
@@ -81,7 +78,7 @@ class Partitioner:
 
     def register_node(self, node):
         pass
-    
+
     def unregister_node(self, node):
         if node.frozen:
             return
@@ -102,7 +99,7 @@ class Partitioner:
         self.id_to_noderef[b_id] = b_ref = self.NodeRef(b)
         self.sig(event)[a_id][b_id] += func
         return True
-    
+
     def unregister_callbacks(self, event, a, b=None):
         a_id, b_id = id(a), id(b)
         if b is None:
@@ -111,7 +108,7 @@ class Partitioner:
         else:
             del self.sig(event)[a_id][b_id]
             del self.sig(event)[b_id][a_id]
-    
+
     #     scene = self.app.scene
     #     with scene:
     #         for a in self.scene.walk():
@@ -164,7 +161,7 @@ class Partitioner:
             return
         # if sigfunc(sig, b_id, a_id, b, a, dt):
         #     return
-        
+
         ta = type(a)
         tb = type(b)
         an = a.name
@@ -233,22 +230,22 @@ class Partitioner:
         # for pair in self.touching:
         #     pair.touching = False
         # self.touching.clear()
-        
+
         self.touching_this_frame = set()
 
         scene = self.scene
         with scene:
 
-            for a in scene.walk_fast(): # ignores frozen elements
+            for a in scene.walk_fast():  # ignores frozen elements
                 if a.world_box is None:
                     continue
 
                 # for each slot, loop through each slot
-                for b in scene.walk_fast(): # ignores frozen elements
+                for b in scene.walk_fast():  # ignores frozen elements
                     if a is not b:
                         if b.world_box is None:
                             continue
-                        
+
                         col = self.collision(a, b)
                         if col:
                             ta = type(a)
@@ -262,13 +259,19 @@ class Partitioner:
                                 abkey = (a_id, b_id)
                                 pair = self.collision_pairs.get(abkey, None)
                                 if not pair:
-                                    pair = self.collision_pairs[abkey] = Partitioner.CollisionPair(a,b,False)
-                                self.touching_this_frame.add(pair) # reset touch state next frame
+                                    pair = self.collision_pairs[
+                                        abkey
+                                    ] = Partitioner.CollisionPair(a, b, False)
+                                self.touching_this_frame.add(
+                                    pair
+                                )  # reset touch state next frame
                                 if not pair.touching:
                                     pair.touching = True
-                                    if not self._run_callbacks(self.enter, a, b, dt): # a b
-                                        self._run_callbacks(self.enter, b, a, dt)     # b a
-                            
+                                    if not self._run_callbacks(
+                                        self.enter, a, b, dt
+                                    ):  # a b
+                                        self._run_callbacks(self.enter, b, a, dt)  # b a
+
                             self._run_callbacks(self.overlap, a, b, dt)
 
         # if self.collision_pairs:
@@ -279,17 +282,16 @@ class Partitioner:
 
         for pair in stopped_touching:
             a = pair.objs[0]
-            a = a() # unwrap weak
+            a = a()  # unwrap weak
             if a:
                 b = pair.objs[1]
-                b = b() # unwrap weak
+                b = b()  # unwrap weak
                 if b:
-                    if not self._run_callbacks(self.leave, a, b, dt): # a b
-                        self._run_callbacks(self.leave, b, a, dt)     # b a
-            
+                    if not self._run_callbacks(self.leave, a, b, dt):  # a b
+                        self._run_callbacks(self.leave, b, a, dt)  # b a
+
             del self.collision_pairs[pair.ids]
-        
+
         # cycle this frame / last frame
         self.touching_last_frame = self.touching_this_frame
         self.touching_this_frame = None
-

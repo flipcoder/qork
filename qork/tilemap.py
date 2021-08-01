@@ -55,7 +55,7 @@ class TileMap(Node):
             self.size = None
             self.compiled = False
             self.meshes = []
-            self.zmeshes = [] # meshes with depth attribute
+            self.zmeshes = []  # meshes with depth attribute
             self.objects = []
 
     def load(self, fn=None, **kwargs):
@@ -72,7 +72,7 @@ class TileMap(Node):
         # print('wb', self.world_box)
 
         rules = kwargs.get("rules", {})
-        use_depth = kwargs.get('use_depth', False)
+        use_depth = kwargs.get("use_depth", False)
         # print(tmx.layers)
         layer_ofs = 0.0
         # tmx.layers = sorted(tmx.layers)
@@ -102,7 +102,7 @@ class TileMap(Node):
             mylayer = TileMap.Layer()
             self.layers.append(mylayer)
             mylayer.pages = []
-            
+
             # print(layer.id)
             if isinstance(layer, pytmx.TiledImageLayer):
                 pass
@@ -123,7 +123,7 @@ class TileMap(Node):
                     last_group = group
                 layer.node = layer_node = self.add(Node(layer.name))
                 page_node = layer_node.add(Node("page"))
-                
+
                 page = TileMap.Page()
                 page.node = page_node
                 page.layer_node = layer_node
@@ -399,4 +399,3 @@ class TileMap(Node):
         # TODO: get the range of tiles that are inside wb
         # TODO: check collision against their collision masks
         return True
-

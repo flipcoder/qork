@@ -318,8 +318,8 @@ class Mesh(Node):
         else:  # not sprite
             if isinstance(fn, str):
                 fns = [fn]
-            if self.material is not None: # material already preloaded
-                pass # mat already provided
+            if self.material is not None:  # material already preloaded
+                pass  # mat already provided
             elif not self.image:  # mesh image not preloaded?
                 self.layers = self.layers or [[[]]]  # layers -> skins -> images
                 for img_fn in fns:
