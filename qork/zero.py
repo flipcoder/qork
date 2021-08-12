@@ -164,7 +164,10 @@ class ZeroMode(Core):
             "V3": glm.vec3,
             "V": V,
             # "RV": Rvec,
-            "Q": app,
+        }
+        
+        self.q_globe = {
+            "app": app,
             "when": app.when,
             "every": app.when.every,
             "once": app.when.once,
@@ -198,6 +201,31 @@ class ZeroMode(Core):
             "data_path": self.data_path,
             "quit": app.quit,
         }
+
+        # class hashabledict(dict):
+        #     def __hash__(self):
+        #         return hash(tuple(sorted(self.items())))
+
+        # q_obj = hashabledict({
+        #     **self.q_globe
+        # })
+
+        class Q:
+            pass
+        for key,value in self.q_globe.items():
+            setattr(Q, key, value)
+
+        # if USE_Q:
+        self.globe = {
+            **self.globe,
+            "Q": Q,
+        }
+        # else:
+        #     self.globe = {
+        #         **self.globe,
+        #         self.q_globe
+        #     }
+
 
         # additional vars for code golfing (optional in the future)
         self.golf()
@@ -299,7 +327,7 @@ class ZeroMode(Core):
 
         if self.script_func:
             # sf = script_func shortened
-            exec("Q._sf(" + str(dt) + ")", self.globe, self.loc)
+            exec("Q.app._sf(" + str(dt) + ")", self.globe, self.loc)
 
         if self._terminal:
             self._terminal.call_soon(self._terminal.stop)
