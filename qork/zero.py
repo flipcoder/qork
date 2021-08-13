@@ -17,7 +17,8 @@ import traceback
 import asyncio
 
 from qork import *
-from qork.easy import *
+from qork import easy
+# from qork.easy import *
 from qork.util import *
 from qork.console import *
 from os import path
@@ -135,7 +136,7 @@ class ZeroMode(Core):
         app = qork_app()
         self.terminal_called = False
         # camera = self.camera
-        scene = self.scene
+        # scene = self.scene
 
         self._init()
         # removed canvas and backdrop from here (added to State)
@@ -152,7 +153,7 @@ class ZeroMode(Core):
             # "__loader__": __loader__,
             # "__file__": self.script_path,
             **qork.__dict__,
-            **easy.__dict__,
+            # **easy.__dict__,
             **util.__dict__,
             **math.__dict__,
             **decorators.__dict__,
@@ -164,16 +165,17 @@ class ZeroMode(Core):
             "V3": glm.vec3,
             "V": V,
             # "RV": Rvec,
+            "app": app,
+            "KEY": app.wnd.keys,
         }
         
-        self.q_globe = {
-            "app": app,
-            "when": app.when,
+        self.q_funcs = {
+            # "when": app.when,
             "every": app.when.every,
             "once": app.when.once,
             # "after": app.when.once,
             # "init": init,
-            "mouse_pos": app.mouse_pos,
+            # "mouse_pos": app.mouse_pos,
             "hold_click": app.hold_click,
             "click": app.click,
             "unclick": app.unclick,
@@ -186,49 +188,89 @@ class ZeroMode(Core):
             "keys": app.get_keys,
             "keys_pressed": app.get_keys_pressed,
             "keys_released": app.get_keys_released,
-            "KEY": app.wnd.keys,
             # "update": update,
             # "render": render,
-            "scene": self.scene,
-            "backdrop": self.backdrop,
+            # "scene": self.scene,
+            # "backdrop": self.backdrop,
             # "gui": self.gui,
             "terminal": self.terminal,
             # "console": self.console,
-            "backdrop": self.backdrop,
-            "canvas": self.canvas,
-            "camera": self.camera,
-            "data_paths": self._data_paths,
+            # "backdrop": self.backdrop,
+            # "canvas": self.canvas,
+            # "camera": self.camera,
+            # "data_paths": self._data_paths,
             "data_path": self.data_path,
             "quit": app.quit,
         }
+        
+        # add all easy mode functions to Q namespace
+        for k,v in easy.funcs.items():
+            # if k not in self.q_funcs:
+            self.q_funcs[k] = v
 
         # class hashabledict(dict):
         #     def __hash__(self):
         #         return hash(tuple(sorted(self.items())))
 
         # q_obj = hashabledict({
-        #     **self.q_globe
+        #     **self.q_funcs
         # })
 
+        # populate Q namespace with q_funcs functions
         class Q:
-            pass
-        for key,value in self.q_globe.items():
-            setattr(Q, key, value)
+            @property
+            def app(self): return app
+
+            @property
+            def when(self): return app.when
+            
+            @property
+            def mouse_pos(self): return app.mouse_pos
+            
+            @property
+            def scene(self): return app.state_scene
+            
+            @property
+            def backdrop(self): return app.state_backdrop
+            
+            @property
+            def data_paths(self): return app.data_paths
+            
+            @property
+            def canvas(self): return app.state_canvas
+
+            @property
+            def scale(self): return app.scale
+            
+            @property
+            def camera(self): return app.state_camera
+
+        self.Q = Q()
+            
+        for k,v in self.q_funcs.items():
+            if callable(v):
+                # print(k, v)
+                try:
+                    getattr(Q, k)
+                except AttributeError:
+                    setattr(Q, k, v)
+            else:
+                print(k, v)
 
         # if USE_Q:
         self.globe = {
             **self.globe,
-            "Q": Q,
+            "Q": self.Q,
         }
         # else:
         #     self.globe = {
         #         **self.globe,
-        #         self.q_globe
+        #         self.q_funcs
         #     }
 
 
         # additional vars for code golfing (optional in the future)
-        self.golf()
+        # self.golf()
 
         if self.golfing:
             self.globe = {

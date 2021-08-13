@@ -365,6 +365,24 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
             return self.state.camera
         return self.camera
 
+    @property
+    def state_canvas(self):
+        if self.pending_state is not None:
+            # should only be called only during State ctor
+            return self.pending_state.canvas
+        if self.state is not None:
+            return self.state.canvas
+        return self.canvas
+
+    @property
+    def state_backdrop(self):
+        if self.pending_state is not None:
+            # should only be called only during State ctor
+            return self.pending_state.backdrop
+        if self.state is not None:
+            return self.state.backdrop
+        return self.backdrop
+
     def render_from(self, camera):
         if self.state:
             self.state.camera = self.camera = camera

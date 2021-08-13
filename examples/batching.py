@@ -1,20 +1,20 @@
 #!/usr/bin/env qork
 
-canvas.clear("white")
+Q.canvas.clear("white")
 
 # make a red square
-red_square = canvas.batch("red")
+red_square = Q.canvas.batch("red")
 with red_square:
-    canvas.source = "red"
-    canvas.canvas_rectangle(*canvas.res / 2, *canvas.res / 2)
-    canvas.fill()
+    Q.canvas.source = "red"
+    Q.canvas.canvas_rectangle(*Q.canvas.res / 2, *Q.canvas.res / 2)
+    Q.canvas.fill()
 
 # make a blue square
-blue_square = canvas.batch("blue")
+blue_square = Q.canvas.batch("blue")
 with blue_square:
-    canvas.source = "blue"
-    canvas.canvas_rectangle(0, 0, *canvas.res / 2)
-    canvas.fill()
+    Q.canvas.source = "blue"
+    Q.canvas.canvas_rectangle(0, 0, *Q.canvas.res / 2)
+    Q.canvas.fill()
 
 
 def script(ctx):

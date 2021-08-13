@@ -6,10 +6,10 @@ from glm import vec2
 # load the ball and 2 paddles
 # paddle = add(2, "player.png", scale=(0.1, 0.25, 0.1))
 paddle = [None] * 2
-paddle[0] = add(Canvas(color="white", res=ivec2(1), scale=(0.1, 0.25, 0.1)))
-paddle[1] = add(Canvas(color="white", res=ivec2(1), scale=(0.1, 0.25, 0.1)))
+paddle[0] = Q.add(Canvas(color="white", res=ivec2(1), scale=(0.1, 0.25, 0.1)))
+paddle[1] = Q.add(Canvas(color="white", res=ivec2(1), scale=(0.1, 0.25, 0.1)))
 
-ball = add(Canvas(color="white", res=ivec2(1), scale=0.05))
+ball = Q.add(Canvas(color="white", res=ivec2(1), scale=0.05))
 # ball = add("player.png", scale=0.05)
 
 # prosition paddles and set speed
@@ -24,8 +24,8 @@ score = [0] * 2
 
 
 def refresh_score():
-    canvas.clear()
-    canvas.ctext(
+    Q.canvas.clear()
+    Q.canvas.ctext(
         " - ".join(map(lambda s: str(s), score)), "white", vec2(0, 128), anchor="h"
     )
 
@@ -51,8 +51,8 @@ def update(t):
         # hud.ctext(str(score[0]) + ' - ' + str(score[1]), hud.res/2, 'white', 'hv')
         init()
 
-    paddle[0].vy = (key(KEY.W) - key(KEY.S)) * paddle_speed
-    paddle[1].vy = (key(KEY.UP) - key(KEY.DOWN)) * paddle_speed
+    paddle[0].vy = (Q.key(KEY.W) - Q.key(KEY.S)) * paddle_speed
+    paddle[1].vy = (Q.key(KEY.UP) - Q.key(KEY.DOWN)) * paddle_speed
 
 
 @collision_overlap(ball, paddle)

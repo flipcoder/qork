@@ -2,12 +2,12 @@
 
 img = "player.png"
 
-camera.mode = "3D"
-camera.z = 1
+Q.camera.mode = "3D"
+Q.camera.z = 1
 
-p = add(img)
+p = Q.add(img)
 
-level = add("map.png", scale=25, pos=-Z * 10)
+level = Q.add("map.png", scale=25, pos=-Z * 10)
 
 nodes = [None] * 4
 nodes[0] = p.add(img, scale=0.25, pos=(-0.5, 0.5, 0.1))
@@ -28,5 +28,5 @@ def update(dt):
         n.rotate(dt * i * 0.1)
         n.rotate(dt, X)
 
-    camera.reset_orientation()
-    camera.rotate(0.01 * sint(t / 2), Y)
+    Q.camera.reset_orientation()
+    Q.camera.rotate(0.01 * sint(t / 2), Y)
