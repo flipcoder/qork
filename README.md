@@ -6,8 +6,8 @@ This means an empty file is a valid blank window program.
 
 Getting an image on the screen and moving around requires only one line of code:
 
-```
-add('hello_world.png', pos=-X, vel=X, spin=1)
+```py
+Q.add('hello_world.png', pos=-X, vel=X, spin=1)
 ```
 
 This will spawn an image on the left hand side of the screen,
@@ -106,14 +106,14 @@ that with qork on windows. This is optional.
 
 Here's the shebang line if you want it:
 
-```
+```py
 #!/usr/bin/env qork
 ```
 
 Let's load a player image and display it on the screen:
 
-```
-player = add('player.png')
+```py
+player = Q.add('player.png')
 ```
 
 A camera is automatically placed in the scene so that any spawned elements
@@ -121,14 +121,14 @@ will be visible by default.
 
 Let's set the player velocity to the Y direction at a speed of 2
 
-```
+```py
 player.velocity = Y * 2
 ```
 
 Or we could do this by changing the position every frame.  This is
 what our automatically called update() function does.
 
-```
+```py
 def update(dt):
     player.pos += Y * 2 * dt
 ```
@@ -150,16 +150,16 @@ That's the entire script!  Run it with qork.
 
 ### Create and Add
 
-```
-node = create() # create an empty node without adding it to the scene
+```py
+node = Q.create() # create an empty node without adding it to the scene
 
 node = Node() # same as above
 
-node = add() # create and add an empty node to the scene
+node = Q.add() # create and add an empty node to the scene
 
-node = add(Node()) # same as above
+node = Q.add(Node()) # same as above
 
-node = add('player.png') # create object based on image, and add to scene
+node = Q.add('player.png') # create object based on image, and add to scene
 
 ```
 
@@ -169,7 +169,7 @@ node = add('player.png') # create object based on image, and add to scene
 Positioning can be set using either 3D or 2D tuples/lists or any unpackable type.
 Internally, vec3 (from glm) is used.
 
-```
+```py
 node.pos = (0,0) # 2D
 
 node.pos = vec2(0,0)
@@ -183,7 +183,6 @@ node.move(1,2,3) # relative movement (changes position)
 node.move(vec2(1,2))
 
 node.move(vec3(1,2,3))
-
 ```
 
 You can use pos or position if you prefer.
@@ -194,13 +193,13 @@ Global vectors X, Y and Z are basis vectors that point in that direction.
 
 The below velocity code will start node moving at 1unit/sec in the positive X
 
-```
+```py
 node.velocity = X
 ```
 
 You can also change acceleration
 
-```
+```py
 node.acceleration = Z # set acceleration in positive Z direction
 
 node.acceleration = (1,2) # in 2d
@@ -214,7 +213,7 @@ You can use `vel` and `accel` if you prefer shorter names.
 
 You can also change components individually, like this:
 
-```
+```py
 node.x = 1
 node.y = 2
 node.z = 2
@@ -239,15 +238,15 @@ that child nodes are connected to their parents, inheriting the position and
 orientation changes of the parent while keeping their own relative positioning and
 orientation.
 
-```
-parent = add() # add parent to scene
+```py
+parent = Q.add() # add parent to scene
 child = parent.add() # add a new child to parent
 ```
 
 Node positions are relative to their parents, so if you want to get
 the real world position of a node, use `world_position`
 
-```
+```py
 print(child.world_position)
 
 # or...
@@ -257,7 +256,7 @@ print(child.wpos)
 
 ### Angular Velocity
 
-```
+```py
 node.spin(1) # 1 turn per sec around Z axis
 
 node.spin(1, Y) # or with axis
@@ -265,13 +264,13 @@ node.spin(1, Y) # or with axis
 
 You can change the default for all nodes:
 
-```
+```py
 Node.ROTATION_AXIS = Y
 ```
 
 ### Detaching
 
-```
+```py
 child.remove()
 
 # or...
@@ -284,15 +283,14 @@ parent.remove()
 
 # or...
 
-remove(parent)
-    
+Q.remove(parent)
 ```
 
 ### Rotation/Scaling
 
 Qork angles are based on **turns**. Rotating .5 is half a turn.
 
-```
+```py
 node.rotate(.25) # rotate quarter turn in 2D
 
 node.rotate(.5, Y) # rotate half turn in 3D around Y axis
@@ -304,19 +302,19 @@ The second parameter to rotate can take any vector to rotate around.
 
 An object can have any named tag and you can filter objects with these tags.
 
-```
-p = add('Player')
+```py
+p = Q.add('Player')
 p.tag('red')
 
-find('Player') # -> [p]
+Q.find('Player') # -> [p]
 
-find('#red') # -> [p]
+Q.find('#red') # -> [p]
 
-find_one('#red') # -> p
+Q.find_one('#red') # -> p
 
 # or use a function....
 
-find(lambda obj: obj.name=='Player') # -> p
+Q.find(lambda obj: obj.name=='Player') # -> p
 
 ```
 
@@ -326,7 +324,7 @@ You can also limit your search to a certain node:
 
 Any node can have a state machine if you need it.
 
-```
+```py
 # set up a callback
 player.on_stage_change += lambda state, stance: print(state, "is now", stance)
 
@@ -341,7 +339,7 @@ We'll get into that later!
 
 Create and trigger events with callbacks
 
-```
+```py
 player.heal = player.event('heal')
 player.heal += lambda hp: print('Healed ', hp)
 
@@ -383,25 +381,24 @@ the attached nodes remain attached.
 
 ### Camera
 
-In zero mode, the camera is a global node called `camera`.
+In zero mode, the camera is accessible as `Q.camera`.
 
-```
-camera.position = (0,0,5) # back up the camera by 5 units
+```py
+Q.camera.position = (0,0,5) # back up the camera by 5 units
 
-camera.fov = deg(80) # change field of view (usually in turns, but we use degrees here)
+Q.camera.fov = deg(80) # change field of view (usually in turns, but we use degrees here)
 
-camera.ortho = True # turn on 2D mode
+Q.camera.ortho = True # turn on 2D mode
 
-camera.mode = '3D' # same as setting ortho to False
-
+Q.camera.mode = '3D' # same as setting ortho to False
 ```
 
 If you change game states, you get a new default camera and scene for that state.
 You don't have to use this camera as the default.  You can create your own camera
 and set it to be the default.
 
-```
-newCamera = add(Camera(default=True))
+```py
+newCamera = Q.add(Q.Camera(default=True))
 ```
 
 This will assoiate the camera with the current game state or, if you have no states,
@@ -411,15 +408,15 @@ the app itself.
 
 Tilemaps in the TMX format can be loaded in with `add` as well:
 
-```
-add('map.tmx')
+```py
+Q.add('map.tmx')
 ```
 
 These are only partially supported at the moment.
 
 ## Input
 
-- KEY: array containing all the keys (use autocomplete in the qork console to see them all)
+- KEY (global): array containing all the keys (use autocomplete in the qork console to see them all)
 - key(k): check if a key is pressed down
 - key_pressed(k): check if a key was just pressed
 - key_released(k): check if a key was just released
@@ -434,18 +431,18 @@ These are only partially supported at the moment.
 - mouse_buttons_released(): a set containing the mouse buttons that were just released
 - mouse_pos(): get the current mouse position
 
-```
+```py
 def update(dt):
-    if key(KEY.SPACE):
+    if Q.key(KEY.SPACE):
         shoot()
 ```
 
 The following function implements "pong" controls for two players:
 
-```
+```py
 def update(dt):
-    paddle[0].vy = (key(KEY.W) - key(KEY.S)) * paddle_speed
-    paddle[1].vy = (key(KEY.UP) - key(KEY.DOWN)) * paddle_speed
+    paddle[0].vy = (Q.key(KEY.W) - Q.key(KEY.S)) * paddle_speed
+    paddle[1].vy = (Q.key(KEY.UP) - Q.key(KEY.DOWN)) * paddle_speed
      
 ```
 
@@ -453,7 +450,7 @@ def update(dt):
 
 Spritesheet example (cson format):
 
-```
+```yaml
 type: 'Sprite'
 size: [ 16, 16 ]
 tile_size: [ 16, 16 ]
@@ -480,34 +477,34 @@ frames:
 
 Load a spritesheet with add() and make it do the walk animation:
 
-```
-player = add('player.cson')
+```py
+player = Q.add('player.cson')
 player.state['stance'] = 'walk'
 ```
 
 ## Audio
 
-```
-sound = add('sound.wav') # Add a sound (does not autoplay)
+```py
+sound = Q.add('sound.wav') # Add a sound (does not autoplay)
 sound.play() # play a sound
 sound.play(once=True) # play a sound once, but keep it attached
 sound.play(temp=True) # temporary sound, detach when done playing
 
 sound.on_done += lambda: print('done') # callback when sound it done playing
 
-play('test.wav') # play sound once and remove when done (attached to camera)
-add('test.wav', temp=True).play() # same as above
-add('test.wav').play(temp=True) # same as above
+Q.play('test.wav') # play sound once and remove when done (attached to camera)
+Q.add('test.wav', temp=True).play() # same as above
+Q.add('test.wav').play(temp=True) # same as above
 
-cache('test.wav') # preload a sound
+Q.cache('test.wav') # preload a sound
 
-sound = create('test.wav') # create a sound node to attach later
-add(sound).play() # attach the precreated sound node and play it
+sound = Q.create('test.wav') # create a sound node to attach later
+Q.add(sound).play() # attach the precreated sound node and play it
 
 sound.stop() # stop sound, but keep it attached
 sound.remove() # stop sound and remove it from scene
 
-play('music.ogg') # playing music is the same
+Q.play('music.ogg') # playing music is the same
 ```
 
 3D positioning of sound is not yet implemented.
@@ -532,19 +529,19 @@ keeping the canvas elements individually accessible.  Let's touch more on this l
 
 To draw text to the screen, we have the canvas draw function:
 
-```
+```py
 def text(self, s, color, pos, flags, shadow=None)
 ```
 
 It is used like this:
 
-```
-canvas.text('Hello world!', 'green')
+```py
+Q.canvas.text('Hello world!', 'green')
 ```
 
 The text function has many different options.  Here is the prototype:
 
-```
+```py
 def text(
     self,
     txt,
@@ -582,8 +579,8 @@ which is configurable with shadow_pos and shadow_color.
 
 You can also blit images to the canvas if you like:
 
-```
-canvas.blit('image.png', (x,y))
+```py
+Q.canvas.blit('image.png', (x,y))
 ```
 
 If you wish to use images in your game, consider adding them as nodes instead.
@@ -594,8 +591,8 @@ If you wish to use images in your game, consider adding them as nodes instead.
 
 This clears the backdrop to a 3-color gradient:
 
-```
-backdrop.gradient("lightblue", "blue", "black")
+```py
+Q.backdrop.gradient("lightblue", "blue", "black")
 ```
 
 You can also add "stops", which are values from 0 to 1, which specify
@@ -604,8 +601,8 @@ are not provided, and they should be called in order.
 
 To add stop values, instead of providing just the color, provide a tuple per step:
 
-```
-backdrop.gradient(
+```py
+Q.backdrop.gradient(
     (0.0, 'red'),
     (0.1, 'orange'),
     (0.3, 'green'),
@@ -616,8 +613,8 @@ backdrop.gradient(
 The colors you specify can eiher be string names or types of class Color,
 which are 4d vectors of RGBA colors.
 
-```
-backdrop.gradient(Color(1,0,0), Color(0,1,0), Color(.5,.5,.5))
+```py
+Q.backdrop.gradient(Color(1,0,0), Color(0,1,0), Color(.5,.5,.5))
 ```
 
 It should be noted that clearing to a gradient ADDS a clear to the canvas draw routine.
@@ -626,27 +623,27 @@ will be combined every time you need to redraw.
 
 So if you wish to reset the primary gradient, pass `clear=True` into the gradient function:
 
-```
-backdrop.gradient('white', 'black', clear=True)
+```py
+Q.backdrop.gradient('white', 'black', clear=True)
 ```
 
 or simply clear beforehand, which removes all draw steps:
 
-```
-backdrop.clear()
-backdrop.gradient('white', 'black')
+```py
+Q.backdrop.clear()
+Q.backdrop.gradient('white', 'black')
 ```
 
 Or if you want to clear to a solid color:
 
-```
-backdrop.clear('black')
+```py
+Q.backdrop.clear('black')
 ```
 
 To set gradient region:
 
-```
-backdrop.gradient('red', 'green', region=[0,0,0,100])
+```py
+Q.backdrop.gradient('red', 'green', region=[0,0,0,100])
 ```
 
 To do a radial gradient, provide a tuple of the (x,y,rad) of the 
@@ -654,12 +651,12 @@ To do a radial gradient, provide a tuple of the (x,y,rad) of the
 
 We'll use half the screen size and a radius of 10 to 1000:
 
-```
+```py
 r = (
     (*Q.size/2, 10),
     (*Q.size/2, 1000)
 )
-backdrop.gradient('white', 'black', radial=r)
+Q.backdrop.gradient('white', 'black', radial=r)
 ```
 
 ### Drawing Shapes (the easy way)
@@ -667,7 +664,7 @@ backdrop.gradient('white', 'black', radial=r)
 You can draw a shape using any canvas object.
 Here is the rectangle function:
 
-```
+```py
 def rectangle(
     self,
     pos=None,
@@ -679,12 +676,12 @@ def rectangle(
 )
 
 # example:
-backdrop.rectangle((100,100), (50,50), 'yellow', 10, 10)
+Q.backdrop.rectangle((100,100), (50,50), 'yellow', 10, 10)
 ```
 
 Here is the circle function:
 
-```
+```py
 def circle(
     self,
     pos=None,
@@ -695,7 +692,7 @@ def circle(
 )
 
 # example:
-backdrop.circle((100,100), 50, 'blue', 10)
+Q.backdrop.circle((100,100), 50, 'blue', 10)
 ```
 
 ### Cairo Access
@@ -707,10 +704,10 @@ that is called, or you may clear the entire canvas to remove everything.
 
 This will draw a centered red rectangle of half the screen size
 
-```
-canvas.rectangle(*canvas.res/4, *canvas.res/2)
-canvas.source = 'red'
-canvas.fill()
+```py
+Q.canvas.rectangle(*canvas.res/4, *canvas.res/2)
+Q.canvas.source = 'red'
+Q.canvas.fill()
 ```
 
 Qork's canvas methods contain mostly mirrors of pycairo/cairocffi methods, so you
@@ -726,7 +723,7 @@ ever have issues with using cairo methods!
 If you wish to make a custom canvas, simply add one as a node:
 
 ```
-mycanvas = add(Canvas())
+mycanvas = Q.add(Canvas())
 ```
 
 Canvases are quad meshes which allow you to draw onto the texture.  They can be
@@ -744,12 +741,12 @@ or disconnected entirely.
 
 Here is an example:
 
-```
-red_square = canvas.batch('red')
+```py
+red_square = Q.canvas.batch('red')
 with red_square:
-    canvas.source = 'red'
-    canvas.rectangle(*canvas.res/2, *canvas.res/2)
-    canvas.fill()
+    Q.canvas.source = 'red'
+    Q.canvas.rectangle(*canvas.res/2, *canvas.res/2)
+    Q.canvas.fill()
 ```
 
 This puts a red square onto the canvas's draw queue.  It can then be removed
@@ -767,7 +764,7 @@ your previous draw calls, but with the removal of the red square batch.
 
 You can also temporarily disable a batch and re-enable it when you wish:
 
-```
+```py
 red_square.disable()
 
 # later...
@@ -783,7 +780,7 @@ Your game might need a menu, a score screen, and the game itself.
 If you want a separate scene and camera for these states, create separate
 states by inheriting from the State base class:
 
-```
+```py
 class Game(State):
     def __init__(self, *args, **kwargs):
         super().__init__(self)
@@ -793,14 +790,11 @@ class Game(State):
 Q.states.change(Game) # make GameState the current state
 ```
 
-When you're using states, the global camera will no longer be used.
-Instead, use the state's camera (self.camera if you're inside the State class).
-
 ## Advanced (Reactive Classes)
 
 ### Signal
 
-```
+```py
 sig = Signal()
 sig += lambda: print('hello ', end='')
 sig += lambda: print('world')
@@ -809,7 +803,7 @@ sig() # hello world
 
 ### Slots
 
-```
+```py
 # Make a signal
 
 sig = Signal()
@@ -857,7 +851,7 @@ Here are the signals associated with each node:
 
 Reactive variables are variables that are paired with an on_change signal.
 
-```
+```py
 x = Reactive(1)
 
 x += lambda x: print('x is now', x)
@@ -873,7 +867,7 @@ x += 1 # "x is now 3"
 
 Lazy values are functions that are called only when the value is needed
 
-```
+```py
 
 equation = Lazy(lambda: 2 * math.pi)
 equation() # computed!
@@ -883,7 +877,7 @@ equation() # value is returned again, since it has already been computed
 
 Lazy values can depend on other lazy or reactive values:
 
-```
+```py
 x = Reactive(2)
 y = Reactive(3)
 equation = Lazy(lambda: x() + y(), [x, y])
@@ -900,20 +894,20 @@ equation() # 4 (recomputes since it was invalidated)
 
 ### Scheduling a callback
 
-```
-when.once(1, lambda: print('call after 1 second'))
+```py
+Q.when.once(1, lambda: print('call after 1 second'))
 ```
 
 ### Callback every N seconds
 
-```
-when(1, lambda: print('call every second'))
+```py
+Q.when(1, lambda: print('call every second'))
 ```
 
 ### Pausing a callback
 
-```
-slot = when(1, lambda: print('pause me'))
+```py
+slot = Q.when(1, lambda: print('pause me'))
 
 ...
 
@@ -926,8 +920,8 @@ slot.unpause()
 
 ### Stopping a callback
 
-```
-slot = when(1, lambda: print('pause me'))
+```py
+slot = Q.when(1, lambda: print('pause me'))
 
 ...
 
@@ -938,8 +932,8 @@ Or, a slot can be disconnected automatically when it is no longer held, if it
 is stored as a weakref (weak=True).  This relies on garbage collection, so it
 is not as reliable as explicitly disconnecting:
 
-```
-slot = when(1, lambda: print('pause me'), weak=True)
+```py
+slot = Q.when(1, lambda: print('pause me'), weak=True)
 
 ...
 
@@ -949,14 +943,16 @@ slot = when(1, lambda: print('pause me'), weak=True)
 In most cases, you probably want to use weakrefs, and have the object you want
 hold the specific slot.
 
+```py
 object = Node()
 object.connections += when.once(1, lambda: print('call every second'), weak=True)
+```
 
 ## Scripting
 
 Qork includes an async scripting system using generators:
 
-```
+```py
 def script(ctx):
     while True:
         # do this every second
@@ -965,20 +961,20 @@ def script(ctx):
 
 Delay a script for a specific length of time in seconds:
 
-```
+```py
 yield 1.0
 ```
 
 Delay a script until a condition is true
 
-```
+```py
 yield lambda: ctx.key(KEY.SPACE)
 ```
 
 Calling a function 'script' in a qorkscript starts it with the program.
 You can also use the `@coro()` decorator to start other functions as scripts:
 
-```
+```py
 @coro()
 def script_func(ctx):
     pass
@@ -986,10 +982,10 @@ def script_func(ctx):
 
 Or you can add them manually:
 
-```
+```py
 def script_func(ctx):
     pass
-Q.scripts += script_func # app-level script
+Q.app.scripts += script_func # app-level script
 ```
 
 ### Typing Text
@@ -1001,8 +997,8 @@ screen asyncronously:
 def script(ctx):
     msg = "Hello there!"
     for x in range(len(msg) + 1):
-        canvas.clear()
-        canvas.text(msg[0:x])
+        Q.canvas.clear()
+        Q.canvas.text(msg[0:x])
         yield 0.1
 ```
 
@@ -1010,23 +1006,23 @@ def script(ctx):
 
 Another usage of scripting and timers is to do timed async color fades:
 
-```
+```py
 def script(ctx):
     while True:
 
         # fade black to white gradient
-        yield when.fade(
+        yield Q.when.fade(
             2,  # seconds
             ["black", "white"],  # range
-            lambda col: backdrop.gradient(col, Color(1) - col),
+            lambda col: Q.backdrop.gradient(col, Color(1) - col),
             ctx.resume,
         )
 
         # fade white to black gradient
-        yield when.fade(
+        yield Q.when.fade(
             2,  # seconds
             ["white", "black"],  # range
-            lambda col: backdrop.gradient(col, Color(1) - col),
+            lambda col: Q.backdrop.gradient(col, Color(1) - col),
             ctx.resume,
         )
 ```
@@ -1036,7 +1032,7 @@ def script(ctx):
 All nodes are scriptable, and you can attach a script to them using
 the `+=` operator, and remove it using the `-=` operator.
 
-```
+```py
 def my_script(ctx):
     while True:
         # TODO: do this every second
@@ -1057,7 +1053,7 @@ or is detached.
 
 The easiest way to do collision is through the collision decorators:
 
-```
+```py
 @overlap(player, door)
 def player_door_collision(player, door, dt):
     # collision response
