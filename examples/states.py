@@ -9,7 +9,7 @@ class Game(State):
 
     def update(self, dt):
         super().update(dt)
-        if key_pressed(KEY.M):
+        if Q.key_pressed(KEY.M):
             Q.states.change(Menu)
 
 
@@ -21,7 +21,7 @@ class Menu(State):
 
     def update(self, dt):
         super().update(dt)
-        if key_pressed(KEY.G):
+        if Q.key_pressed(KEY.G):
             Q.states.change(Game)
 
 

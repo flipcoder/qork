@@ -245,6 +245,9 @@ class ZeroMode(Core):
             @property
             def camera(self): return app.state_camera
 
+            @property
+            def states(self): return app.states
+
         self.Q = Q()
             
         for k,v in self.q_funcs.items():
@@ -254,8 +257,9 @@ class ZeroMode(Core):
                     getattr(Q, k)
                 except AttributeError:
                     setattr(Q, k, v)
+                    # setattr(Q, k, lambda *a, _v=v, **kw: _v(*a,**kw))
             else:
-                print(k, v)
+                assert False # Q attribute not callable
 
         # if USE_Q:
         self.globe = {

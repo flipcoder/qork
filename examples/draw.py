@@ -1,13 +1,13 @@
 #!/usr/bin/env qork
 
-camera.mode = "3D"
-camera.z = 1.5
+Q.camera.mode = "3D"
+Q.camera.z = 1.5
 
-backdrop.gradient("blue", "lightblue", "white", "yellow", "green", "darkgreen")
+Q.backdrop.gradient("blue", "lightblue", "white", "yellow", "green", "darkgreen")
 
 nodes = [None] * 2
 for i in range(len(nodes)):
-    n = nodes[i] = add(Canvas())
+    n = nodes[i] = Q.add(Canvas())
     n.cfont(n.res[0] / 5)
 
 nodes[0].ctext("Hello", "gray", shadow=True)
@@ -22,3 +22,4 @@ def update(dt):
         n.rotate(s * 0.1 * dt, X)
         n.rotate(s * 0.2 * dt, Y)
         n.rotate(s * 0.3 * dt, Z)
+

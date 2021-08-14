@@ -1,5 +1,5 @@
 #!/usr/bin/env qork
 
-canvas.clear("blue")
-canvas.rectangle(canvas.res / 4, canvas.res / 2, "red")
-canvas.blit("player.png", (100, 100))
+Q.canvas.clear("blue")
+Q.canvas.rectangle(Q.canvas.res / 4, Q.canvas.res / 2, "red")
+Q.canvas.blit("player.png", (100, 100))

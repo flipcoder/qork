@@ -358,10 +358,12 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
     @property
     def state_camera(self):
-        if self.pending_state is not None:
+        if self.pending_state is not None and \
+            self.pending_state.camera is not None:
             # should only be called only during State ctor
             return self.pending_state.camera
-        if self.state is not None:
+        if self.state is not None and \
+            self.state.camera is not None:
             return self.state.camera
         return self.camera
 
@@ -607,6 +609,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
                 node = self.create(*args, num=i, **kwargs)
                 r[i] = scene.add(node)
             return r
+        # return scene.add(*args, **kwargs)
         return scene.add(self.create(*args, **kwargs))
 
     def __iadd__(self, node):
