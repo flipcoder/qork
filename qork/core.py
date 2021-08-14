@@ -358,12 +358,10 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
     @property
     def state_camera(self):
-        if self.pending_state is not None and \
-            self.pending_state.camera is not None:
+        if self.pending_state is not None and self.pending_state.camera is not None:
             # should only be called only during State ctor
             return self.pending_state.camera
-        if self.state is not None and \
-            self.state.camera is not None:
+        if self.state is not None and self.state.camera is not None:
             return self.state.camera
         return self.camera
 
@@ -600,7 +598,7 @@ class Core(mglw.WindowConfig, MinimalCore, Scriptable, State):
 
     def add(self, *args, **kwargs):
         scene = self.state_scene
-        if args and isinstance(args[0], int):  # count
+        if args and type(args[0]) is int:  # count
             r = [None] * args[0]
             count = args[0]
             args = list(args)

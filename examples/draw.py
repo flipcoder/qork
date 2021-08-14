@@ -22,4 +22,3 @@ def update(dt):
         n.rotate(s * 0.1 * dt, X)
         n.rotate(s * 0.2 * dt, Y)
         n.rotate(s * 0.3 * dt, Z)
-

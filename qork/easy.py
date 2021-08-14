@@ -46,16 +46,17 @@ def clear():
 def play(*args, **kwargs):
     return APP.play(*args, **kwargs)
 
-funcs = {
-    "cache": cache,
-    "add": add,
-    "find": find,
-    "find_one": find_one,
-    "remove": remove,
-    "create": find,
-    "clear": clear,
-    "play": play,
-}
+
+# funcs = {
+#     "cache": cache,
+#     "add": add,
+#     "find": find,
+#     "find_one": find_one,
+#     "remove": remove,
+#     "create": create,
+#     "clear": clear,
+#     "play": play,
+# }
 
 # def music(fn):
 #     return APP.add(fn, loop=True)

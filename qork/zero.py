@@ -18,6 +18,7 @@ import asyncio
 
 from qork import *
 from qork import easy
+
 # from qork.easy import *
 from qork.util import *
 from qork.console import *
@@ -168,9 +169,17 @@ class ZeroMode(Core):
             "app": app,
             "KEY": app.wnd.keys,
         }
-        
+
         self.q_funcs = {
-            # "when": app.when,
+            "when": app.when,
+            "add": app.add,
+            "create": app.create,
+            "cache": app.cache,
+            "find": lambda *a, **kw: app.state_scene.find(*a, **kw),
+            "find_one": lambda *a, **kw: app.state_scene.find_one(*a, **kw),
+            "clear": app.clear,
+            "remove": app.remove,
+            "play": app.play,
             "every": app.when.every,
             "once": app.when.once,
             # "after": app.when.once,
@@ -202,11 +211,11 @@ class ZeroMode(Core):
             "data_path": self.data_path,
             "quit": app.quit,
         }
-        
+
         # add all easy mode functions to Q namespace
-        for k,v in easy.funcs.items():
-            # if k not in self.q_funcs:
-            self.q_funcs[k] = v
+        # for k,v in easy.funcs.items():
+        #     # if k not in self.q_funcs:
+        #     self.q_funcs[k] = v
 
         # class hashabledict(dict):
         #     def __hash__(self):
@@ -218,39 +227,52 @@ class ZeroMode(Core):
 
         # populate Q namespace with q_funcs functions
         class Q:
-            @property
-            def app(self): return app
+            def __init__(self, app):
+                self._app = app
 
             @property
-            def when(self): return app.when
-            
-            @property
-            def mouse_pos(self): return app.mouse_pos
-            
-            @property
-            def scene(self): return app.state_scene
-            
-            @property
-            def backdrop(self): return app.state_backdrop
-            
-            @property
-            def data_paths(self): return app.data_paths
-            
-            @property
-            def canvas(self): return app.state_canvas
+            def app(self):
+                return self._app
 
             @property
-            def scale(self): return app.scale
-            
-            @property
-            def camera(self): return app.state_camera
+            def when(self):
+                return self._app.when
 
             @property
-            def states(self): return app.states
+            def mouse_pos(self):
+                return self._app.mouse_pos
 
-        self.Q = Q()
-            
-        for k,v in self.q_funcs.items():
+            @property
+            def scene(self):
+                return self._app.state_scene
+
+            @property
+            def backdrop(self):
+                return self._app.state_backdrop
+
+            @property
+            def data_paths(self):
+                return self._app.data_paths
+
+            @property
+            def canvas(self):
+                return self._app.state_canvas
+
+            @property
+            def scale(self):
+                return self._app.scale
+
+            @property
+            def camera(self):
+                return self._app.state_camera
+
+            @property
+            def states(self):
+                return self._app.states
+
+        self.Q = Q(app)
+
+        for k, v in self.q_funcs.items():
             if callable(v):
                 # print(k, v)
                 try:
@@ -259,7 +281,8 @@ class ZeroMode(Core):
                     setattr(Q, k, v)
                     # setattr(Q, k, lambda *a, _v=v, **kw: _v(*a,**kw))
             else:
-                assert False # Q attribute not callable
+                print("Q attribute not callable", file=sys.stderr)
+                assert False  # Q attribute not callable
 
         # if USE_Q:
         self.globe = {
@@ -271,7 +294,6 @@ class ZeroMode(Core):
         #         **self.globe,
         #         self.q_funcs
         #     }
-
 
         # additional vars for code golfing (optional in the future)
         # self.golf()
