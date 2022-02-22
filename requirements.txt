@@ -1,6 +1,6 @@
 moderngl
 moderngl-window
-PyGLM==2.0.0a3
+PyGLM
 cson
 overrides
 pycairo
